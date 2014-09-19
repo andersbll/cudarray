@@ -1,7 +1,7 @@
 import numpy as np
 
 import cudarray_wrap.reduction as wrap
-import cudarray
+import base
 
 
 REDUCE_ALL = 0
@@ -34,21 +34,21 @@ def reduce_shape(shape, axis, keepdims):
 
 
 def reduce_type(axis, ndim):
-    if axis == tuple(range(ndim)):
+    all_axis = tuple(range(ndim))
+    if axis == all_axis:
         return REDUCE_ALL
-    elif axis[0] == 0:
+    elif axis == all_axis[:len(axis)]:
         return REDUCE_LEADING
-    elif axis[-1] == ndim-1:
+    elif axis == tuple(reversed(all_axis))[:len(axis)]:
         return REDUCE_TRAILING
     raise ValueError('reduction of middle axes not implemented')
 
 
 def sum(a, axis=None, dtype=None, out=None, keepdims=False):
-
     axis = normalize_axis(axis, a.ndim)
     out_shape = reduce_shape(a.shape, axis, keepdims)
     if out is None:
-        out = cudarray.empty(out_shape, a.dtype)
+        out = base.empty(out_shape, a.dtype)
     else:
         if not out_shape == out.shape:
             raise ValueError('out.shape does not match result')
@@ -63,9 +63,9 @@ def sum(a, axis=None, dtype=None, out=None, keepdims=False):
     elif rtype == REDUCE_LEADING:
         n = np.prod(out_shape)
         m = a.size / n
-        wrap._sum_batched(a, m, n, True, out)
+        wrap._sum_batched(a._data, m, n, True, out._data)
     else:
         m = np.prod(out_shape)
         n = a.size / m
-        wrap._sum_batched(a, m, n, False, out)
+        wrap._sum_batched(a._data, m, n, False, out._data)
     return out

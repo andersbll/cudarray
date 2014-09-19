@@ -1,5 +1,3 @@
-cimport cudarray
-
 cdef extern from "cublas_v2.h":
     struct cublasContext:
         pass
@@ -30,13 +28,3 @@ cdef extern from "cublas_v2.h":
         cublasOperation_t transb, int m, int n, int k, const float *alpha,
         const float *A, int lda, const float *B, int ldb, const float *beta,
         float *C, int ldc)
-
-
-#cdef void cublasCheck(cublasStatus_t error)
-
-#cdef axpy(cudarray.CUDArray x, cudarray.CUDArray y, alpha)
-
-#cdef scal(cudarray.CUDArray x, alpha)
-
-#cdef gemm(cudarray.CUDArray a, cudarray.CUDArray b, cudarray.CUDArray c, alpha, beta)
-

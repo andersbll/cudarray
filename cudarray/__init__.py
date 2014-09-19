@@ -4,6 +4,7 @@ import os
 if 'CUDARRAY_BACKEND' not in os.environ:
     # If no backend specified, try CUDA with Numpy fall-back.
     try:
+        from .base import *
         from .cudarray import *
         from .linalg import *
         from .elementwise import *
@@ -18,6 +19,7 @@ else:
         from .numpy_backend import *
     elif backend == 'cuda':
         try:
+            from .base import *
             from .cudarray import *
             from .linalg import *
             from .elementwise import *

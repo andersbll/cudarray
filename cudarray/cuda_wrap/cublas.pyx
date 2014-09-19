@@ -3,8 +3,16 @@ cimport numpy as np
 
 from cublas cimport *
 
-cimport cudarray
-import cudarray
+# XXX
+#from cudarray.cudarray_wrap cimport array_data
+#import cudarray.cudarray_wrap.array_data as array_data
+
+#from ..cudarray_wrap cimport array_data
+#from ..cudarray_wrap import array_data
+
+from ..cudarray_wrap.array_data cimport ArrayData
+#from ..cudarray_wrap.array_data import ArrayData
+
 
 cdef cublasHandle_t handle
 cublasCreate(&handle)
@@ -32,7 +40,7 @@ cdef void cublasCheck(cublasStatus_t error):
         raise ValueError("other cuBLAS error")
 
 
-def axpy(cudarray.CUDArray x, cudarray.CUDArray y, alpha):
+def axpy(ArrayData x, ArrayData y, alpha):
     cdef int n = x.size
     cdef float alpha_f = alpha
     if x.dtype == np.float32:
@@ -42,7 +50,7 @@ def axpy(cudarray.CUDArray x, cudarray.CUDArray y, alpha):
         raise ValueError('dtype not supported (yet)')
 
 
-def scal(cudarray.CUDArray x, alpha):
+def scal(ArrayData x, alpha):
     cdef int n = x.size
     cdef float alpha_f = alpha
     if x.dtype == np.float32:
@@ -52,7 +60,7 @@ def scal(cudarray.CUDArray x, alpha):
         raise ValueError('dtype not supported (yet)')
 
 
-def gemm(cudarray.CUDArray a, cudarray.CUDArray b, cudarray.CUDArray c, alpha, beta):
+def gemm(ArrayData a, ArrayData b, ArrayData c, alpha, beta):
     cdef float alpha_f = alpha
     cdef float beta_f = beta
 

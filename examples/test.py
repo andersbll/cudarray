@@ -76,7 +76,7 @@ def test_sum():
 
 
 def run():
-    test_dot()
+#    test_dot()
     test_multiply()
     test_sum()
     return

@@ -26,8 +26,7 @@ def cuda_extensions():
     cudarray_dir = './cudarray'
     cudarray_include_dir = './include'
     cudarray_lib_dir = './build'
-    cython_include_dirs = ['./cudarray', './cudarray/cudarray_wrap',
-                           './cudarray/cuda_wrap']
+    cython_include_dirs = ['./cudarray/cudarray_wrap', './cudarray/cuda_wrap']
 
     cudart_ext = Extension(
         name='cudarray.cuda_wrap.cudart',
@@ -50,12 +49,11 @@ def cuda_extensions():
     )
 
     cudarray_ext = Extension(
-        name='cudarray.cudarray',
-        sources=[os.path.join(cudarray_dir, 'cudarray.pyx')],
+        name='cudarray.cudarray_wrap.array_data',
+        sources=[os.path.join(cudarray_dir, 'cudarray_wrap', 'array_data.pyx')],
+        libraries=["cudart"],
         include_dirs=[cudarray_include_dir],
         library_dirs=[cudarray_lib_dir],
-        libraries=["cudart", "cudarray"],
-        language='c++',
         cython_include_dirs=cython_include_dirs,
         extra_compile_args=["-O3", "-DDEBUG", "-fPIC"],
         extra_link_args=["-fPIC"],

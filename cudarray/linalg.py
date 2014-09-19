@@ -2,7 +2,7 @@ import numpy as np
 
 from cuda_wrap import cublas
 
-import cudarray
+import base
 
 
 def dot(a, b, out=None):
@@ -11,7 +11,7 @@ def dot(a, b, out=None):
     n = b.shape[-1]
 
     if out is None:
-        out = cudarray.empty((m, n), a.dtype)
+        out = base.empty((m, n), a.dtype)
     else:
         if not m == out.shape[0] and n == out.shape[-1]:
             raise ValueError('out.shape does not match result')

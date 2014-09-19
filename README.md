@@ -3,10 +3,14 @@
 
 ### Features
 - Implements (a subset of) Numpy operations.
-- Extends Numpy with specialized function for neural networks:
-  - Convolution and pooling operations for convnets.
-- Simple C interface based on Cython.
 - Fast linear algebra module based on cuBLAS.
+- Extends Numpy with specialized functions for neural networks:
+  - Convolution and pooling operations for convnets.
+- (somewhat) Simple C/CUDA wrapper based on Cython.
+
+
+#### Limitations compared to Numpy
+- Can only reduce (`sum`, `max`, etc.) along either leading or trailing axes.
 
 
 ### TODO
@@ -20,14 +24,13 @@
 
 
 ### Installation
-Run
+Install with CUDA back-end:
 
     make
     python setup.py install
 
 
-#### Disable CUDA back-end
-Run
+Install without CUDA back-end:
 
     python setup.py --without-cuda install
 
