@@ -1,0 +1,3 @@
+# Cython generated C files
+*.c
+*.cpp
