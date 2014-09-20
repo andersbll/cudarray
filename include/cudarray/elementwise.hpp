@@ -11,6 +11,14 @@ ELEMENTWISE_OP_DECL(mul)
 ELEMENTWISE_OP_DECL(div)
 
 
+#define ELEMENTWISE_BROADCAST_OP_DECL(name) \
+  template<typename T> \
+  void name(const T *a, const T *b, int m, int n, bool broadcast_to_leading, \
+            T *c);
+ELEMENTWISE_BROADCAST_OP_DECL(add_broadcast)
+ELEMENTWISE_BROADCAST_OP_DECL(mul_broadcast)
+
+
 #define ELEMENTWISE_INPLACE_OP_DECL(name) \
   template<typename T> \
   void name(T *x, const T *y, int n);

@@ -2,22 +2,12 @@ import numpy as np
 
 import cudarray_wrap.reduction as wrap
 import base
+from .helpers import normalize_axis
 
 
 REDUCE_ALL = 0
 REDUCE_LEADING = 1
 REDUCE_TRAILING = 2
-
-
-def normalize_axis(axis, ndim):
-    if axis is None:
-        return tuple(range(ndim))
-    elif isinstance(axis, (int, long, float, complex)):
-        return (axis,)
-    elif isinstance(axis, tuple):
-        return sorted(axis)
-    else:
-        raise ValueError('invalid axis type')
 
 
 def reduce_shape(shape, axis, keepdims):
@@ -63,9 +53,9 @@ def sum(a, axis=None, dtype=None, out=None, keepdims=False):
     elif rtype == REDUCE_LEADING:
         n = np.prod(out_shape)
         m = a.size / n
-        wrap._sum_batched(a._data, m, n, True, out._data)
+        wrap._sum_mat(a._data, m, n, True, out._data)
     else:
         m = np.prod(out_shape)
         n = a.size / m
-        wrap._sum_batched(a._data, m, n, False, out._data)
+        wrap._sum_mat(a._data, m, n, False, out._data)
     return out

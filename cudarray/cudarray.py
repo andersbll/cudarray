@@ -22,9 +22,8 @@ class CUDArray(object):
     def __repr__(self):
         return self.__array__().__repr__()
 
-    def mem_overlap(self, other):
-        # TODO
-        pass
+    def _same_array(self, other):
+        return self.data == other.data
 
     @property
     def data(self):

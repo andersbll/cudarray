@@ -25,6 +25,38 @@ ELEMENTWISE_OP_DEFS(mul, *)
 ELEMENTWISE_OP_DEFS(div, /)
 
 
+#define ELEMENTWISE_BROADCAST_OP_DEF(name, type) \
+  template<> \
+  void name<type>(const type *a, const type *b, int m, int n,\
+                  bool broadcast_to_leading, type *c) { \
+    if (broadcast_to_leading) { \
+      kernel_##name<true, type><<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>> \
+          (a, b, m, n, c); \
+    } else { \
+      kernel_##name<false, type><<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>> \
+          (a, b, m, n, c); \
+    } \
+  }
+
+// abll: grid stride looping is not ideal for broadcasting 
+#define ELEMENTWISE_BROADCAST_OP_DEFS(name, operation) \
+  template <bool broadcast_to_leading, typename T> \
+  __global__ void kernel_##name(const T *a, const T *b, int m, int n, T *c) { \
+    unsigned int n_threads = n*m; \
+    CUDA_GRID_STRIDE_LOOP(idx, n_threads) { \
+      if (broadcast_to_leading) { \
+        c[idx] = a[idx] operation b[idx % n]; \
+      } else { \
+        c[idx] = a[idx] operation b[idx / m]; \
+      } \
+    } \
+  } \
+  ELEMENTWISE_BROADCAST_OP_DEF(name, float)
+
+ELEMENTWISE_BROADCAST_OP_DEFS(add_broadcast, +)
+ELEMENTWISE_BROADCAST_OP_DEFS(mul_broadcast, *)
+
+
 #define ELEMENTWISE_INPLACE_OP_DEF(name, type) \
   template<> \
   void name<type>(type *x, const type *y, int n) { \

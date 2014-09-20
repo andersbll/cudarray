@@ -7,6 +7,20 @@ def _mul(ArrayData x1, ArrayData x2, unsigned int n, ArrayData out):
     if x1.dtype == np.dtype('float32'):
         elementwise.mul[float](<const float *>x1.dev_ptr, <const float *>x2.dev_ptr, n, <float *>out.dev_ptr)
 
+def _mul_broadcast(ArrayData x1, ArrayData x2, unsigned int m, unsigned int n,
+                   bool broadcast_to_leading, ArrayData out):
+    if x1.dtype == np.dtype('float32'):
+        elementwise.mul_broadcast[float](<const float *>x1.dev_ptr,
+            <const float *>x2.dev_ptr, m, n, broadcast_to_leading,
+            <float *>out.dev_ptr)
+
+def _add_broadcast(ArrayData x1, ArrayData x2, unsigned int m, unsigned int n,
+                   bool broadcast_to_leading, ArrayData out):
+    if x1.dtype == np.dtype('float32'):
+        elementwise.add_broadcast[float](<const float *>x1.dev_ptr,
+            <const float *>x2.dev_ptr, m, n, broadcast_to_leading,
+            <float *>out.dev_ptr)
+
 def _mul_inplace(ArrayData x1, ArrayData x2, unsigned int n):
     if x1.dtype == np.dtype('float32'):
         elementwise.mul_inplace[float](<float *>x1.dev_ptr, <const float *>x2.dev_ptr, n)

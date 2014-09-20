@@ -25,6 +25,78 @@ def test_dot():
 
 
 def test_multiply():
+    a_np = np.ones((5,5))
+    b_np = np.arange(5)
+    a_ca = ca.array(a_np)
+    b_ca = ca.array(b_np)
+    c_ca = ca.multiply(a_ca, b_ca)
+    c_np = np.multiply(a_np, b_np)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+    a_np = np.ones((3,3))
+    b_np = np.arange(3)
+    a_ca = ca.array(a_np)
+    b_ca = ca.array(b_np)
+    c_np = np.multiply(a_np, b_np)
+    c_ca = ca.multiply(a_ca, b_ca)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+
+    a_np = np.ones((3,3))
+    b_np = np.arange(3).reshape(1,3)
+    a_ca = ca.array(a_np)
+    b_ca = ca.array(b_np)
+    c_np = np.multiply(a_np, b_np)
+    c_ca = ca.multiply(a_ca, b_ca)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+
+    a_np = np.ones((3,3))
+    b_np = np.arange(3).reshape(3,1)
+    a_ca = ca.array(a_np)
+    b_ca = ca.array(b_np)
+
+    c_np = np.multiply(a_np, b_np)
+    c_ca = ca.multiply(a_ca, b_ca)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+
+    a_np = np.ones((3, 3, 4))
+    b_np = np.arange(3).reshape(3,1,1)
+    a_ca = ca.array(a_np)
+    b_ca = ca.array(b_np)
+    c_np = np.multiply(a_np, b_np)
+    c_ca = ca.multiply(a_ca, b_ca)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+
+    a_np = np.ones((3, 3, 4))
+    b_np = np.arange(4)
+    a_ca = ca.array(a_np)
+    b_ca = ca.array(b_np)
+    c_np = np.multiply(a_np, b_np)
+    c_ca = ca.multiply(a_ca, b_ca)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+
+    a_np = np.arange(3)
+    b_np = np.ones((3,3))
+    a_ca = ca.array(a_np)
+    b_ca = ca.array(b_np)
+    c_np = np.multiply(a_np, b_np)
+    c_ca = ca.multiply(a_ca, b_ca)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+
+    a_np = np.arange(4)
+    b_np = np.ones((3, 3, 4))
+    a_ca = ca.array(a_np)
+    b_ca = ca.array(b_np)
+    c_np = np.multiply(a_np, b_np)
+    c_ca = ca.multiply(a_ca, b_ca)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+    return
     a = np.random.normal(size=(5,5))
     a_ca = ca.array(a)
 
@@ -78,7 +150,7 @@ def test_sum():
 def run():
 #    test_dot()
     test_multiply()
-    test_sum()
+#    test_sum()
     return
 
 
