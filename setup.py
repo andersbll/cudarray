@@ -103,6 +103,7 @@ setup(
     url='http://compute.dtu.dk/~abll',
     packages=find_packages(),
     install_requires=['numpy', 'cython'],
+    include_dirs=[numpy.get_include()],
     long_description=read('README.md'),
     classifiers=[
         'Development Status :: 4 - Beta',
