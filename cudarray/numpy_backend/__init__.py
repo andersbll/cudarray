@@ -1,2 +1,2 @@
-from numpy import * 
+from numpy import *
 from .nnet import *

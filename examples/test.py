@@ -69,6 +69,7 @@ def test_multiply():
     c_ca = ca.multiply(a_ca, b_ca)
     print(np.allclose(c_np, np.array(c_ca)))
 
+    return
 
     a_np = np.ones((3, 3, 4))
     b_np = np.arange(4)
@@ -96,7 +97,6 @@ def test_multiply():
     c_ca = ca.multiply(a_ca, b_ca)
     print(np.allclose(c_np, np.array(c_ca)))
 
-    return
     a = np.random.normal(size=(5,5))
     a_ca = ca.array(a)
 
@@ -120,6 +120,16 @@ def test_multiply():
 
     c_np = np.multiply(a, b)
     c_ca = ca.multiply(a_ca, b_ca)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+def test_binary():
+    a_np = np.random.normal(size=(5,5))
+    b_np = np.random.normal(size=(5,5))
+    a_ca = ca.array(a_np)
+    b_ca = ca.array(b_np)
+
+    c_np = np.divide(a_np, b_np)
+    c_ca = ca.divide(a_ca, b_ca)
     print(np.allclose(c_np, np.array(c_ca)))
 
 
@@ -150,6 +160,7 @@ def test_sum():
 def run():
 #    test_dot()
     test_multiply()
+#    test_binary()
 #    test_sum()
     return
 

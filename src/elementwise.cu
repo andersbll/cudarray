@@ -4,163 +4,271 @@
 
 namespace cudarray {
 
-#define ELEMENTWISE_OP_DEF(name, type) \
+#define BINARY_OP_WRAPPERS(name, type) \
   template<> \
-  void name<type>(const type *a, const type *b, int n, type *c) { \
+  void name<type>(const type *a, const type *b, unsigned int n, type *c) { \
     kernel_##name<<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>(a, b, n, c); \
+  } \
+  template<> \
+  void name##_inplace<type>(type *a, const type *b, unsigned int n) { \
+    kernel_##name##_inplace<<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>(a, b, n); \
+  } \
+  template<> \
+  void name##_scalar<type>(const type *a, type alpha, unsigned int n, \
+                           type *b) { \
+    kernel_##name##_scalar<<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>> \
+        (a, alpha, n, b); \
+  } \
+  template<> \
+  void name##_scalar_inplace<type>(type *a, type alpha, unsigned int n) { \
+    kernel_##name##_scalar_inplace<<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>> \
+        (a, alpha, n); \
   }
 
-#define ELEMENTWISE_OP_DEFS(name, operation) \
+
+#define BINARY_OP_DEF(name, op, op_inplace, op_scalar, op_scalar_inplace) \
   template <typename T> \
-  __global__ void kernel_##name(const T *a, const T *b, int n, T *c) { \
+  __global__ void kernel_##name(const T *a, const T *b, unsigned int n, \
+                                T *c) { \
     CUDA_GRID_STRIDE_LOOP(idx, n) { \
-      c[idx] = a[idx] operation b[idx]; \
+      op; \
     } \
   } \
-  ELEMENTWISE_OP_DEF(name, float)
+  template <typename T> \
+  __global__ void kernel_##name##_inplace(T *a, const T *b, unsigned int n) { \
+    CUDA_GRID_STRIDE_LOOP(idx, n) { \
+      op_inplace; \
+    } \
+  } \
+  template <typename T> \
+  __global__ void kernel_##name##_scalar(const T *a, T alpha, \
+                                         unsigned int n, T *b) { \
+    CUDA_GRID_STRIDE_LOOP(idx, n) { \
+      op_scalar; \
+    } \
+  } \
+  template <typename T> \
+  __global__ void kernel_##name##_scalar_inplace(T *a, T alpha, \
+                                                 unsigned int n) { \
+    CUDA_GRID_STRIDE_LOOP(idx, n) { \
+      op_scalar_inplace; \
+    } \
+  } \
+  BINARY_OP_WRAPPERS(name, float)
 
-ELEMENTWISE_OP_DEFS(add, +)
-ELEMENTWISE_OP_DEFS(sub, -)
-ELEMENTWISE_OP_DEFS(mul, *)
-ELEMENTWISE_OP_DEFS(div, /)
+BINARY_OP_DEF(add,
+              c[idx] = a[idx] + b[idx],
+              a[idx] += b[idx],
+              b[idx] = a[idx] + alpha,
+              a[idx] += alpha)
+BINARY_OP_DEF(sub,
+              c[idx] = a[idx] - b[idx],
+              a[idx] -= b[idx],
+              b[idx] = a[idx] - alpha,
+              a[idx] -= alpha)
+BINARY_OP_DEF(mul,
+              c[idx] = a[idx] * b[idx],
+              a[idx] *= b[idx],
+              b[idx] = a[idx] * alpha,
+              a[idx] *= alpha)
+BINARY_OP_DEF(div,
+              c[idx] = a[idx] / b[idx],
+              a[idx] /= b[idx],
+              b[idx] = a[idx] / alpha,
+              a[idx] /= alpha)
+BINARY_OP_DEF(max,
+              c[idx] = fmaxf(a[idx], b[idx]),
+              a[idx] = fmaxf(a[idx], b[idx]),
+              b[idx] = fmaxf(a[idx], alpha),
+              a[idx] = fmaxf(a[idx], alpha))
+BINARY_OP_DEF(min,
+              c[idx] = fminf(a[idx], b[idx]),
+              a[idx] = fminf(a[idx], b[idx]),
+              b[idx] = fminf(a[idx], alpha),
+              a[idx] = fminf(a[idx], alpha))
+BINARY_OP_DEF(pow,
+              c[idx] = powf(a[idx], b[idx]),
+              a[idx] = powf(a[idx], b[idx]),
+              b[idx] = powf(a[idx], alpha),
+              a[idx] = powf(a[idx], alpha))
 
 
-#define ELEMENTWISE_BROADCAST_OP_DEF(name, type) \
+#define BINARY_BROADCAST_OP_WRAPPER(name, type) \
   template<> \
-  void name<type>(const type *a, const type *b, int m, int n,\
-                  bool broadcast_to_leading, type *c) { \
+  void name##_broadcast<type>(const type *a, const type *b, unsigned int m, \
+                  unsigned int n, bool broadcast_to_leading, type *c) { \
     if (broadcast_to_leading) { \
-      kernel_##name<true, type><<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>> \
+      kernel_##name##_broadcast<true, type> \
+          <<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>> \
           (a, b, m, n, c); \
     } else { \
-      kernel_##name<false, type><<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>> \
+      kernel_##name##_broadcast<false, type> \
+          <<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>> \
           (a, b, m, n, c); \
+    } \
+  } \
+  template<> \
+  void name##_broadcast_inplace<type>(type *a, const type *b, unsigned int m, \
+      unsigned int n, bool broadcast_to_leading) { \
+    if (broadcast_to_leading) { \
+      kernel_##name##_broadcast_inplace<true, type> \
+          <<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>> \
+          (a, b, m, n); \
+    } else { \
+      kernel_##name##_broadcast_inplace<false, type> \
+          <<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>> \
+          (a, b, m, n); \
     } \
   }
 
-// abll: grid stride looping is not ideal for broadcasting 
-#define ELEMENTWISE_BROADCAST_OP_DEFS(name, operation) \
+// abll: grid stride looping might not ideal for broadcasting 
+#define BINARY_BROADCAST_OP_DEF(name, op_leading, op_trailing, \
+                                op_inplace_leading, op_inplace_trailing) \
   template <bool broadcast_to_leading, typename T> \
-  __global__ void kernel_##name(const T *a, const T *b, int m, int n, T *c) { \
-    unsigned int n_threads = n*m; \
-    CUDA_GRID_STRIDE_LOOP(idx, n_threads) { \
+  __global__ void kernel_##name##_broadcast(const T *a, const T *b, \
+      unsigned int m, unsigned int n, T *c) { \
+    CUDA_GRID_STRIDE_LOOP(idx, n*m) { \
       if (broadcast_to_leading) { \
-        c[idx] = a[idx] operation b[idx % n]; \
+        op_leading; \
       } else { \
-        c[idx] = a[idx] operation b[idx / m]; \
+        op_trailing; \
       } \
     } \
   } \
-  ELEMENTWISE_BROADCAST_OP_DEF(name, float)
-
-ELEMENTWISE_BROADCAST_OP_DEFS(add_broadcast, +)
-ELEMENTWISE_BROADCAST_OP_DEFS(mul_broadcast, *)
-
-
-#define ELEMENTWISE_INPLACE_OP_DEF(name, type) \
-  template<> \
-  void name<type>(type *x, const type *y, int n) { \
-    kernel_##name<<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>(x, y, n); \
-  }
-
-#define ELEMENTWISE_INPLACE_OP_DEFS(name, operation) \
-  template <typename T> \
-  __global__ void kernel_##name(T *x, const T *y, int n) { \
-    CUDA_GRID_STRIDE_LOOP(idx, n) { \
-      x[idx] operation y[idx]; \
+  template <bool broadcast_to_leading, typename T> \
+  __global__ void kernel_##name##_broadcast_inplace(T *a, const T *b, \
+      unsigned int m, unsigned int n) { \
+    CUDA_GRID_STRIDE_LOOP(idx, n*m) { \
+      if (broadcast_to_leading) { \
+        op_inplace_leading; \
+      } else { \
+        op_inplace_trailing; \
+      } \
     } \
   } \
-  ELEMENTWISE_INPLACE_OP_DEF(name, float)
+  BINARY_BROADCAST_OP_WRAPPER(name, float)
 
-ELEMENTWISE_INPLACE_OP_DEFS(add_inplace, +=)
-ELEMENTWISE_INPLACE_OP_DEFS(sub_inplace, -=)
-ELEMENTWISE_INPLACE_OP_DEFS(mul_inplace, *=)
-ELEMENTWISE_INPLACE_OP_DEFS(div_inplace, /=)
+BINARY_BROADCAST_OP_DEF(add,
+                        c[idx] = a[idx] + b[idx % n],
+                        c[idx] = a[idx] + b[idx / m],
+                        a[idx] += b[idx % n],
+                        a[idx] += b[idx / m])
+BINARY_BROADCAST_OP_DEF(sub,
+                        c[idx] = a[idx] - b[idx % n],
+                        c[idx] = a[idx] - b[idx / m],
+                        a[idx] -= b[idx % n],
+                        a[idx] -= b[idx / m])
+BINARY_BROADCAST_OP_DEF(mul,
+                        c[idx] = a[idx] * b[idx % n],
+                        c[idx] = a[idx] * b[idx / m],
+                        a[idx] *= b[idx % n],
+                        a[idx] *= b[idx / m])
+BINARY_BROADCAST_OP_DEF(div,
+                        c[idx] = a[idx] / b[idx % n],
+                        c[idx] = a[idx] / b[idx / m],
+                        a[idx] /= b[idx % n],
+                        a[idx] /= b[idx / m])
+BINARY_BROADCAST_OP_DEF(max,
+                        c[idx] = fmaxf(a[idx], b[idx % n]),
+                        c[idx] = fmaxf(a[idx], b[idx / m]),
+                        a[idx] = fmaxf(a[idx], b[idx % n]),
+                        a[idx] = fmaxf(a[idx], b[idx / m]))
+BINARY_BROADCAST_OP_DEF(min,
+                        c[idx] = fminf(a[idx], b[idx % n]),
+                        c[idx] = fminf(a[idx], b[idx / m]),
+                        a[idx] = fminf(a[idx], b[idx % n]),
+                        a[idx] = fminf(a[idx], b[idx / m]))
+BINARY_BROADCAST_OP_DEF(pow,
+                        c[idx] = powf(a[idx], b[idx % n]),
+                        c[idx] = powf(a[idx], b[idx / m]),
+                        a[idx] = powf(a[idx], b[idx % n]),
+                        a[idx] = powf(a[idx], b[idx / m]))
 
 
-#define SCALAR_OP_DEF(name, type) \
+#define UNARY_OP_WRAPPER(name, type) \
   template<> \
-  void name<type>(const type *x, type alpha, int n, type *y) { \
-    kernel_##name<<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>(x, alpha, n, y); \
+  void name<type>(const type *a, unsigned int n, type *b) { \
+    kernel_##name<<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>(a, n, b); \
+  } \
+  template<> \
+  void name##_inplace<type>(type *a, unsigned int n) { \
+    kernel_##name##_inplace<<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>(a, n); \
   }
 
-#define SCALAR_OP_DEFS(name, operation) \
+#define UNARY_OP_DEF(name, op, op_inplace) \
   template <typename T> \
-  __global__ void kernel_##name(const T *x, T alpha, int n, T *y) { \
+  __global__ void kernel_##name(const T *a, unsigned int n, T *b) { \
     CUDA_GRID_STRIDE_LOOP(idx, n) { \
-      y[idx] = x[idx] operation alpha; \
+      op; \
     } \
   } \
-  SCALAR_OP_DEF(name, float)
+  template <typename T> \
+  __global__ void kernel_##name##_inplace(T *a, unsigned int n) { \
+    CUDA_GRID_STRIDE_LOOP(idx, n) { \
+      op_inplace; \
+    } \
+  } \
+  UNARY_OP_WRAPPER(name, float)
 
-SCALAR_OP_DEFS(add_scalar, +)
-SCALAR_OP_DEFS(sub_scalar, -)
-SCALAR_OP_DEFS(mul_scalar, *)
-SCALAR_OP_DEFS(div_scalar, /)
+UNARY_OP_DEF(abs,
+             b[idx] = fabsf(a[idx]),
+             a[idx] = fabsf(a[idx]))
+UNARY_OP_DEF(exp,
+             b[idx] = expf(a[idx]),
+             a[idx] = expf(a[idx]))
+UNARY_OP_DEF(log,
+             b[idx] = logf(a[idx]),
+             a[idx] = logf(a[idx]))
+UNARY_OP_DEF(relu,
+             b[idx] = fmaxf(0.0, a[idx]),
+             a[idx] = fmaxf(0.0, a[idx]))
+UNARY_OP_DEF(relu_d,
+             b[idx] = a[idx] > 0.0 ? 1 : 0,
+             a[idx] = a[idx] > 0.0 ? 1 : 0)
+UNARY_OP_DEF(sigmoid,
+             b[idx] = 1.0/(1.0 + expf(-a[idx])),
+             a[idx] = 1.0/(1.0 + expf(-a[idx])))
+UNARY_OP_DEF(sqrt,
+             b[idx] = sqrtf(a[idx]),
+             a[idx] = sqrtf(a[idx]))
+UNARY_OP_DEF(tanh,
+             b[idx] = tanhf(a[idx]),
+             a[idx] = tanhf(a[idx]))
 
 
-#define SCALAR_INPLACE_OP_DEF(name, type) \
+
+#define UNARY_TMP_OP_WRAPPER(name, op_tmp_var, op, op_inplace, type) \
+  __global__ void kernel_##name(const type *a, unsigned int n, type *b) { \
+    CUDA_GRID_STRIDE_LOOP(idx, n) { \
+      type tmp = op_tmp_var; \
+      op; \
+    } \
+  } \
+  __global__ void kernel_##name##_inplace(type *a, unsigned int n) { \
+    CUDA_GRID_STRIDE_LOOP(idx, n) { \
+      type tmp = op_tmp_var; \
+      op_inplace; \
+    } \
+  } \
   template<> \
-  void name<type>(type *x, type alpha, int n) { \
-    kernel_##name<<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>(x, alpha, n); \
-  }
-
-#define SCALAR_INPLACE_OP_DEFS(name, operation) \
-  template <typename T> \
-  __global__ void kernel_##name(T *x, T alpha, int n) { \
-    CUDA_GRID_STRIDE_LOOP(idx, n) { \
-      x[idx] operation alpha; \
-    } \
+  void name<type>(const type *a, unsigned int n, type *b) { \
+    kernel_##name<<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>(a, n, b); \
   } \
-  SCALAR_INPLACE_OP_DEF(name, float)
-
-SCALAR_INPLACE_OP_DEFS(add_scalar_inplace, +=)
-SCALAR_INPLACE_OP_DEFS(sub_scalar_inplace, -=)
-SCALAR_INPLACE_OP_DEFS(mul_scalar_inplace, *=)
-SCALAR_INPLACE_OP_DEFS(div_scalar_inplace, /=)
-
-
-
-#define UNARY_OP_DEF(name, type) \
   template<> \
-  void name<type>(const type *x, int n, type *y) { \
-    kernel_##name<<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>(x, n, y); \
-  }
-
-#define UNARY_OP_DEFS(name, operation) \
-  template <typename T> \
-  __global__ void kernel_##name(const T *x, int n, T *y) { \
-    CUDA_GRID_STRIDE_LOOP(idx, n) { \
-      operation; \
-    } \
+  void name##_inplace<type>(type *a, unsigned int n) { \
+    kernel_##name##_inplace<<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>(a, n); \
   } \
-  UNARY_OP_DEF(name, float)
 
-UNARY_OP_DEFS(abs, y[idx] = fabsf(x[idx]))
-UNARY_OP_DEFS(exp, y[idx] = expf(x[idx]))
-UNARY_OP_DEFS(log, y[idx] = logf(x[idx]))
-UNARY_OP_DEFS(sqrt, y[idx] = sqrtf(x[idx]))
-UNARY_OP_DEFS(tanh, y[idx] = tanhf(x[idx]))
-//UNARY_OP_DEFS(sigmoid, y[idx] = 1.0/(1.0 + expf(-x[idx])))
+#define UNARY_TMP_OP_DEF(name, op_tmp_var, op, op_inplace) \
+  UNARY_TMP_OP_WRAPPER(name, op_tmp_var, op, op_inplace, float)
 
-
-#define UNARY_ARG_OP_DEF(name, type) \
-  template<> \
-  void name<type>(const type *x, type arg, int n, type *y) { \
-    kernel_##name<<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>(x, arg, n, y); \
-  }
-
-#define UNARY_ARG_OP_DEFS(name, operation) \
-  template <typename T> \
-  __global__ void kernel_##name(const T *x, T arg, int n, T *y) { \
-    CUDA_GRID_STRIDE_LOOP(idx, n) { \
-      operation; \
-    } \
-  } \
-  UNARY_ARG_OP_DEF(name, float)
-
-UNARY_ARG_OP_DEFS(pow, y[idx] = powf(x[idx], arg))
-UNARY_ARG_OP_DEFS(max, y[idx] = fmaxf(x[idx], arg))
-UNARY_ARG_OP_DEFS(min, y[idx] = fminf(x[idx], arg))
+UNARY_TMP_OP_DEF(sigmoid_d,
+             1.0/(1.0 + expf(-a[idx])),
+             b[idx] = tmp*(1-tmp),
+             a[idx] = tmp*(1-tmp))
+UNARY_TMP_OP_DEF(tanh_d,
+             expf(2*a[idx]),
+             b[idx] = (tmp-1)/(tmp+1),
+             a[idx] = (tmp-1)/(tmp+1))
 
 }

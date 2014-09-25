@@ -21,9 +21,9 @@ def broadcast_type(shape1, shape2):
     if shape1 == shape2:
         return NO_BROADCAST
 
-    error =  ValueError('operands could not be broadcast together with shapes'
-                        + ' ' + str(shape1) + ' ' + str(shape2))
-    
+    error = ValueError('operands could not be broadcast together with shapes '
+                       + str(shape1) + ' ' + str(shape2))
+
     # Bring shapes to same length by setting missing trailing dimensions to 1's
     len_diff = len(shape1) - len(shape2)
     if len_diff > 0:
@@ -49,10 +49,9 @@ def broadcast_type(shape1, shape2):
         raise error
 
 
-def multiply(x1, x2, out=None):
+def binary(op, x1, x2, out=None):
     if np.isscalar(x1) or np.isscalar(x2):
         if np.isscalar(x1) and np.isscalar(x2):
-            # abll: this should never happen and can be removed
             return x1*x2
         if np.isscalar(x1):
             scalar = x1
@@ -61,6 +60,7 @@ def multiply(x1, x2, out=None):
             array = x1
             scalar = x2
 
+        # Create/check output array
         inplace = False
         out_shape = array.shape
         if out is None:
@@ -74,9 +74,9 @@ def multiply(x1, x2, out=None):
                 inplace = True
         n = array.size
         if inplace:
-            wrap._mul_scalar_inplace(array._data, scalar, n)
+            wrap.scalar_inplace(op, array._data, scalar, n)
         else:
-            wrap._mul_scalar(array._data, scalar, n, out._data)
+            wrap.scalar(op, array._data, scalar, n, out._data)
         return out
 
     # Create/check output array
@@ -96,10 +96,12 @@ def multiply(x1, x2, out=None):
     if btype == NO_BROADCAST:
         n = x1.size
         if inplace:
-            wrap._mul_inplace(x1._data, x2._data, n)
+            wrap.binary_inplace(op, x1._data, x2._data, n)
         else:
-            wrap._mul(x1._data, x2._data, n, out._data)
+            wrap.binary(op, x1._data, x2._data, n, out._data)
+        return out
 
+    # Calculate dimensions of the broadcast operation
     size1 = x1.size
     size2 = x2.size
     if size1 > size2:
@@ -109,10 +111,81 @@ def multiply(x1, x2, out=None):
         x1, x2 = x2, x1
         if x1._same_array(out):
             inplace = True
-
-    if btype == BROADCAST_TO_LEADING:
-        wrap._mul_broadcast(x1._data, x2._data, m, n, True, out._data)
-    elif btype == BROADCAST_TO_TRAILING:
-        wrap._mul_broadcast(x1._data, x2._data, m, n, False, out._data)
-
+    b_to_l = btype == BROADCAST_TO_LEADING
+    if inplace:
+        wrap.binary_broadcast_inplace(op, x1._data, x2._data, m, n, b_to_l)
+    else:
+        wrap.binary_broadcast(op, x1._data, x2._data, m, n, b_to_l, out._data)
     return out
+
+
+def add(x1, x2, out=None):
+    return binary(wrap.BinaryOp.add, x1, x2, out)
+
+
+def subtract(x1, x2, out=None):
+    return binary(wrap.BinaryOp.sub, x1, x2, out)
+
+
+def multiply(x1, x2, out=None):
+    return binary(wrap.BinaryOp.mul, x1, x2, out)
+
+
+def divide(x1, x2, out=None):
+    return binary(wrap.BinaryOp.div, x1, x2, out)
+
+
+def power(x1, x2, out=None):
+    return binary(wrap.BinaryOp.pow, x1, x2, out)
+
+
+def maximum(x1, x2, out=None):
+    return binary(wrap.BinaryOp.max, x1, x2, out)
+
+
+def minimum(x1, x2, out=None):
+    return binary(wrap.BinaryOp.min, x1, x2, out)
+
+
+def unary(op, x, out=None):
+    inplace = False
+    out_shape = array.shape
+    if out is None:
+        out = base.empty(out_shape, dtype=x.dtype)
+    else:
+        if not out_shape == out.shape:
+            raise ValueError('out.shape does not match result')
+        if not array.dtype == out.dtype:
+            raise ValueError('dtype mismatch')
+        if array._same_array(out):
+            inplace = True
+    n = array.size
+    if inplace:
+        wrap.unary_inplace(x._data, n)
+    else:
+        wrap.unary(x._data, n, out._data)
+    return out
+
+
+def absolute(x, out=None):
+    return unary(wrap.UnaryOp.abs, x, out)
+
+
+def exp(x, out=None):
+    return unary(wrap.UnaryOp.exp, x, out)
+
+
+def fabs(x, out=None):
+    return unary(wrap.UnaryOp.abs, x, out)
+
+
+def log(x, out=None):
+    return unary(wrap.UnaryOp.log, x, out)
+
+
+def sqrt(x, out=None):
+    return unary(wrap.UnaryOp.sqrt, x, out)
+
+
+def tanh(x, out=None):
+    return unary(wrap.UnaryOp.tanh, x, out)

@@ -29,7 +29,7 @@ def ones_like(a, dtype=None):
 
 
 def zeros(shape, dtype=np.float32):
-    #TODO: use fill()
+    # TODO: use fill()
     return array(np.zeros(shape, dtype=dtype))
 
 
