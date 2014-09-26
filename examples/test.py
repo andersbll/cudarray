@@ -145,6 +145,13 @@ def test_sum():
     a_np = np.random.normal(size=(5,5))
     a_ca = ca.array(a_np)
 
+    s_np = np.sum(a_np)
+    s_ca = ca.sum(a_ca)
+    print(np.allclose(s_np, np.array(s_ca)))
+
+    a_np = np.random.normal(size=(5,5))
+    a_ca = ca.array(a_np)
+
     s_np = np.sum(a_np, 0)
     s_ca = ca.sum(a_ca, 0)
     print(np.allclose(s_np, np.array(s_ca)))
@@ -166,9 +173,9 @@ def test_sum():
 
 
 def run():
-    test_dot()
-    test_multiply()
-    test_binary()
+#    test_dot()
+#    test_multiply()
+#    test_binary()
     test_sum()
     return
 

@@ -4,9 +4,24 @@ cimport reduction
 from .array_data cimport ArrayData
 
 
-def _sum_mat(ArrayData a, unsigned int m, unsigned int n, bool reduce_leading,
-             ArrayData out):
-    if a.dtype == np.dtype('float32'):
-        reduction.sum_mat[float](<const float *>a.dev_ptr, m, n,
-                                 reduce_leading, <float *>out.dev_ptr)
+max_op = MAX_OP
+mean_op = MEAN_OP
+min_op = MIN_OP
+sum_op = SUM_OP
 
+
+def _reduce(ReduceOp op, ArrayData a, unsigned int n, ArrayData out):
+    if a.dtype == np.dtype('float32'):
+        reduction.reduce[float](op, <const float *>a.dev_ptr, n,
+                                <float *>out.dev_ptr)
+    else:
+        raise ValueError('type %s not implemented' % str(a.dtype))
+
+
+def _reduce_mat(ReduceOp op, ArrayData a, unsigned int m, unsigned int n,
+                bool reduce_leading, ArrayData out):
+    if a.dtype == np.dtype('float32'):
+        reduction.reduce_mat[float](op, <const float *>a.dev_ptr, m, n,
+                                    reduce_leading, <float *>out.dev_ptr)
+    else:
+        raise ValueError('type %s not implemented' % str(a.dtype))

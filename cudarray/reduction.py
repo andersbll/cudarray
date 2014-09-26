@@ -34,7 +34,7 @@ def reduce_type(axis, ndim):
     raise ValueError('reduction of middle axes not implemented')
 
 
-def sum(a, axis=None, dtype=None, out=None, keepdims=False):
+def reduction(op, a, axis=None, dtype=None, out=None, keepdims=False):
     axis = normalize_axis(axis, a.ndim)
     out_shape = reduce_shape(a.shape, axis, keepdims)
     if out is None:
@@ -49,13 +49,29 @@ def sum(a, axis=None, dtype=None, out=None, keepdims=False):
 
     rtype = reduce_type(axis, a.ndim)
     if rtype == REDUCE_ALL:
-        wrap.sum(a, out)
+        wrap._reduce(op, a._data, a.size, out._data)
     elif rtype == REDUCE_LEADING:
         n = np.prod(out_shape)
         m = a.size / n
-        wrap._sum_mat(a._data, m, n, True, out._data)
+        wrap._reduce_mat(op, a._data, m, n, True, out._data)
     else:
         m = np.prod(out_shape)
         n = a.size / m
-        wrap._sum_mat(a._data, m, n, False, out._data)
+        wrap._reduce_mat(op, a._data, m, n, False, out._data)
     return out
+
+
+def max(a, axis=None, dtype=None, out=None, keepdims=False):
+    return reduction(wrap.max_op, a, axis, dtype, out, keepdims)
+
+
+def mean(a, axis=None, dtype=None, out=None, keepdims=False):
+    return reduction(wrap.mean_op, a, axis, dtype, out, keepdims)
+
+
+def min(a, axis=None, dtype=None, out=None, keepdims=False):
+    return reduction(wrap.min_op, a, axis, dtype, out, keepdims)
+
+
+def sum(a, axis=None, dtype=None, out=None, keepdims=False):
+    return reduction(wrap.sum_op, a, axis, dtype, out, keepdims)
