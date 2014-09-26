@@ -1,3 +1,6 @@
+#ifndef REDUCTION_HPP_
+#define REDUCTION_HPP_
+
 namespace cudarray {
 
 enum ReduceOp {
@@ -16,3 +19,5 @@ void reduce_mat(ReduceOp op, const T *a, unsigned int m, unsigned int n,
                 bool reduce_leading, T *b);
 
 }
+
+#endif // REDUCTION_HPP_
