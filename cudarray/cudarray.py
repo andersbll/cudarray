@@ -55,3 +55,27 @@ class CUDArray(object):
 
     def __iadd__(self, other):
         return elementwise.add(self, other, self)
+
+    def __sub__(self, other):
+        return elementwise.subtract(self, other)
+
+    def __isub__(self, other):
+        return elementwise.subtract(self, other, self)
+
+    def __mul__(self, other):
+        return elementwise.multiply(self, other)
+
+    def __imul__(self, other):
+        return elementwise.multiply(self, other, self)
+
+    def __div__(self, other):
+        return elementwise.divide(self, other)
+
+    def __idiv__(self, other):
+        return elementwise.divide(self, other, self)
+
+    def __neg__(self):
+        return elementwise.negative(self)
+
+    def __ineg__(self):
+        return elementwise.negative(self, self)

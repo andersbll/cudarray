@@ -14,6 +14,7 @@ sub_op = SUB_OP
 abs_op = ABS_OP
 exp_op = EXP_OP
 log_op = LOG_OP
+neg_op = LOG_OP
 relu_op = RELU_OP
 relu_d_op = RELU_D_OP
 sigmoid_op = SIGMOID_OP

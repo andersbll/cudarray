@@ -185,6 +185,10 @@ def log(x, out=None):
     return unary(wrap.log_op, x, out)
 
 
+def negative(x, out=None):
+    return unary(wrap.neg_op, x, out)
+
+
 def sqrt(x, out=None):
     return unary(wrap.sqrt_op, x, out)
 

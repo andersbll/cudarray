@@ -15,10 +15,10 @@ def reduce_shape(shape, axis, keepdims):
     if axis == all_axis:
         return (1,)
     if keepdims:
-        out_shape = shape
+        out_shape = list(shape)
         for a in axis:
             out_shape[a] = 1
-        return out_shape
+        return tuple(out_shape)
     else:
         return tuple(shape[a] for a in all_axis if a not in axis)
 
@@ -61,7 +61,7 @@ def reduction(op, a, axis=None, dtype=None, out=None, keepdims=False):
     return out
 
 
-def max(a, axis=None, dtype=None, out=None, keepdims=False):
+def amax(a, axis=None, dtype=None, out=None, keepdims=False):
     return reduction(wrap.max_op, a, axis, dtype, out, keepdims)
 
 
@@ -69,7 +69,7 @@ def mean(a, axis=None, dtype=None, out=None, keepdims=False):
     return reduction(wrap.mean_op, a, axis, dtype, out, keepdims)
 
 
-def min(a, axis=None, dtype=None, out=None, keepdims=False):
+def amin(a, axis=None, dtype=None, out=None, keepdims=False):
     return reduction(wrap.min_op, a, axis, dtype, out, keepdims)
 
 

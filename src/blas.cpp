@@ -62,7 +62,7 @@ void gemm(const T *A, const T *B, TransposeOp transA, TransposeOp transB,
   cublasOperation_t cuTransB = (transB == OP_TRANS) ? CUBLAS_OP_T
                                                     : CUBLAS_OP_N;
   CUBLAS_CHECK(cublas_gemm(CUDA::cublas_handle(), cuTransB, cuTransA,
-                           n, m, k, &alpha, B, ldb, A, lda, &beta, C, n));
+                           n, m, k, &alpha, B, ldb, A, lda, &beta, C, ldc));
 }
 
 template void gemm<float>(const float *A, const float *B, TransposeOp transA,

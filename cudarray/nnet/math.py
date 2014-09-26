@@ -5,20 +5,20 @@ from ..cudarray_wrap import elementwise as wrap
 
 
 def relu(x, out=None):
-    return unary(wrap.UnaryOp.relu, x, out)
+    return unary(wrap.relu_op, x, out)
 
 
 def relu_d(x, out=None):
-    return unary(wrap.UnaryOp.relu_d, x, out)
+    return unary(wrap.relu_d_op, x, out)
 
 
 def sigmoid(x, out=None):
-    return unary(wrap.UnaryOp.sigmoid, x, out)
+    return unary(wrap.sigmoid_op, x, out)
 
 
 def sigmoid_d(x, out=None):
-    return unary(wrap.UnaryOp.sigmoid_d, x, out)
+    return unary(wrap.sigmoid_d_op, x, out)
 
 
 def tanh_d(x, out=None):
-    return unary(wrap.UnaryOp.tanh_d, x, out)
+    return unary(wrap.tanh_d_op, x, out)

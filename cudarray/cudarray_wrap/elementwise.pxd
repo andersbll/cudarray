@@ -24,6 +24,7 @@ cdef extern from 'cudarray/elementwise.hpp' namespace 'cudarray':
         ABS_OP
         EXP_OP
         LOG_OP
+        NEG_OP
         RELU_OP
         RELU_D_OP
         SIGMOID_OP

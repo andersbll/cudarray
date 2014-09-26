@@ -364,6 +364,7 @@ __global__ void kernel_unary(const T *a, unsigned int n, T *b) {
     if (op == ABS_OP) b[idx] = fabsf(a[idx]);
     if (op == EXP_OP) b[idx] = expf(a[idx]);
     if (op == LOG_OP) b[idx] = logf(a[idx]);
+    if (op == NEG_OP) b[idx] = -a[idx];
     if (op == RELU_OP) b[idx] = fmaxf(0.0, a[idx]);
     if (op == RELU_D_OP) b[idx] = 1.0/(1.0 + expf(-a[idx]));
     if (op == SIGMOID_OP) b[idx] = 1.0/(1.0 + expf(-a[idx]));
@@ -396,6 +397,9 @@ void unary(UnaryOp op, const T *a, unsigned int n, T *b) {
       break;
     case LOG_OP:
       unary<T, LOG_OP>(a, n, b);
+      break;
+    case NEG_OP:
+      unary<T, NEG_OP>(a, n, b);
       break;
     case RELU_OP:
       unary<T, RELU_OP>(a, n, b);
@@ -431,6 +435,7 @@ __global__ void kernel_unary_inplace(T *a, unsigned int n) {
     if (op == ABS_OP) a[idx] = fabsf(a[idx]);
     if (op == EXP_OP) a[idx] = expf(a[idx]);
     if (op == LOG_OP) a[idx] = logf(a[idx]);
+    if (op == NEG_OP) a[idx] = -a[idx];
     if (op == RELU_OP) a[idx] = fmaxf(0.0, a[idx]);
     if (op == RELU_D_OP) a[idx] = 1.0/(1.0 + expf(-a[idx]));
     if (op == SIGMOID_OP) a[idx] = 1.0/(1.0 + expf(-a[idx]));
@@ -463,6 +468,9 @@ void unary_inplace(UnaryOp op, T *a, unsigned int n) {
       break;
     case LOG_OP:
       unary_inplace<T, LOG_OP>(a, n);
+      break;
+    case NEG_OP:
+      unary_inplace<T, NEG_OP>(a, n);
       break;
     case RELU_OP:
       unary_inplace<T, RELU_OP>(a, n);

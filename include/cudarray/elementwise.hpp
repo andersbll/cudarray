@@ -27,7 +27,7 @@ void binary_broadcast_inplace(BinaryOp op, T *a, const T *b, unsigned int m,
 
 
 enum UnaryOp {
-  ABS_OP, EXP_OP, LOG_OP, RELU_OP, RELU_D_OP, SIGMOID_OP, SIGMOID_D_OP,
+  ABS_OP, EXP_OP, LOG_OP, NEG_OP, RELU_OP, RELU_D_OP, SIGMOID_OP, SIGMOID_D_OP,
   SQRT_OP, TANH_OP, TANH_D_OP
 };
 
