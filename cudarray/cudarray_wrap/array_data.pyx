@@ -10,8 +10,8 @@ cdef class ArrayData:
         self.nbytes = size*dtype.itemsize
         cudaCheck(cudaMalloc(&self.dev_ptr, self.nbytes))
         if np_data is not None:
-            cudaCheck(cudaMemcpy(self.dev_ptr, np.PyArray_DATA(np_data),
-                                 self.nbytes, cudaMemcpyHostToDevice))
+            cudaCheck(cudaMemcpyAsync(self.dev_ptr, np.PyArray_DATA(np_data),
+                                      self.nbytes, cudaMemcpyHostToDevice))
 
     def to_numpy(self, np_array):
         cudaCheck(cudaMemcpy(np.PyArray_DATA(np_array), self.dev_ptr,
