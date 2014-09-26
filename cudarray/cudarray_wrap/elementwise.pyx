@@ -123,7 +123,6 @@ def binary_broadcast(int op, ArrayData a, ArrayData b, unsigned int m,
 def binary_broadcast_inplace(int op, ArrayData a, ArrayData b, unsigned int m,
                      unsigned int n, bool broadcast_to_leading):
     if a.dtype == np.dtype('float32'):
-        pass
         if op == BinaryOp.add:
             elementwise.add_broadcast_inplace[float](<float *>a.dev_ptr,
                 <const float *>b.dev_ptr, m, n, broadcast_to_leading)
@@ -210,38 +209,38 @@ def unary(int op, ArrayData a, unsigned int n, ArrayData b):
         if op == UnaryOp.abs:
             elementwise.abs[float](<const float *>a.dev_ptr, n,
                 <float *>b.dev_ptr)
-        if op == UnaryOp.exp:
+        elif op == UnaryOp.exp:
             elementwise.exp[float](<const float *>a.dev_ptr, n,
                 <float *>b.dev_ptr)
-        if op == UnaryOp.log:
+        elif op == UnaryOp.log:
             elementwise.log[float](<const float *>a.dev_ptr, n,
                 <float *>b.dev_ptr)
-        if op == UnaryOp.relu:
+        elif op == UnaryOp.relu:
             elementwise.relu[float](<const float *>a.dev_ptr, n,
                 <float *>b.dev_ptr)
-        if op == UnaryOp.relu_d:
+        elif op == UnaryOp.relu_d:
             elementwise.relu_d[float](<const float *>a.dev_ptr, n,
                 <float *>b.dev_ptr)
-        if op == UnaryOp.sigmoid:
+        elif op == UnaryOp.sigmoid:
             elementwise.sigmoid[float](<const float *>a.dev_ptr, n,
                 <float *>b.dev_ptr)
-        if op == UnaryOp.sigmoid_d:
+        elif op == UnaryOp.sigmoid_d:
             elementwise.sigmoid_d[float](<const float *>a.dev_ptr, n,
                 <float *>b.dev_ptr)
-        if op == UnaryOp.sqrt:
+        elif op == UnaryOp.sqrt:
             elementwise.sqrt[float](<const float *>a.dev_ptr, n,
                 <float *>b.dev_ptr)
-        if op == UnaryOp.tanh:
+        elif op == UnaryOp.tanh:
             elementwise.tanh[float](<const float *>a.dev_ptr, n,
                 <float *>b.dev_ptr)
-        if op == UnaryOp.tanh_d:
+        elif op == UnaryOp.tanh_d:
             elementwise.tanh_d[float](<const float *>a.dev_ptr, n,
                 <float *>b.dev_ptr)
         else:
             raise ValueError('invalid op %i specified' % op)
 
 
-def unary_inplace(int op, ArrayData a, unsigned int n, ArrayData b):
+def unary_inplace(int op, ArrayData a, unsigned int n):
     if a.dtype == np.dtype('float32'):
         if op == UnaryOp.abs:
             elementwise.abs_inplace[float](<float *>a.dev_ptr, n)

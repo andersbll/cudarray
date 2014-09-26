@@ -38,16 +38,6 @@ def cuda_extensions():
         extra_link_args=["-fPIC"],
     )
 
-    cublas_ext = Extension(
-        name='cudarray.cuda_wrap.cublas',
-        sources=[os.path.join(cudarray_dir, 'cuda_wrap', 'cublas.pyx')],
-        libraries=["cublas"],
-        language='c++',
-        cython_include_dirs=cython_include_dirs,
-        extra_compile_args=["-O3", "-DDEBUG", "-fPIC"],
-        extra_link_args=["-fPIC"],
-    )
-
     cudarray_ext = Extension(
         name='cudarray.cudarray_wrap.array_data',
         sources=[os.path.join(cudarray_dir, 'cudarray_wrap', 'array_data.pyx')],
@@ -82,8 +72,20 @@ def cuda_extensions():
         extra_compile_args=["-O3", "-DDEBUG", "-fPIC"],
         extra_link_args=["-fPIC"],
     )
-    return [cudart_ext, cublas_ext, cudarray_ext, elementwise_wrap_ext,
-            reduction_wrap_ext,]
+
+    blas_wrap_ext = Extension(
+        name='cudarray.cudarray_wrap.blas',
+        sources=[os.path.join(cudarray_dir, 'cudarray_wrap', 'blas.pyx')],
+        libraries=["cudarray"],
+        library_dirs=[cudarray_lib_dir],
+        include_dirs=['./include'],
+        cython_include_dirs=cython_include_dirs,
+        language='c++',
+        extra_compile_args=["-O3", "-DDEBUG", "-fPIC"],
+        extra_link_args=["-fPIC"],
+    )
+    return [cudart_ext, cudarray_ext, elementwise_wrap_ext,
+            reduction_wrap_ext, blas_wrap_ext]
 
 def numpy_extensions():
     cython_srcs = [

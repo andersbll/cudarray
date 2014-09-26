@@ -7,6 +7,7 @@ NVCC = nvcc
 SRCS = $(SRC_DIR)/common.cpp
 CUDA_SRCS = $(SRC_DIR)/elementwise.cu \
             $(SRC_DIR)/reduction.cu \
+            $(SRC_DIR)/blas.cu \
             $(SRC_DIR)/image/img2win.cu
 
 OBJS = $(SRCS:.cpp=.o) $(CUDA_SRCS:.cu=.o)

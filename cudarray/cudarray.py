@@ -1,6 +1,7 @@
 import numpy as np
 
 from .cudarray_wrap.array_data import ArrayData
+import elementwise
 
 
 class CUDArray(object):
@@ -48,3 +49,9 @@ class CUDArray(object):
     @property
     def size(self):
         return np.prod(self.shape)
+    
+    def __add__(self, other):
+        return elementwise.add(self, other)
+
+    def __iadd__(self, other):
+        return elementwise.add(self, other, self)

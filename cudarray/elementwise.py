@@ -66,9 +66,9 @@ def binary(op, x1, x2, out=None):
         if out is None:
             out = base.empty(out_shape, dtype=x1.dtype)
         else:
-            if not out_shape == out.shape:
+            if out_shape != out.shape:
                 raise ValueError('out.shape does not match result')
-            if not array.dtype == out.dtype:
+            if array.dtype != out.dtype:
                 raise ValueError('dtype mismatch')
             if array._same_array(out):
                 inplace = True
@@ -79,15 +79,17 @@ def binary(op, x1, x2, out=None):
             wrap.scalar(op, array._data, scalar, n, out._data)
         return out
 
+    if not x1.dtype == x2.dtype:
+        raise ValueError('dtype mismatch')
     # Create/check output array
     inplace = False
     out_shape = broadcast_shape(x1.shape, x2.shape)
     if out is None:
         out = base.empty(out_shape, dtype=x1.dtype)
     else:
-        if not out_shape == out.shape:
+        if out_shape != out.shape:
             raise ValueError('out.shape does not match result')
-        if not x1.dtype == x2.dtype == out.dtype:
+        if x1.dtype != out.dtype:
             raise ValueError('dtype mismatch')
         if x1._same_array(out):
             inplace = True
@@ -149,21 +151,21 @@ def minimum(x1, x2, out=None):
 
 def unary(op, x, out=None):
     inplace = False
-    out_shape = array.shape
+    out_shape = x.shape
     if out is None:
         out = base.empty(out_shape, dtype=x.dtype)
     else:
         if not out_shape == out.shape:
             raise ValueError('out.shape does not match result')
-        if not array.dtype == out.dtype:
+        if not x.dtype == out.dtype:
             raise ValueError('dtype mismatch')
-        if array._same_array(out):
+        if x._same_array(out):
             inplace = True
-    n = array.size
+    n = x.size
     if inplace:
-        wrap.unary_inplace(x._data, n)
+        wrap.unary_inplace(op, x._data, n)
     else:
-        wrap.unary(x._data, n, out._data)
+        wrap.unary(op, x._data, n, out._data)
     return out
 
 

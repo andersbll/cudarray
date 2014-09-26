@@ -1,6 +1,7 @@
 import numpy as np
 
 from ..elementwise import unary
+from ..cudarray_wrap import elementwise as wrap
 
 
 def relu(x, out=None):
