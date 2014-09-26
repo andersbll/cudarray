@@ -74,9 +74,9 @@ def binary(op, x1, x2, out=None):
                 inplace = True
         n = array.size
         if inplace:
-            wrap.scalar_inplace(op, array._data, scalar, n)
+            wrap._binary_scalar_inplace(op, array._data, scalar, n)
         else:
-            wrap.scalar(op, array._data, scalar, n, out._data)
+            wrap._binary_scalar(op, array._data, scalar, n, out._data)
         return out
 
     if not x1.dtype == x2.dtype:
@@ -98,9 +98,9 @@ def binary(op, x1, x2, out=None):
     if btype == NO_BROADCAST:
         n = x1.size
         if inplace:
-            wrap.binary_inplace(op, x1._data, x2._data, n)
+            wrap._binary_inplace(op, x1._data, x2._data, n)
         else:
-            wrap.binary(op, x1._data, x2._data, n, out._data)
+            wrap._binary(op, x1._data, x2._data, n, out._data)
         return out
 
     # Calculate dimensions of the broadcast operation
@@ -115,38 +115,38 @@ def binary(op, x1, x2, out=None):
             inplace = True
     b_to_l = btype == BROADCAST_TO_LEADING
     if inplace:
-        wrap.binary_broadcast_inplace(op, x1._data, x2._data, m, n, b_to_l)
+        wrap._binary_broadcast_inplace(op, x1._data, x2._data, m, n, b_to_l)
     else:
-        wrap.binary_broadcast(op, x1._data, x2._data, m, n, b_to_l, out._data)
+        wrap._binary_broadcast(op, x1._data, x2._data, m, n, b_to_l, out._data)
     return out
 
 
 def add(x1, x2, out=None):
-    return binary(wrap.BinaryOp.add, x1, x2, out)
+    return binary(wrap.add_op, x1, x2, out)
 
 
 def subtract(x1, x2, out=None):
-    return binary(wrap.BinaryOp.sub, x1, x2, out)
+    return binary(wrap.sub_op, x1, x2, out)
 
 
 def multiply(x1, x2, out=None):
-    return binary(wrap.BinaryOp.mul, x1, x2, out)
+    return binary(wrap.mul_op, x1, x2, out)
 
 
 def divide(x1, x2, out=None):
-    return binary(wrap.BinaryOp.div, x1, x2, out)
+    return binary(wrap.div_op, x1, x2, out)
 
 
 def power(x1, x2, out=None):
-    return binary(wrap.BinaryOp.pow, x1, x2, out)
+    return binary(wrap.pow_op, x1, x2, out)
 
 
 def maximum(x1, x2, out=None):
-    return binary(wrap.BinaryOp.max, x1, x2, out)
+    return binary(wrap.max_op, x1, x2, out)
 
 
 def minimum(x1, x2, out=None):
-    return binary(wrap.BinaryOp.min, x1, x2, out)
+    return binary(wrap.min_op, x1, x2, out)
 
 
 def unary(op, x, out=None):
@@ -163,31 +163,31 @@ def unary(op, x, out=None):
             inplace = True
     n = x.size
     if inplace:
-        wrap.unary_inplace(op, x._data, n)
+        wrap._unary_inplace(op, x._data, n)
     else:
-        wrap.unary(op, x._data, n, out._data)
+        wrap._unary(op, x._data, n, out._data)
     return out
 
 
 def absolute(x, out=None):
-    return unary(wrap.UnaryOp.abs, x, out)
+    return unary(wrap.abs_op, x, out)
 
 
 def exp(x, out=None):
-    return unary(wrap.UnaryOp.exp, x, out)
+    return unary(wrap.exp_op, x, out)
 
 
 def fabs(x, out=None):
-    return unary(wrap.UnaryOp.abs, x, out)
+    return unary(wrap.abs_op, x, out)
 
 
 def log(x, out=None):
-    return unary(wrap.UnaryOp.log, x, out)
+    return unary(wrap.log_op, x, out)
 
 
 def sqrt(x, out=None):
-    return unary(wrap.UnaryOp.sqrt, x, out)
+    return unary(wrap.sqrt_op, x, out)
 
 
 def tanh(x, out=None):
-    return unary(wrap.UnaryOp.tanh, x, out)
+    return unary(wrap.tanh_op, x, out)

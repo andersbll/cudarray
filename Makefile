@@ -14,8 +14,8 @@ OBJS = $(SRCS:.cpp=.o) $(CUDA_SRCS:.cu=.o)
 
 
 INCLUDES = -I$(INCLUDE_DIR)
-C_FLAGS = -O3 -fPIC
-NVCC_FLAGS = -arch=sm_35 --use_fast_math -O --ptxas-options=-v --compiler-options '-fPIC'
+C_FLAGS = -O3 -fPIC -Wall
+NVCC_FLAGS = -arch=sm_35 --use_fast_math -O --compiler-options '-fPIC -Wall'
 LIBS = -lcudart -lcublas -lcufft -lcurand
 
 

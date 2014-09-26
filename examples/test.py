@@ -174,8 +174,8 @@ def test_sum():
 
 def run():
 #    test_dot()
-#    test_multiply()
-#    test_binary()
+    test_multiply()
+    test_binary()
     test_sum()
     return
 
