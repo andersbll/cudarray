@@ -1,7 +1,9 @@
 SRC_DIR = ./src
 BUILD_DIR = ./build
 INCLUDE_DIR = ./include
-INSTALL_PREFIX = /usr/local
+ifndef INSTALL_PREFIX
+  INSTALL_PREFIX=/usr/local
+endif
 
 CC = g++
 NVCC = nvcc
@@ -12,7 +14,7 @@ CUDA_SRCS = $(SRC_DIR)/elementwise.cu \
             $(SRC_DIR)/image/img2win.cu
 
 OBJS = $(SRCS:.cpp=.o) $(CUDA_SRCS:.cu=.o)
-
+LIBCUDARRAY = $(BUILD_DIR)/libcudarray.so
 
 INCLUDES = -I$(INCLUDE_DIR)
 C_FLAGS = -O3 -fPIC -Wall
@@ -20,7 +22,7 @@ NVCC_FLAGS = -arch=sm_35 --use_fast_math -O3 --compiler-options '-fPIC -Wall'
 LDFLAGS = -lcudart -lcublas -lcufft -lcurand
 
 
-libcudarray : $(OBJS)
+$(LIBCUDARRAY) : $(OBJS)
 	mkdir -p $(BUILD_DIR)
 	$(CC) -shared $(C_FLAGS) -o $@ $^ $(LDFLAGS)
 
@@ -30,15 +32,15 @@ libcudarray : $(OBJS)
 %.o : %.cu
 	$(NVCC) $(NVCC_FLAGS) $(INCLUDES) -c -o $@ $<
 
-all: libcudarray
+all: $(LIBCUDARRAY)
 
 .PHONY: install
-install: libcudarray
-	cp $(BUILD_DIR)/libcudarray.so $(INSTALL_PREFIX)/lib
+install: $(LIBCUDARRAY)
+	cp $(LIBCUDARRAY) $(INSTALL_PREFIX)/lib
 
 uninstall:
 	rm $(INSTALL_PREFIX)/lib/libcudarray.so
 
 .PHONY: clean
 clean:
-	rm -f $(OBJS)
+	rm -f $(OBJS) $(LIBCUDARRAY)
