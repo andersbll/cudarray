@@ -2,16 +2,21 @@ import numpy as np
 
 from .cudarray_wrap.array_data import ArrayData
 import elementwise
+import base
 
 
 class CUDArray(object):
-    def __init__(self, shape, dtype=None, np_data=None):
+    def __init__(self, shape, dtype=None, np_data=None, array_data=None):
         self.shape = shape
+        self.transposed = False
         if dtype is None or dtype == np.dtype('float64'):
             dtype = np.dtype('float32')
         if np_data is not None:
             np_data = np.require(np_data, dtype=dtype, requirements='C')
-        self._data = ArrayData(self.size, dtype, np_data)
+        if array_data is None:
+            self._data = ArrayData(self.size, dtype, np_data)
+        else:
+            self._data = array_data
 
     def __array__(self):
         np_array = np.empty(self.shape, dtype=self.dtype)
@@ -49,7 +54,14 @@ class CUDArray(object):
     @property
     def size(self):
         return np.prod(self.shape)
-    
+
+    @property
+    def T(self):
+        return base.transpose(self)
+
+    def view(self):
+        return CUDArray(self.shape, self.dtype, None, self._data)
+
     def __add__(self, other):
         return elementwise.add(self, other)
 

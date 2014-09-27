@@ -53,17 +53,17 @@ def dot(a, b, out=None):
     if a.ndim == b.ndim == 2:
         m, k = a.shape[:2]
         n = b.shape[1]
-        transA = blas.TransOp.no_trans
-        transB = blas.TransOp.no_trans
+        transA = blas.trans_op if a.transposed else blas.no_trans_op
+        transB = blas.trans_op if b.transposed else blas.no_trans_op
         blas.gemm_(a._data, b._data, transA, transB, m, n, k, 1.0, 0.0,
                    out._data)
     elif a.ndim == 2 and b.ndim == 1:
         m, n = a.shape
-        trans = blas.TransOp.no_trans
+        trans = blas.trans_op if a.transposed else blas.no_trans_op
         blas.gemv_(a._data, b._data, trans, m, n, 1.0, 0.0, out._data)
     elif a.ndim == 1 and b.ndim == 2:
-        m, n = b.shape
-        trans = blas.TransOp.trans
+        n, m = b.shape
+        trans = blas.no_trans_op if b.transposed else blas.trans_op
         blas.gemv_(b._data, a._data, trans, m, n, 1.0, 0.0, out._data)
     else:
         raise ValueError('invalid array dimensionality')

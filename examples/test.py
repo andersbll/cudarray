@@ -33,6 +33,72 @@ def test_dot():
     print(np.allclose(c_np, np.array(c_ca)))
 
 
+    a_np = np.random.normal(size=(5, 5))
+    b_np = np.random.normal(size=(5, 5))
+    a_ca = ca.array(a_np)
+    b_ca = ca.array(b_np)
+    c_np = np.dot(a_np.T, b_np)
+    c_ca = ca.dot(a_ca.T, b_ca)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+
+    a_np = np.random.normal(size=(3, 4))
+    b_np = np.random.normal(size=(5, 4))
+    a_ca = ca.array(a_np)
+    b_ca = ca.array(b_np)
+    c_np = np.dot(a_np, b_np.T)
+    c_ca = ca.dot(a_ca, b_ca.T)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+    a_np = np.random.normal(size=(4, 3))
+    b_np = np.random.normal(size=(4, 5))
+    a_ca = ca.array(a_np)
+    b_ca = ca.array(b_np)
+    c_np = np.dot(a_np.T, b_np)
+    c_ca = ca.dot(a_ca.T, b_ca)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+    a_np = np.random.normal(size=(4, 3))
+    b_np = np.random.normal(size=(5, 4))
+    a_ca = ca.array(a_np)
+    b_ca = ca.array(b_np)
+    c_np = np.dot(a_np.T, b_np.T)
+    c_ca = ca.dot(a_ca.T, b_ca.T)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+
+    a_np = np.random.normal(size=(4))
+    b_np = np.random.normal(size=(4, 5))
+    a_ca = ca.array(a_np)
+    b_ca = ca.array(b_np)
+    c_np = np.dot(a_np, b_np)
+    c_ca = ca.dot(a_ca, b_ca)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+    a_np = np.random.normal(size=(4, 5))
+    b_np = np.random.normal(size=(5))
+    a_ca = ca.array(a_np)
+    b_ca = ca.array(b_np)
+    c_np = np.dot(a_np, b_np)
+    c_ca = ca.dot(a_ca, b_ca)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+    a_np = np.random.normal(size=(4))
+    b_np = np.random.normal(size=(5, 4))
+    a_ca = ca.array(a_np)
+    b_ca = ca.array(b_np)
+    c_np = np.dot(a_np, b_np.T)
+    c_ca = ca.dot(a_ca, b_ca.T)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+    a_np = np.random.normal(size=(5, 4))
+    b_np = np.random.normal(size=(5))
+    a_ca = ca.array(a_np)
+    b_ca = ca.array(b_np)
+    c_np = np.dot(a_np.T, b_np)
+    c_ca = ca.dot(a_ca.T, b_ca)
+    print(np.allclose(c_np, np.array(c_ca)))
+
 def test_multiply():
     a_np = np.ones((5,5))
     b_np = np.arange(5)
@@ -172,11 +238,12 @@ def test_sum():
     print(np.allclose(s_np, np.array(s_ca)))
 
 
+
 def run():
-#    test_dot()
-    test_multiply()
-    test_binary()
-    test_sum()
+    test_dot()
+#    test_multiply()
+#    test_binary()
+#    test_sum()
     return
 
 

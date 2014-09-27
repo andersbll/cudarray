@@ -31,10 +31,18 @@ cublasStatus_t cublas_gemv(cublasHandle_t handle, cublasOperation_t trans,
 template<typename T>
 void gemv(const T *A, const T *b, TransposeOp trans, unsigned int m,
           unsigned int n, T alpha, T beta, T *c) {
-  int lda = (trans == OP_NO_TRANS) ? n : m;
-  cublasOperation_t cuTrans = (trans == OP_TRANS) ? CUBLAS_OP_T : CUBLAS_OP_N;
-  CUBLAS_CHECK(cublas_gemv(CUDA::cublas_handle(), cuTrans,
-      n, m, &alpha, A, lda, b, 1, &beta, c, 1));
+  cublasOperation_t cuTrans;
+  if (trans == OP_TRANS) {
+    cuTrans = CUBLAS_OP_N;
+    unsigned int tmp = n;
+    n = m;
+    m = tmp;
+  } else {
+    cuTrans = CUBLAS_OP_T;
+  }
+  int lda = n;
+  CUBLAS_CHECK(cublas_gemv(CUDA::cublas_handle(), cuTrans, n, m, &alpha, A,
+     lda, b, 1, &beta, c, 1));
 }
 
 template void gemv<float>(const float *A, const float *b, TransposeOp trans,
@@ -55,12 +63,10 @@ void gemm(const T *A, const T *B, TransposeOp transA, TransposeOp transB,
           unsigned int m, unsigned int n, unsigned int k, T alpha, T beta,
           T *C) {
   int lda = (transA == OP_NO_TRANS) ? k : m;
-  int ldb = (transA == OP_NO_TRANS) ? n : k;
+  int ldb = (transB == OP_NO_TRANS) ? n : k;
   int ldc = n;
-  cublasOperation_t cuTransA = (transA == OP_TRANS) ? CUBLAS_OP_T
-                                                    : CUBLAS_OP_N;
-  cublasOperation_t cuTransB = (transB == OP_TRANS) ? CUBLAS_OP_T
-                                                    : CUBLAS_OP_N;
+  cublasOperation_t cuTransA = (cublasOperation_t) transA;
+  cublasOperation_t cuTransB = (cublasOperation_t) transB;
   CUBLAS_CHECK(cublas_gemm(CUDA::cublas_handle(), cuTransB, cuTransA,
                            n, m, k, &alpha, B, ldb, A, lda, &beta, C, ldc));
 }

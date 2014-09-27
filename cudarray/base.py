@@ -37,3 +37,12 @@ def zeros_like(a, dtype=None):
     if not isinstance(a, (np.ndarray, CUDArray)):
         a = np.array(a)
     return array(np.zeros_like(a, dtype=dtype))
+
+
+def transpose(a):
+    if a.ndim != 2:
+        raise ValueError('transpose is implemented for 2D arrays only')
+    a_trans = a.view()
+    a_trans.shape = (a.shape[1], a.shape[0])
+    a_trans.transposed = True
+    return a_trans

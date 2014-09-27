@@ -9,8 +9,8 @@ namespace cudarray {
 // http://docs.nvidia.com/cuda/pdf/CUBLAS_Library.pdf
 
 enum TransposeOp {
-  OP_TRANS,
-  OP_NO_TRANS
+  OP_TRANS = CUBLAS_OP_T,
+  OP_NO_TRANS = CUBLAS_OP_N
 };
 
 template<typename T>

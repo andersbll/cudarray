@@ -3,9 +3,8 @@ from .array_data cimport ArrayData
 cimport blas
 
 
-class TransOp(object):
-    no_trans = blas.OP_NO_TRANS
-    trans = blas.OP_TRANS
+no_trans_op = blas.OP_NO_TRANS
+trans_op = blas.OP_TRANS
 
 
 def dot_(ArrayData a, ArrayData b, unsigned int n):
