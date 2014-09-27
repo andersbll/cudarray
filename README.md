@@ -14,12 +14,27 @@
 
 
 ### Installation
-Install with CUDA back-end:
+##### With CUDA back-end
+First, build libcudarray:
 
     make
+
+Install libcudarray to system folders. Beforehand, you should set the system path where Python looks for libraries. For Anaconda Python distributions, something similar to the following should work.
+
+    export INSTALL_PREFIX=/path/to/anaconda
+    make install
+
+Alternatively, you can skip the previous installation step by adding the build dir to your library search path.
+
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/cudarray/build
+
+Install the cudarray package:
+
     python setup.py install
 
-Install without CUDA back-end:
+
+##### Without CUDA back-end
+Install the cudarray package:
 
     python setup.py --without-cuda install
 
@@ -28,9 +43,7 @@ Install without CUDA back-end:
 - Transpose semantics
 - Array expressions
 - Fast FFT module based on cuFFT
-- Fast random number module based on cuRAND
 - Unit tests!
-- Proper build system
 
 
 ### Influences
@@ -38,4 +51,3 @@ Thanks to the following projects for showing the way.
  - cudamat
  - PyCUDA
  - mshadow
- - pyFFTW
