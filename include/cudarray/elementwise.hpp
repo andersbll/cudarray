@@ -36,6 +36,13 @@ void unary(UnaryOp op, const T *a, unsigned int n, T *b);
 template<typename T>
 void unary_inplace(UnaryOp op, T *a, unsigned int n);
 
+
+template<typename T>
+void clip(const T *a, T a_min, T a_max, unsigned int n, T *b);
+
+template<typename T>
+void clip_inplace(T *a, T a_min, T a_max, unsigned int n);
+
 }
 
 #endif // ELEMENTWISE_HPP_

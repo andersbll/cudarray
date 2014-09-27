@@ -14,7 +14,7 @@ sub_op = SUB_OP
 abs_op = ABS_OP
 exp_op = EXP_OP
 log_op = LOG_OP
-neg_op = LOG_OP
+neg_op = NEG_OP
 relu_op = RELU_OP
 relu_d_op = RELU_D_OP
 sigmoid_op = SIGMOID_OP
@@ -89,3 +89,20 @@ def _unary_inplace(UnaryOp op, ArrayData a, unsigned int n):
         elementwise.unary_inplace[float](op, <float *>a.dev_ptr, n)
     else:
         raise ValueError('type %s not implemented' % str(a.dtype))
+
+
+def _clip(ArrayData a, a_min, a_max, unsigned int n, ArrayData b):
+    if a.dtype == np.dtype('float32'):
+        elementwise.clip[float](<const float *>a.dev_ptr, <float> a_min,
+                                <float> a_max, n, <float *>b.dev_ptr)
+    else:
+        raise ValueError('type %s not implemented' % str(a.dtype))
+
+
+def _clip_inplace(ArrayData a, a_min, a_max, unsigned int n):
+    if a.dtype == np.dtype('float32'):
+        elementwise.clip_inplace[float](<float *>a.dev_ptr, <float> a_min,
+                                        <float> a_max, n)
+    else:
+        raise ValueError('type %s not implemented' % str(a.dtype))
+

@@ -498,4 +498,39 @@ void unary_inplace(UnaryOp op, T *a, unsigned int n) {
 
 template void unary_inplace<float>(UnaryOp op, float *a, unsigned int n);
 
+
+
+
+template<typename T>
+__global__ void kernel_clip(const T *a, T a_min, T a_max, unsigned int n,
+                            T *b) {
+  CUDA_GRID_STRIDE_LOOP(idx, n) {
+    b[idx] = fminf(fmaxf(a[idx], a_min), a_max);
+  }
+}
+
+template<typename T>
+void clip(const T *a, T a_min, T a_max, unsigned int n, T *b) {
+  kernel_clip<T><<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>(a, a_min, a_max, n, b);
+}
+
+template void clip<float>(const float *a, float a_min, float a_max,
+                          unsigned int n, float *b);
+
+template<typename T>
+__global__ void kernel_clip_inplace(T *a, T a_min, T a_max, unsigned int n) {
+  CUDA_GRID_STRIDE_LOOP(idx, n) {
+    a[idx] = fminf(fmaxf(a[idx], a_min), a_max);
+  }
+}
+
+template<typename T>
+void clip_inplace(T *a, T a_min, T a_max, unsigned int n) {
+  kernel_clip_inplace<T><<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>
+      (a, a_min, a_max, n);
+}
+
+template void clip_inplace<float>(float *a, float a_min, float a_max,
+                                  unsigned int n);
+
 }

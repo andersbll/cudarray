@@ -35,3 +35,6 @@ cdef extern from 'cudarray/elementwise.hpp' namespace 'cudarray':
 
     void unary[T](UnaryOp op, const T *a, unsigned int n, T *b);
     void unary_inplace[T](UnaryOp op, T *a, unsigned int n);
+
+    void clip[T](const T *a, T a_min, T a_max, unsigned int n, T *b);
+    void clip_inplace[T](T *a, T a_min, T a_max, unsigned int n);

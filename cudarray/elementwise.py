@@ -195,3 +195,23 @@ def sqrt(x, out=None):
 
 def tanh(x, out=None):
     return unary(wrap.tanh_op, x, out)
+
+
+def clip(a, a_min, a_max, out=None):
+    inplace = False
+    out_shape = a.shape
+    if out is None:
+        out = base.empty(out_shape, dtype=a.dtype)
+    else:
+        if not out_shape == out.shape:
+            raise ValueError('out.shape does not match result')
+        if not a.dtype == out.dtype:
+            raise ValueError('dtype mismatch')
+        if a._same_array(out):
+            inplace = True
+    n = a.size
+    if inplace:
+        wrap._clip_inplace(a._data, a_min, a_max, n)
+    else:
+        wrap._clip(a._data, a_min, a_max, n, out._data)
+    return out
