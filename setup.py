@@ -21,68 +21,71 @@ def find_files(root_dir, filename_pattern):
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
-
 def cuda_extensions():
     cudarray_dir = './cudarray'
     cudarray_include_dir = './include'
     cudarray_lib_dir = './build'
+    include_dirs = [cudarray_include_dir, numpy.get_include()]
     cython_include_dirs = ['./cudarray/cudarray_wrap', './cudarray/cuda_wrap']
+    extra_compile_args = ['-O3', '-DDEBUG', '-fPIC']
+    extra_link_args = ['-fPIC']
+    language = 'c++'
 
     cudart_ext = Extension(
         name='cudarray.cuda_wrap.cudart',
         sources=[os.path.join(cudarray_dir, 'cuda_wrap', 'cudart.pyx')],
-        libraries=["cudart"],
+        libraries=['cudart'],
         language='c++',
         cython_include_dirs=cython_include_dirs,
-        extra_compile_args=["-O3", "-DDEBUG", "-fPIC"],
-        extra_link_args=["-fPIC"],
+        extra_compile_args=extra_compile_args,
+        extra_link_args=extra_link_args,
     )
 
     cudarray_ext = Extension(
         name='cudarray.cudarray_wrap.array_data',
         sources=[os.path.join(cudarray_dir, 'cudarray_wrap', 'array_data.pyx')],
-        libraries=["cudart"],
-        include_dirs=[cudarray_include_dir],
+        libraries=['cudart'],
+        include_dirs=include_dirs,
         library_dirs=[cudarray_lib_dir],
         cython_include_dirs=cython_include_dirs,
-        extra_compile_args=["-O3", "-DDEBUG", "-fPIC"],
-        extra_link_args=["-fPIC"],
+        extra_compile_args=extra_compile_args,
+        extra_link_args=extra_link_args,
     )
 
     elementwise_wrap_ext = Extension(
         name='cudarray.cudarray_wrap.elementwise',
         sources=[os.path.join(cudarray_dir, 'cudarray_wrap', 'elementwise.pyx')],
-        libraries=["cudarray"],
+        libraries=['cudarray'],
         library_dirs=[cudarray_lib_dir],
-        include_dirs=['./include'],
+        include_dirs=include_dirs,
         cython_include_dirs=cython_include_dirs,
         language='c++',
-        extra_compile_args=["-O3", "-DDEBUG", "-fPIC"],
-        extra_link_args=["-fPIC"],
+        extra_compile_args=extra_compile_args,
+        extra_link_args=extra_link_args,
     )
 
     reduction_wrap_ext = Extension(
         name='cudarray.cudarray_wrap.reduction',
         sources=[os.path.join(cudarray_dir, 'cudarray_wrap', 'reduction.pyx')],
-        libraries=["cudarray"],
+        libraries=['cudarray'],
         library_dirs=[cudarray_lib_dir],
-        include_dirs=['./include'],
+        include_dirs=include_dirs,
         cython_include_dirs=cython_include_dirs,
         language='c++',
-        extra_compile_args=["-O3", "-DDEBUG", "-fPIC"],
-        extra_link_args=["-fPIC"],
+        extra_compile_args=extra_compile_args,
+        extra_link_args=extra_link_args,
     )
 
     blas_wrap_ext = Extension(
         name='cudarray.cudarray_wrap.blas',
         sources=[os.path.join(cudarray_dir, 'cudarray_wrap', 'blas.pyx')],
-        libraries=["cudarray"],
+        libraries=['cudarray'],
         library_dirs=[cudarray_lib_dir],
-        include_dirs=['./include'],
+        include_dirs=include_dirs,
         cython_include_dirs=cython_include_dirs,
         language='c++',
-        extra_compile_args=["-O3", "-DDEBUG", "-fPIC"],
-        extra_link_args=["-fPIC"],
+        extra_compile_args=extra_compile_args,
+        extra_link_args=extra_link_args,
     )
     return [cudart_ext, cudarray_ext, elementwise_wrap_ext,
             reduction_wrap_ext, blas_wrap_ext]
@@ -101,7 +104,7 @@ setup(
     version='0.1',
     author='Anders Boesen Lindbo Larsen',
     author_email='abll@dtu.dk',
-    description="CUDA-based Numpy array and operations",
+    description='CUDA-based Numpy array and operations',
     license='MIT',
     url='http://compute.dtu.dk/~abll',
     packages=find_packages(),
@@ -118,13 +121,13 @@ setup(
     ],
     features={
         'cuda': Feature(
-            description="CUDA back-end",
+            description='CUDA back-end',
             standard=True,
             remove=['cudarray.cudarray_wrap', 'cudarray.cuda_wrap'],
             ext_modules=cuda_extensions(),
         ),
         'numpy': Feature(
-            description="Numpy back-end",
+            description='Numpy back-end',
             standard=True,
             remove=['cudarray.numpy_backend'],
             ext_modules=numpy_extensions(),
