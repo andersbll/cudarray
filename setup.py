@@ -27,7 +27,7 @@ def cuda_extensions():
     cudarray_lib_dir = './build'
     include_dirs = [cudarray_include_dir, numpy.get_include()]
     cython_include_dirs = ['./cudarray/cudarray_wrap', './cudarray/cuda_wrap']
-    extra_compile_args = ['-O3', '-DDEBUG', '-fPIC']
+    extra_compile_args = ['-O3', '-fPIC', '-Wall', '-Wfatal-errors']
     extra_link_args = ['-fPIC']
     language = 'c++'
 
@@ -35,7 +35,6 @@ def cuda_extensions():
         name='cudarray.cuda_wrap.cudart',
         sources=[os.path.join(cudarray_dir, 'cuda_wrap', 'cudart.pyx')],
         libraries=['cudart'],
-        language='c++',
         cython_include_dirs=cython_include_dirs,
         extra_compile_args=extra_compile_args,
         extra_link_args=extra_link_args,
@@ -59,7 +58,7 @@ def cuda_extensions():
         library_dirs=[cudarray_lib_dir],
         include_dirs=include_dirs,
         cython_include_dirs=cython_include_dirs,
-        language='c++',
+        language=language,
         extra_compile_args=extra_compile_args,
         extra_link_args=extra_link_args,
     )
@@ -71,7 +70,7 @@ def cuda_extensions():
         library_dirs=[cudarray_lib_dir],
         include_dirs=include_dirs,
         cython_include_dirs=cython_include_dirs,
-        language='c++',
+        language=language,
         extra_compile_args=extra_compile_args,
         extra_link_args=extra_link_args,
     )
@@ -83,12 +82,26 @@ def cuda_extensions():
         library_dirs=[cudarray_lib_dir],
         include_dirs=include_dirs,
         cython_include_dirs=cython_include_dirs,
-        language='c++',
+        language=language,
         extra_compile_args=extra_compile_args,
         extra_link_args=extra_link_args,
     )
+
+    random_wrap_ext = Extension(
+        name='cudarray.cudarray_wrap.random',
+        sources=[os.path.join(cudarray_dir, 'cudarray_wrap', 'random.pyx')],
+        libraries=['cudarray'],
+        library_dirs=[cudarray_lib_dir],
+        include_dirs=include_dirs,
+        cython_include_dirs=cython_include_dirs,
+        language=language,
+        extra_compile_args=extra_compile_args,
+        extra_link_args=extra_link_args,
+    )
+
+
     return [cudart_ext, cudarray_ext, elementwise_wrap_ext,
-            reduction_wrap_ext, blas_wrap_ext]
+            reduction_wrap_ext, blas_wrap_ext, random_wrap_ext]
 
 def numpy_extensions():
     cython_srcs = [

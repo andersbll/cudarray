@@ -11,14 +11,15 @@ SRCS = $(SRC_DIR)/common.cpp
 CUDA_SRCS = $(SRC_DIR)/elementwise.cu \
             $(SRC_DIR)/reduction.cu \
             $(SRC_DIR)/blas.cu \
+            $(SRC_DIR)/random.cu \
             $(SRC_DIR)/image/img2win.cu
 
 OBJS = $(SRCS:.cpp=.o) $(CUDA_SRCS:.cu=.o)
 LIBCUDARRAY = $(BUILD_DIR)/libcudarray.so
 
 INCLUDES = -I$(INCLUDE_DIR)
-C_FLAGS = -O3 -fPIC -Wall
-NVCC_FLAGS = -arch=sm_35 --use_fast_math -O3 --compiler-options '-fPIC -Wall'
+C_FLAGS = -O3 -fPIC -Wall -Wfatal-errors
+NVCC_FLAGS = -arch=sm_35 --use_fast_math -O3 --compiler-options '$(C_FLAGS)'
 LDFLAGS = -lcudart -lcublas -lcufft -lcurand
 
 

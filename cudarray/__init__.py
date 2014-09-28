@@ -9,6 +9,7 @@ if 'CUDARRAY_BACKEND' not in os.environ:
         from .linalg import *
         from .elementwise import *
         from .reduction import *
+        import random
         import nnet
         print('cudarray: Using CUDA back-end.')
     except:
@@ -25,6 +26,7 @@ else:
             from .linalg import *
             from .elementwise import *
             from .reduction import *
+            import random
             import nnet
         except:
             print('cudarray: Failed to load CUDA back-end.')

@@ -238,12 +238,33 @@ def test_sum():
     print(np.allclose(s_np, np.array(s_ca)))
 
 
+def test_random():
+    a_np = np.random.normal(size=(1000,1000), loc=3, scale=10)
+    a_ca = ca.random.normal(size=(1000,1000), loc=3, scale=10)
+    a_ca = np.array(a_ca)
+    print(np.mean(a_np), np.mean(a_ca))
+    print(np.std(a_np), np.std(a_ca))
 
+    a_np = np.random.uniform(size=(1000,1000), low=0, high=1)
+    a_ca = ca.random.uniform(size=(1000,1000), low=0, high=1)
+    a_ca = np.array(a_ca)
+    print(np.mean(a_np), np.mean(a_ca))
+    print(np.std(a_np), np.std(a_ca))
+
+    a_np = np.random.uniform(size=(1000,1000), low=-10, high=30)
+    a_ca = ca.random.uniform(size=(1000,1000), low=-10, high=30)
+    a_ca = np.array(a_ca)
+    print(np.mean(a_np), np.mean(a_ca))
+    print(np.std(a_np), np.std(a_ca))
+
+
+    
 def run():
-    test_dot()
+#    test_dot()
 #    test_multiply()
 #    test_binary()
 #    test_sum()
+    test_random()
     return
 
 
