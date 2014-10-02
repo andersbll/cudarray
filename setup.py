@@ -120,6 +120,7 @@ setup(
     description='CUDA-based Numpy array and operations',
     license='MIT',
     url='http://compute.dtu.dk/~abll',
+    include_dirs=[numpy.get_include()],
     packages=find_packages(),
     install_requires=['numpy', 'cython'],
     long_description=read('README.md'),
