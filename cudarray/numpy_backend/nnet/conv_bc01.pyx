@@ -153,6 +153,7 @@ def conv_bc01_bprop_filters(np.ndarray[DTYPE_t, ndim=4] imgs,
                             fil_x = <uint>(fil_mid_h + x_off)
                             for c_imgs in range(n_channels_imgs):
                                 filters_d[c_imgs, c_convout, fil_y, fil_x] += imgs[i, c_imgs, img_y, img_x] * convout_d_value
+    return filters_d
 #    filters_grad[...] /= n_imgs
 
 @cython.boundscheck(False)
