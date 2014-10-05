@@ -16,7 +16,7 @@ cdef inline int int_min(int a, int b): return a if a <= b else b
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def pool_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
+def max_pool_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
               np.ndarray[DTYPE_t, ndim=4] poolout,
               np.ndarray[np.int_t, ndim=5] switches,
               uint pool_h, uint pool_w, uint stride_y, uint stride_x):
@@ -81,7 +81,7 @@ def pool_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def bprop_pool_bc01(np.ndarray[DTYPE_t, ndim=4] poolout_grad,
+def bprop_max_pool_bc01(np.ndarray[DTYPE_t, ndim=4] poolout_grad,
                     np.ndarray[np.int_t, ndim=5] switches,
                     np.ndarray[DTYPE_t, ndim=4] imgs_grad):
 
