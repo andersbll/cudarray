@@ -3,6 +3,8 @@ import numpy as np
 import cython
 cimport numpy as np
 
+cdef int POOL_MAX = 0
+cdef int POOL_MEAN = 1
 
 DTYPE = np.float
 ctypedef np.float_t DTYPE_t
@@ -17,15 +19,24 @@ cdef inline int int_min(int a, int b): return a if a <= b else b
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def pool_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
-              np.ndarray[DTYPE_t, ndim=4] poolout,
-              np.ndarray[np.int_t, ndim=5] switches,
-              uint pool_h, uint pool_w, uint stride_y, uint stride_x):
+              tuple win_shape,
+              tuple strides,
+              uint type = POOL_MAX,
+              np.ndarray[DTYPE_t, ndim=4] poolout = None,
+              np.ndarray[np.int_t, ndim=5] switches = None):
     """ Multi-image, multi-channel pooling
     imgs has shape (n_imgs, n_channels, img_h, img_w)
+    win_shape has shape (win_h, win_w) 
+    strides has shape (stride_y, stride_x)
     poolout has shape (n_imgs, n_channels, img_h//stride_y, img_w//stride_x)
     switches has shape (n_imgs, n_channels, img_h//stride_y, img_w//stride_x, 2)
     """
-    # TODO: mean pool
+
+    cdef uint pool_h = win_shape[0] 
+    cdef uint pool_w = win_shape[1]
+    cdef uint pool_size = pool_h * pool_w
+    cdef uint stride_x = strides[1] 
+    cdef uint stride_y = strides[0] 
 
     cdef uint n_imgs = imgs.shape[0]
     cdef uint n_channels = imgs.shape[1]
@@ -40,6 +51,15 @@ def pool_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
     cdef int pool_w_left = pool_w // 2 - 1 + pool_w % 2
     cdef int pool_w_right = pool_w // 2 + 1
 
+    if (poolout == None):
+        poolout = np.empty(shape=(n_imgs, n_channels, img_h//stride_y, img_w//stride_x),
+                           dtype=DTYPE)
+
+    if (switches == None):
+        switches = np.empty(shape=(n_imgs, n_channels, img_h//stride_y, img_w//stride_x, 2),
+                           dtype=DTYPE)
+
+
     if not n_imgs == poolout.shape[0] == switches.shape[0]:
         raise ValueError('Mismatch in number of images.')
     if not n_channels == poolout.shape[1] == switches.shape[1]:
@@ -48,6 +68,7 @@ def pool_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
         raise ValueError('Mismatch in image shape.')
     if not switches.shape[4] == 2:
         raise ValueError('switches should only have length 2 in the 5. dimension.')
+
 
     cdef uint i, c, y, x, y_out, x_out
     cdef int y_min, y_max, x_min, x_max
@@ -66,38 +87,74 @@ def pool_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
                     x = x_out*stride_x
                     x_min = int_max(x-pool_w_left, 0)
                     x_max = int_min(x+pool_w_right, img_w)
-                    value = -9e99
+                    if (type == POOL_MAX):
+                        value = -9e99
+                    else: 
+                        value = 0
+
                     for img_y in range(y_min, y_max):
                         for img_x in range(x_min, x_max):
-                            new_value = imgs[i, c, img_y, img_x]
-                            if new_value > value:
-                                value = new_value
-                                img_y_max = img_y
-                                img_x_max = img_x
-                    poolout[i, c, y_out, x_out] = value
-                    switches[i, c, y_out, x_out, 0] = img_y_max
-                    switches[i, c, y_out, x_out, 1] = img_x_max
+                            if (type == POOL_MAX):
+                                new_value = imgs[i, c, img_y, img_x]
+                                if new_value > value:
+                                    value = new_value
+                                    img_y_max = img_y
+                                    img_x_max = img_x
+                            else:
+                                value += imgs[i, c, img_y, img_x]
+                    if (type == POOL_MAX):
+                        poolout[i, c, y_out, x_out] = value
+                        switches[i, c, y_out, x_out, 0] = img_y_max
+                        switches[i, c, y_out, x_out, 1] = img_x_max
+                    else:
+                        poolout[i, c, y_out, x_out] = value / pool_size
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def bprop_pool_bc01(np.ndarray[DTYPE_t, ndim=4] poolout_grad,
-                    np.ndarray[np.int_t, ndim=5] switches,
-                    np.ndarray[DTYPE_t, ndim=4] imgs_grad):
+                    tuple win_shape,
+                    tuple strides,
+                    uint type = POOL_MAX,
+                    np.ndarray[np.int_t, ndim=5] switches = None,
+                    np.ndarray[DTYPE_t, ndim=4] imgs_grad = None):
 
     cdef uint n_imgs = poolout_grad.shape[0]
     cdef uint n_channels = poolout_grad.shape[1]
     cdef uint poolout_h = poolout_grad.shape[2]
     cdef uint poolout_w = poolout_grad.shape[3]
 
-    cdef uint i, c, y, x, img_y, img_x
+    cdef uint pool_h = win_shape[0] 
+    cdef uint pool_w = win_shape[1]
+    cdef uint pool_size = pool_h * pool_w
+    cdef uint stride_x = strides[1] 
+    cdef uint stride_y = strides[0] 
 
-    imgs_grad[...] = 0
+    cdef uint i, c, y, x, img_y, img_y_min, img_x_min, img_y_max, img_x_max
+
+    if (type == POOL_MAX and switches == None):
+        raise ValueError('switches has to be defined')
+
+    if (imgs_grad == None):
+        imgs_grad = np.zeros(shape=(n_imgs, n_channels, poolout_h*stride_y, poolout_w*stride_x),
+                             dtype=DTYPE)
+    else:
+        imgs_grad[...] = 0
+
     for i in range(n_imgs):
         for c in range(n_channels):
             for y in range(poolout_h):
                 for x in range(poolout_w):
-                    img_y = switches[i, c, y, x, 0]
-                    img_x = switches[i, c, y, x, 1]
-                    # XXX should be += instead of =
-                    imgs_grad[i, c, img_y, img_x] = poolout_grad[i, c, y, x]
+                    if (type == POOL_MEAN):
+                        img_y_min = y * stride_y
+                        img_x_min = x * stride_x
+                        img_y_max = img_y_min + pool_h - 1
+                        img_x_max = img_x_min + pool_w - 1
+                        # XXX should be += instead of =
+                        imgs_grad[i, c, img_y_min : img_y_max, img_x_min : img_x_max] += (poolout_grad[i, c, y, x] / pool_size)
+                    elif (type == POOL_MAX):
+                        img_y = switches[i, c, y, x, 0]
+                        img_x = switches[i, c, y, x, 1]
+                        # XXX should be += instead of =
+                        imgs_grad[i, c, img_y, img_x] += poolout_grad[i, c, y, x]
+    return imgs_grad
