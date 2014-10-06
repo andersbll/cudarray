@@ -37,12 +37,18 @@ def conv_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
     cdef int fil_mid_h = fil_h // 2
     cdef int fil_mid_w = fil_w // 2
 
+    cdef uint i, c_in, c_out
+    cdef uint img_y, img_x, fil_y, fil_x
+    cdef DTYPE_t value
+
+    cdef int y, x, y_off_min, y_off_max, y_off, x_off_min, x_off_max, x_off, mid_off_h, mid_off_w
+
     if n_channels_in != imgs.shape[1]:
         raise ValueError('Mismatch in number of channels between filters and imgs.')
 
     if convout == None:
-        # ? cdef np.ndarray[DTYPE_t, ndim=4] 
         convout = np.ndarray(shape=(n_imgs, n_channels_out, img_h, img_w), dtype=DTYPE)
+    #else check if convout is validt 
     else:
         if n_channels_out != convout.shape[1]:
             raise ValueError('Mismatch in number of channels between filters and convout.')
@@ -50,20 +56,9 @@ def conv_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
             raise ValueError('Mismatch in number of images between imgs and convout.')
         if img_h != convout.shape[2] or img_w != convout.shape[3]:
             raise ValueError('Mismatch in image shape between imgs and convout.')
-
-
-    #if fil_h % 2 != 1 or fil_w % 2 != 1:
-        #raise ValueError('Only odd filter dimensions are supported.')
     
 
-
-    cdef uint i, c_in, c_out
-    cdef uint img_y, img_x, fil_y, fil_x
-    cdef DTYPE_t value
-
-    cdef int y, x, y_off_min, y_off_max, y_off, x_off_min, x_off_max, x_off, mid_off_h, mid_off_w
-
-#mid_off only add one to max iff filter is of an uneaven sice 
+    #mid_off only add one to max iff filter is of an uneaven sice 
     mid_off_h = 0
     mid_off_w = 0
     if mid_off_h % 2 == 1:
