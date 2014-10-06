@@ -9,8 +9,20 @@ class CUDArray(object):
     def __init__(self, shape, dtype=None, np_data=None, array_data=None):
         self.shape = shape
         self.transposed = False
-        if dtype is None or dtype == np.dtype('float64'):
+        self.isbool = False
+        if dtype is None:
+            if np_data is None:
+                dtype = np.dtype('float32')
+            else:
+                dtype = np_data.dtype
+        if dtype == np.dtype('float64'):
             dtype = np.dtype('float32')
+        if dtype == np.dtype('int64'):
+            dtype = np.dtype('int32')
+        if dtype == np.dtype('bool'):
+            # TODO: figure out if bool should stay as char
+            dtype = np.dtype('int32')
+            self.isbool = True
         if np_data is not None:
             np_data = np.require(np_data, dtype=dtype, requirements='C')
         if array_data is None:
@@ -20,7 +32,10 @@ class CUDArray(object):
 
     def __array__(self):
         np_array = np.empty(self.shape, dtype=self.dtype)
-        return self._data.to_numpy(np_array)
+        self._data.to_numpy(np_array)
+        if self.isbool:
+            np_array = np_array.astype(np.dtype('bool'))
+        return np_array
 
     def __str__(self):
         return self.__array__().__str__()
@@ -106,6 +121,24 @@ class CUDArray(object):
 
     def __ipow__(self, other):
         return elementwise.power(self, other, self)
+
+    def __eq__(self, other):
+        return elementwise.equal(self, other)
+
+    def __gt__(self, other):
+        return elementwise.greater(self, other)
+
+    def __ge__(self, other):
+        return elementwise.greater_equal(self, other)
+
+    def __lt__(self, other):
+        return elementwise.less(self, other)
+
+    def __le__(self, other):
+        return elementwise.less_equal(self, other)
+
+    def __ne__(self, other):
+        return elementwise.not_equal(self, other)
 
     def __neg__(self):
         return elementwise.negative(self)

@@ -104,8 +104,8 @@ def test_multiply():
     b_np = np.arange(5)
     a_ca = ca.array(a_np)
     b_ca = ca.array(b_np)
-    c_ca = ca.multiply(a_ca, b_ca)
-    c_np = np.multiply(a_np, b_np)
+    c_ca = ca.multiply(a_ca, b_ca, a_ca)
+    c_np = np.multiply(a_np, b_np, a_np)
     print(np.allclose(c_np, np.array(c_ca)))
 
     a_np = np.ones((3,3))
@@ -202,8 +202,49 @@ def test_binary():
     a_ca = ca.array(a_np)
     b_ca = ca.array(b_np)
 
-    c_np = np.divide(a_np, b_np)
-    c_ca = ca.divide(a_ca, b_ca)
+    c_np = np.add(a_np, b_np)
+    c_ca = ca.add(a_ca, b_ca)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+    np.add(a_np, b_np, a_np)
+    ca.add(a_ca, b_ca, a_ca)
+    print(np.allclose(a_np, np.array(a_ca)))
+
+
+    np.multiply(a_np, b_np, a_np)
+    ca.multiply(a_ca, b_ca, a_ca)
+    print(np.allclose(a_np, np.array(a_ca)))
+
+    a_np = np.random.normal(size=(5,5))
+    b_np = np.random.normal(size=(5,5)) > 0
+    a_ca = ca.array(a_np)
+    b_ca = ca.array(b_np)
+    c_np = np.multiply(a_np, b_np)
+    c_ca = ca.multiply(a_ca, b_ca)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+
+def test_binary_cmp():
+    a_np = np.random.normal(size=(5,5))
+    b_np = np.random.normal(size=(5,5))
+    a_ca = ca.array(a_np)
+    b_ca = ca.array(b_np)
+
+    c_np = np.greater(a_np, b_np)
+    c_ca = ca.greater(a_ca, b_ca)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+    c_np = np.greater(a_np, 0.1)
+    c_ca = ca.greater(a_ca, 0.1)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+
+    c_np = np.less(a_np, 0.1)
+    c_ca = ca.less(a_ca, 0.1)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+    c_np = 0.1 < a_np
+    c_ca = 0.1 < a_ca
     print(np.allclose(c_np, np.array(c_ca)))
 
 
@@ -258,13 +299,15 @@ def test_random():
     print(np.std(a_np), np.std(a_ca))
 
 
-    
+
+
 def run():
 #    test_dot()
-#    test_multiply()
-#    test_binary()
+    test_multiply()
+    test_binary()
+    test_binary_cmp()
 #    test_sum()
-    test_random()
+#    test_random()
     return
 
 

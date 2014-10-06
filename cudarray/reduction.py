@@ -44,7 +44,7 @@ def reduction(op, a, axis=None, dtype=None, out=None, keepdims=False):
             raise ValueError('out.shape does not match result')
         if not a.dtype == out.dtype:
             raise ValueError('dtype mismatch')
-        if a == out:
+        if a._same_array(out):
             raise ValueError('inplace operation not supported')
 
     rtype = reduce_type(axis, a.ndim)
