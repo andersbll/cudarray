@@ -299,15 +299,48 @@ def test_random():
     print(np.std(a_np), np.std(a_ca))
 
 
+def test_reduce():
+    a_np = np.random.normal(size=(5,5))
+    a_ca = ca.array(a_np)
+    c_np = np.sum(a_np)
+    c_ca = ca.sum(a_ca)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+    c_np = np.sum(a_np, axis=0)
+    c_ca = ca.sum(a_ca, axis=0)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+    c_np = np.sum(a_np, axis=1)
+    c_ca = ca.sum(a_ca, axis=1)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+    a_np = np.random.normal(size=(5, 7, 11))
+    a_ca = ca.array(a_np)
+    c_np = np.sum(a_np, axis=0)
+    c_ca = ca.sum(a_ca, axis=0)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+    c_np = np.sum(a_np, axis=2)
+    c_ca = ca.sum(a_ca, axis=2)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+    c_np = np.sum(a_np, axis=(0, 1))
+    c_ca = ca.sum(a_ca, axis=(0, 1))
+    print(np.allclose(c_np, np.array(c_ca)))
+
+    c_np = np.sum(a_np, axis=(1, 2))
+    c_ca = ca.sum(a_ca, axis=(1, 2))
+    print(np.allclose(c_np, np.array(c_ca)))
 
 
 def run():
 #    test_dot()
-    test_multiply()
-    test_binary()
-    test_binary_cmp()
+#    test_multiply()
+#    test_binary()
+#    test_binary_cmp()
 #    test_sum()
 #    test_random()
+    test_reduce()
     return
 
 
