@@ -4,499 +4,504 @@
 
 namespace cudarray {
 
-template<typename T, BinaryOp op>
-__global__ void kernel_binary(const T *a, const T *b, unsigned int n, T *c) {
+
+#define BINARY_OP(name, operation, inplace_operation) \
+  struct name { \
+    template <typename Ta, typename Tb, typename Tc> \
+    __device__ static void binary(volatile Ta a, volatile Tb b, \
+                                  volatile Tc &c) { \
+      operation; \
+    } \
+    template <typename Ta, typename Tb> \
+    __device__ static void binary_inplace(volatile Ta &a, volatile Tb b) { \
+      inplace_operation; \
+    } \
+  };
+
+BINARY_OP(add_op, c = a + b, a += b)
+BINARY_OP(div_op, c = a / b, a /= b)
+BINARY_OP(max_op, c = fmaxf(a, b), a = fmaxf(a, b))
+BINARY_OP(min_op, c = fminf(a, b), a = fminf(a, b))
+BINARY_OP(mul_op, c = a * b, a *= b)
+BINARY_OP(pow_op, c = powf(a, b), a = powf(a, b))
+BINARY_OP(sub_op, c = a - b, a -= b)
+
+
+template<typename Ta, typename Tb, typename Tc, typename Op>
+__global__ void kernel_binary(const Ta *a, const Tb *b, unsigned int n,
+                              Tc *c) {
   CUDA_GRID_STRIDE_LOOP(idx, n) {
-    if (op == ADD_OP) c[idx] = a[idx] + b[idx];
-    if (op == DIV_OP) c[idx] = a[idx] / b[idx];
-    if (op == MAX_B_OP) c[idx] = fmaxf(a[idx], b[idx]);
-    if (op == MIN_B_OP) c[idx] = fminf(a[idx], b[idx]);
-    if (op == MUL_OP) c[idx] = a[idx] * b[idx];
-    if (op == POW_OP) c[idx] = powf(a[idx], b[idx]);
-    if (op == SUB_OP) c[idx] = a[idx] - b[idx];
+    Op::binary(a[idx], b[idx], c[idx]);
   }
 }
 
-template<typename T, BinaryOp op>
-void binary(const T *a, const T *b, unsigned int n, T *c) {
-  kernel_binary<T, op><<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>(a, b, n, c);
+template<typename Ta, typename Tb, typename Tc, typename Op>
+__global__ void kernel_binary_inplace(Ta *a, const Tb *b, unsigned int n) {
+  CUDA_GRID_STRIDE_LOOP(idx, n) {
+    Op::binary_inplace(a[idx], b[idx]);
+  }
 }
 
-template<typename T>
-void binary(BinaryOp op, const T *a, const T *b, unsigned int n, T *c) {
+template<typename Ta, typename Tb, typename Tc, typename Op>
+void binary(const Ta *a, const Tb *b, unsigned int n, Tc *c) {
+  if (c == (Tc *) a) {
+    kernel_binary_inplace<Tc, Tb, Tc, Op>
+        <<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>
+        (c, b, n);
+  } else if (c == (Tc *) b) {
+    kernel_binary_inplace<Tc, Ta, Tc, Op>
+        <<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>
+        (c, a, n);
+
+  } else {
+    kernel_binary<Ta, Tb, Tc, Op>
+        <<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>
+        (a, b, n, c);
+  }
+}
+
+template<typename Ta, typename Tb,  typename Tc>
+void binary(BinaryOp op, const Ta *a, const Tb *b, unsigned int n, Tc *c) {
   switch (op) {
     case ADD_OP:
-      binary<T, ADD_OP>(a, b, n, c);
+      binary<Ta, Tb, Tc, add_op>(a, b, n, c);
       break;
     case DIV_OP:
-      binary<T, DIV_OP>(a, b, n, c);
+      binary<Ta, Tb, Tc, div_op>(a, b, n, c);
       break;
     case MAX_B_OP:
-      binary<T, MAX_B_OP>(a, b, n, c);
+      binary<Ta, Tb, Tc, max_op>(a, b, n, c);
       break;
     case MIN_B_OP:
-      binary<T, MIN_B_OP>(a, b, n, c);
+      binary<Ta, Tb, Tc, min_op>(a, b, n, c);
       break;
     case MUL_OP:
-      binary<T, MUL_OP>(a, b, n, c);
+      binary<Ta, Tb, Tc, mul_op>(a, b, n, c);
       break;
     case POW_OP:
-      binary<T, POW_OP>(a, b, n, c);
+      binary<Ta, Tb, Tc, pow_op>(a, b, n, c);
       break;
     case SUB_OP:
-      binary<T, SUB_OP>(a, b, n, c);
+      binary<Ta, Tb, Tc, sub_op>(a, b, n, c);
       break;
   }
 }
-template void binary<float>(BinaryOp op, const float *a, const float *b,
-                            unsigned int n, float *c);
+
+template void binary<float, float, float>(
+    BinaryOp op, const float *a, const float *b, unsigned int n, float *c);
+template void binary<float, int, float>(
+    BinaryOp op, const float *a, const int *b, unsigned int n, float *c);
+template void binary<int, float, float>(
+    BinaryOp op, const int *a, const float *b, unsigned int n, float *c);
+template void binary<int, int, int>(
+    BinaryOp op, const int *a, const int *b, unsigned int n, int *c);
 
 
 
 
-template<typename T, BinaryOp op>
-__global__ void kernel_binary_inplace(T *a, const T *b, unsigned int n) {
+
+template<typename Ta, typename Talpha, typename Tb, typename Op>
+__global__ void kernel_binary_scalar(const Ta *a, Talpha alpha, unsigned int n,
+                                     Tb *b) {
   CUDA_GRID_STRIDE_LOOP(idx, n) {
-    if (op == ADD_OP) a[idx] += b[idx];
-    if (op == DIV_OP) a[idx] /= b[idx];
-    if (op == MAX_B_OP) a[idx] = fmaxf(a[idx], b[idx]);
-    if (op == MIN_B_OP) a[idx] = fminf(a[idx], b[idx]);
-    if (op == MUL_OP) a[idx] *= b[idx];
-    if (op == POW_OP) a[idx] = powf(a[idx], b[idx]);
-    if (op == SUB_OP) a[idx] -= b[idx];
+    Op::binary(a[idx], alpha, b[idx]);
   }
 }
 
-template<typename T, BinaryOp op>
-void binary_inplace(T *a, const T *b, unsigned int n) {
-  kernel_binary_inplace<T, op><<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>
-      (a, b, n);
+template<typename Ta, typename Talpha, typename Op>
+__global__ void kernel_binary_scalar_inplace(Ta *a, Talpha alpha,
+                                             unsigned int n) {
+  CUDA_GRID_STRIDE_LOOP(idx, n) {
+    Op::binary_inplace(a[idx], alpha);
+  }
 }
 
-template<typename T>
-void binary_inplace(BinaryOp op, T *a, const T *b, unsigned int n) {
+template<typename Ta, typename Talpha, typename Tb, typename Op>
+void binary_scalar(const Ta *a, Talpha alpha, unsigned int n, Tb *b) {
+  if (b == (Tb *)a) {
+    kernel_binary_scalar_inplace<Tb, Talpha, Op>
+        <<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>
+        (b, alpha, n);
+  } else {
+    kernel_binary_scalar<Ta, Talpha, Tb, Op>
+        <<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>
+        (a, alpha, n, b);
+  }
+
+}
+
+template<typename Ta, typename Talpha, typename Tb>
+void binary_scalar(BinaryOp op, const Ta *a, Talpha alpha, unsigned int n,
+                   Tb *b) {
   switch (op) {
     case ADD_OP:
-      binary_inplace<T, ADD_OP>(a, b, n);
+      binary_scalar<Ta, Talpha, Tb, add_op>(a, alpha, n, b);
       break;
     case DIV_OP:
-      binary_inplace<T, DIV_OP>(a, b, n);
+      binary_scalar<Ta, Talpha, Tb, div_op>(a, alpha, n, b);
       break;
     case MAX_B_OP:
-      binary_inplace<T, MAX_B_OP>(a, b, n);
+      binary_scalar<Ta, Talpha, Tb, max_op>(a, alpha, n, b);
       break;
     case MIN_B_OP:
-      binary_inplace<T, MIN_B_OP>(a, b, n);
+      binary_scalar<Ta, Talpha, Tb, min_op>(a, alpha, n, b);
       break;
     case MUL_OP:
-      binary_inplace<T, MUL_OP>(a, b, n);
+      binary_scalar<Ta, Talpha, Tb, mul_op>(a, alpha, n, b);
       break;
     case POW_OP:
-      binary_inplace<T, POW_OP>(a, b, n);
+      binary_scalar<Ta, Talpha, Tb, pow_op>(a, alpha, n, b);
       break;
     case SUB_OP:
-      binary_inplace<T, SUB_OP>(a, b, n);
+      binary_scalar<Ta, Talpha, Tb, sub_op>(a, alpha, n, b);
       break;
   }
 }
-template void binary_inplace<float>(BinaryOp op, float *a, const float *b,
-                                    unsigned int n);
 
-
-
-
-template<typename T, BinaryOp op>
-__global__ void kernel_binary_scalar(const T *a, T alpha, unsigned int n,
-                                     T *c) {
-  CUDA_GRID_STRIDE_LOOP(idx, n) {
-    if (op == ADD_OP) c[idx] = a[idx] + alpha;
-    if (op == DIV_OP) c[idx] = a[idx] / alpha;
-    if (op == MAX_B_OP) c[idx] = fmaxf(a[idx], alpha);
-    if (op == MIN_B_OP) c[idx] = fminf(a[idx], alpha);
-    if (op == MUL_OP) c[idx] = a[idx] * alpha;
-    if (op == POW_OP) c[idx] = powf(a[idx], alpha);
-    if (op == SUB_OP) c[idx] = a[idx] - alpha;
-  }
-}
-
-template<typename T, BinaryOp op>
-void binary_scalar(const T *a, T alpha, unsigned int n, T *c) {
-  kernel_binary_scalar<T, op><<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>
-      (a, alpha, n, c);
-}
-
-template<typename T>
-void binary_scalar(BinaryOp op, const T *a, T alpha, unsigned int n, T *c) {
-  switch (op) {
-    case ADD_OP:
-      binary_scalar<T, ADD_OP>(a, alpha, n, c);
-      break;
-    case DIV_OP:
-      binary_scalar<T, DIV_OP>(a, alpha, n, c);
-      break;
-    case MAX_B_OP:
-      binary_scalar<T, MAX_B_OP>(a, alpha, n, c);
-      break;
-    case MIN_B_OP:
-      binary_scalar<T, MIN_B_OP>(a, alpha, n, c);
-      break;
-    case MUL_OP:
-      binary_scalar<T, MUL_OP>(a, alpha, n, c);
-      break;
-    case POW_OP:
-      binary_scalar<T, POW_OP>(a, alpha, n, c);
-      break;
-    case SUB_OP:
-      binary_scalar<T, SUB_OP>(a, alpha, n, c);
-      break;
-  }
-}
-template void binary_scalar<float>(BinaryOp op, const float *a, float alpha,
-                            unsigned int n, float *c);
+template void binary_scalar<float, float, float>(
+    BinaryOp op, const float *a, float alpha, unsigned int n, float *c);
+template void binary_scalar<float, int, float>(
+    BinaryOp op, const float *a, int alpha, unsigned int n, float *c);
+template void binary_scalar<int, float, float>(
+    BinaryOp op, const int *a, float alpha, unsigned int n, float *c);
+template void binary_scalar<int, int, int>(
+    BinaryOp op, const int *a, int alpha, unsigned int n, int *c);
 
 
 
 
 
-template<typename T, BinaryOp op>
-__global__ void kernel_binary_scalar_inplace(T *a, T alpha, unsigned int n) {
-  CUDA_GRID_STRIDE_LOOP(idx, n) {
-    if (op == ADD_OP) a[idx] += alpha;
-    if (op == DIV_OP) a[idx] /= alpha;
-    if (op == MAX_B_OP) a[idx] = fmaxf(a[idx], alpha);
-    if (op == MIN_B_OP) a[idx] = fminf(a[idx], alpha);
-    if (op == MUL_OP) a[idx] *= alpha;
-    if (op == POW_OP) a[idx] = powf(a[idx], alpha);
-    if (op == SUB_OP) a[idx] -= alpha;
-  }
-}
-
-template<typename T, BinaryOp op>
-void binary_scalar_inplace(T *a, T alpha, unsigned int n) {
-  kernel_binary_scalar_inplace<T, op><<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>
-      (a, alpha, n);
-}
-
-template<typename T>
-void binary_scalar_inplace(BinaryOp op, T *a, T alpha, unsigned int n) {
-  switch (op) {
-    case ADD_OP:
-      binary_scalar_inplace<T, ADD_OP>(a, alpha, n);
-      break;
-    case DIV_OP:
-      binary_scalar_inplace<T, DIV_OP>(a, alpha, n);
-      break;
-    case MAX_B_OP:
-      binary_scalar_inplace<T, MAX_B_OP>(a, alpha, n);
-      break;
-    case MIN_B_OP:
-      binary_scalar_inplace<T, MIN_B_OP>(a, alpha, n);
-      break;
-    case MUL_OP:
-      binary_scalar_inplace<T, MUL_OP>(a, alpha, n);
-      break;
-    case POW_OP:
-      binary_scalar_inplace<T, POW_OP>(a, alpha, n);
-      break;
-    case SUB_OP:
-      binary_scalar_inplace<T, SUB_OP>(a, alpha, n);
-      break;
-  }
-}
-template void binary_scalar_inplace<float>(BinaryOp op, float *a, float alpha,
-                                           unsigned int n);
-
-
-
-
-
-template<typename T, BinaryOp op, bool broadcast_to_leading>
-__global__ void kernel_binary_broadcast(const T *a, const T *b,
-    unsigned int m, unsigned int n, T *c) {
+template<typename Ta, typename Tb, typename Tc, typename Op, bool broadcast_type>
+__global__ void kernel_binary_broadcast(
+    const Ta *a, const Tb *b, unsigned int m, unsigned int n, Tc *c) {
   CUDA_GRID_STRIDE_LOOP(idx, m*n) {
-    if (broadcast_to_leading) {
-      if (op == ADD_OP) c[idx] = a[idx] + b[idx % n];
-      if (op == DIV_OP) c[idx] = a[idx] / b[idx % n];
-      if (op == MAX_B_OP) c[idx] = fmaxf(a[idx], b[idx % n]);
-      if (op == MIN_B_OP) c[idx] = fminf(a[idx], b[idx % n]);
-      if (op == MUL_OP) c[idx] = a[idx] * b[idx % n];
-      if (op == POW_OP) c[idx] = powf(a[idx], b[idx % n]);
-      if (op == SUB_OP) c[idx] = a[idx] - b[idx % n];
+    if (broadcast_type) {
+      Op::binary(a[idx], b[idx % n], c[idx]);
     } else {
-      if (op == ADD_OP) c[idx] = a[idx] + b[idx / m];
-      if (op == DIV_OP) c[idx] = a[idx] / b[idx / m];
-      if (op == MAX_B_OP) c[idx] = fmaxf(a[idx], b[idx / m]);
-      if (op == MIN_B_OP) c[idx] = fminf(a[idx], b[idx / m]);
-      if (op == MUL_OP) c[idx] = a[idx] * b[idx / m];
-      if (op == POW_OP) c[idx] = powf(a[idx], b[idx / m]);
-      if (op == SUB_OP) c[idx] = a[idx] - b[idx / m];
+      Op::binary(a[idx], b[idx / m], c[idx]);
     }
   }
 }
 
-template<typename T, BinaryOp op>
-void binary_broadcast(const T *a, const T *b, unsigned int m,
-                      unsigned int n, bool broadcast_to_leading, T *c) {
-  if (broadcast_to_leading) {
-    kernel_binary_broadcast<T, op, true>
-        <<<CUDA_BLOCKS(m*n), CUDA_NUM_THREADS>>>
-        (a, b, m, n, c);
-  } else {
-    kernel_binary_broadcast<T, op, false>
-        <<<CUDA_BLOCKS(m*n), CUDA_NUM_THREADS>>>
-        (a, b, m, n, c);
-  }
-}
-
-template<typename T>
-void binary_broadcast(BinaryOp op, const T *a, const T *b, unsigned int m,
-                      unsigned int n, bool broadcast_to_leading, T *c) {
-  switch (op) {
-    case ADD_OP:
-      binary_broadcast<T, ADD_OP>(a, b, m, n, broadcast_to_leading, c);
-      break;
-    case DIV_OP:
-      binary_broadcast<T, DIV_OP>(a, b, m, n, broadcast_to_leading, c);
-      break;
-    case MAX_B_OP:
-      binary_broadcast<T, MAX_B_OP>(a, b, m, n, broadcast_to_leading, c);
-      break;
-    case MIN_B_OP:
-      binary_broadcast<T, MIN_B_OP>(a, b, m, n, broadcast_to_leading, c);
-      break;
-    case MUL_OP:
-      binary_broadcast<T, MUL_OP>(a, b, m, n, broadcast_to_leading, c);
-      break;
-    case POW_OP:
-      binary_broadcast<T, POW_OP>(a, b, m, n, broadcast_to_leading, c);
-      break;
-    case SUB_OP:
-      binary_broadcast<T, SUB_OP>(a, b, m, n, broadcast_to_leading, c);
-      break;
-  }
-}
-template void binary_broadcast<float>(BinaryOp op, const float *a,
-    const float *b, unsigned int m, unsigned int n, bool broadcast_to_leading,
-    float *c);
-
-
-
-
-
-
-
-template<typename T, BinaryOp op, bool broadcast_to_leading>
-__global__ void kernel_binary_broadcast_inplace(T *a, const T *b,
-    unsigned int m, unsigned int n) {
+template<typename Ta, typename Tb, typename Op, bool broadcast_type>
+__global__ void kernel_binary_broadcast_inplace(
+    Ta *a, const Tb *b, unsigned int m, unsigned int n) {
   CUDA_GRID_STRIDE_LOOP(idx, m*n) {
-    if (broadcast_to_leading) {
-      if (op == ADD_OP) a[idx] += b[idx % n];
-      if (op == DIV_OP) a[idx] /= b[idx % n];
-      if (op == MAX_B_OP) a[idx] = fmaxf(a[idx], b[idx % n]);
-      if (op == MIN_B_OP) a[idx] = fminf(a[idx], b[idx % n]);
-      if (op == MUL_OP) a[idx] *= b[idx % n];
-      if (op == POW_OP) a[idx] = powf(a[idx], b[idx % n]);
-      if (op == SUB_OP) a[idx] -= b[idx % n];
+    if (broadcast_type) {
+      Op::binary_inplace(a[idx], b[idx % n]);
     } else {
-      if (op == ADD_OP) a[idx] += b[idx / m];
-      if (op == DIV_OP) a[idx] /= b[idx / m];
-      if (op == MAX_B_OP) a[idx] = fmaxf(a[idx], b[idx / m]);
-      if (op == MIN_B_OP) a[idx] = fminf(a[idx], b[idx / m]);
-      if (op == MUL_OP) a[idx] *= b[idx / m];
-      if (op == POW_OP) a[idx] = powf(a[idx], b[idx / m]);
-      if (op == SUB_OP) a[idx] -= b[idx / m];
+      Op::binary_inplace(a[idx], b[idx / m]);
     }
   }
 }
 
-template<typename T, BinaryOp op>
-void binary_broadcast_inplace(T *a, const T *b, unsigned int m,
-                      unsigned int n, bool broadcast_to_leading) {
-  if (broadcast_to_leading) {
-    kernel_binary_broadcast_inplace<T, op, true>
-        <<<CUDA_BLOCKS(m*n), CUDA_NUM_THREADS>>>
-        (a, b, m, n);
+template<typename Ta, typename Tb, typename Tc, typename Op, bool broadcast_type>
+void binary_broadcast(const Ta *a, const Tb *b, unsigned int m,
+                        unsigned int n, Tc *c) {
+  if (c == (Tc *) a) {
+    kernel_binary_broadcast_inplace<Ta, Tb, Op, broadcast_type>
+        <<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>
+        ((Ta *) c, b, m, n);
+  } else if (c == (Tc *) b) {
+    kernel_binary_broadcast_inplace<Tb, Ta, Op, broadcast_type>
+        <<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>
+        ((Tb *) b, a, m, n);
+
   } else {
-    kernel_binary_broadcast_inplace<T, op, false>
-        <<<CUDA_BLOCKS(m*n), CUDA_NUM_THREADS>>>
-        (a, b, m, n);
+    kernel_binary_broadcast<Ta, Tb, Tc, Op, broadcast_type>
+        <<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>
+        (a, b, m, n, c);
   }
 }
 
-template<typename T>
-void binary_broadcast_inplace(BinaryOp op, T *a, const T *b, unsigned int m,
-                      unsigned int n, bool broadcast_to_leading) {
+template<typename Ta, typename Tb, typename Tc, typename Op>
+void binary_broadcast(const Ta *a, const Tb *b, unsigned int m,
+                        unsigned int n, bool broadcast_to_leading, Tc *c) {
+  if (broadcast_to_leading) {
+    binary_broadcast<Ta, Tb, Tc, Op, true>(a, b, m, n, c);
+  } else {
+    binary_broadcast<Ta, Tb, Tc, Op, false>(a, b, m, n, c);
+  }
+}
+
+template<typename Ta, typename Tb, typename Tc>
+void binary_broadcast(BinaryOp op, const Ta *a, const Tb *b, unsigned int m,
+                       unsigned int n, bool broadcast_to_leading, Tc *c) {
   switch (op) {
     case ADD_OP:
-      binary_broadcast_inplace<T, ADD_OP>(a, b, m, n, broadcast_to_leading);
+      binary_broadcast<Ta, Tb, Tc, add_op>
+          (a, b, m, n, broadcast_to_leading, c);
       break;
     case DIV_OP:
-      binary_broadcast_inplace<T, DIV_OP>(a, b, m, n, broadcast_to_leading);
+      binary_broadcast<Ta, Tb, Tc, div_op>
+          (a, b, m, n, broadcast_to_leading, c);
       break;
     case MAX_B_OP:
-      binary_broadcast_inplace<T, MAX_B_OP>(a, b, m, n, broadcast_to_leading);
+      binary_broadcast<Ta, Tb, Tc, max_op>
+          (a, b, m, n, broadcast_to_leading, c);
       break;
     case MIN_B_OP:
-      binary_broadcast_inplace<T, MIN_B_OP>(a, b, m, n, broadcast_to_leading);
+      binary_broadcast<Ta, Tb, Tc, min_op>
+          (a, b, m, n, broadcast_to_leading, c);
       break;
     case MUL_OP:
-      binary_broadcast_inplace<T, MUL_OP>(a, b, m, n, broadcast_to_leading);
+      binary_broadcast<Ta, Tb, Tc, mul_op>
+          (a, b, m, n, broadcast_to_leading, c);
       break;
     case POW_OP:
-      binary_broadcast_inplace<T, POW_OP>(a, b, m, n, broadcast_to_leading);
+      binary_broadcast<Ta, Tb, Tc, pow_op>
+          (a, b, m, n, broadcast_to_leading, c);
       break;
     case SUB_OP:
-      binary_broadcast_inplace<T, SUB_OP>(a, b, m, n, broadcast_to_leading);
+      binary_broadcast<Ta, Tb, Tc, sub_op>
+          (a, b, m, n, broadcast_to_leading, c);
       break;
   }
 }
-template void binary_broadcast_inplace<float>(BinaryOp op, float *a,
-    const float *b, unsigned int m, unsigned int n, bool broadcast_to_leading);
+
+template void binary_broadcast<float, float, float>(
+    BinaryOp op, const float *a, const float *b, unsigned int m,
+    unsigned int n, bool broadcast_to_leading, float *c);
+template void binary_broadcast<float, int, float>(
+    BinaryOp op, const float *a, const int *b, unsigned int m, unsigned int n,
+    bool broadcast_to_leading, float *c);
+template void binary_broadcast<int, float, float>(
+    BinaryOp op, const int *a, const float *b, unsigned int m,
+    unsigned int n, bool broadcast_to_leading, float *c);
+template void binary_broadcast<int, int, int>(
+    BinaryOp op, const int *a, const int *b, unsigned int m, unsigned int n,
+    bool broadcast_to_leading, int *c);
 
 
 
 
 
+BINARY_OP(eq_op, c = a == b, a = a == b)
+BINARY_OP(gt_op, c = a > b, a = a > b)
+BINARY_OP(gt_eq_op, c = a >= b, a = a >= b)
+BINARY_OP(lt_op, c = a < b, a = a < b)
+BINARY_OP(lt_eq_op, c = a <= b, a = a <= b)
+BINARY_OP(neq_op, c = a != b, a = a != b)
 
-template<typename T, UnaryOp op>
+
+template<typename Ta, typename Tb>
+void binary_cmp(BinaryCmpOp op, const Ta *a, const Tb *b, unsigned int n,
+                bool_t *c) {
+  switch (op) {
+    case EQ_OP:
+      binary<Ta, Tb, bool_t, eq_op>(a, b, n, c);
+      break;
+    case GT_OP:
+      binary<Ta, Tb, bool_t, gt_op>(a, b, n, c);
+      break;
+    case GT_EQ_OP:
+      binary<Ta, Tb, bool_t, gt_eq_op>(a, b, n, c);
+      break;
+    case LT_OP:
+      binary<Ta, Tb, bool_t, lt_op>(a, b, n, c);
+      break;
+    case LT_EQ_OP:
+      binary<Ta, Tb, bool_t, lt_eq_op>(a, b, n, c);
+      break;
+    case NEQ_OP:
+      binary<Ta, Tb, bool_t, neq_op>(a, b, n, c);
+      break;
+  }
+}
+
+template void binary_cmp<float, float>(
+    BinaryCmpOp op, const float *a, const float *b, unsigned int n, bool_t *c);
+template void binary_cmp<float, int>(
+    BinaryCmpOp op, const float *a, const int *b, unsigned int n, bool_t *c);
+template void binary_cmp<int, float>(
+    BinaryCmpOp op, const int *a, const float *b, unsigned int n, bool_t *c);
+template void binary_cmp<int, int>(
+    BinaryCmpOp op, const int *a, const int *b, unsigned int n, bool_t *c);
+
+
+
+template<typename Ta, typename Talpha>
+void binary_cmp_scalar(BinaryCmpOp op, const Ta *a, Talpha alpha,
+                       unsigned int n, bool_t *b) {
+  switch (op) {
+    case EQ_OP:
+      binary_scalar<Ta, Talpha, bool_t, eq_op>(a, alpha, n, b);
+      break;
+    case GT_OP:
+      binary_scalar<Ta, Talpha, bool_t, gt_op>(a, alpha, n, b);
+      break;
+    case GT_EQ_OP:
+      binary_scalar<Ta, Talpha, bool_t, gt_eq_op>(a, alpha, n, b);
+      break;
+    case LT_OP:
+      binary_scalar<Ta, Talpha, bool_t, lt_op>(a, alpha, n, b);
+      break;
+    case LT_EQ_OP:
+      binary_scalar<Ta, Talpha, bool_t, lt_eq_op>(a, alpha, n, b);
+      break;
+    case NEQ_OP:
+      binary_scalar<Ta, Talpha, bool_t, neq_op>(a, alpha, n, b);
+      break;
+  }
+}
+
+template void binary_cmp_scalar<float, float>(
+    BinaryCmpOp op, const float *a, float alpha, unsigned int n, bool_t *b);
+template void binary_cmp_scalar<float, int>(
+    BinaryCmpOp op, const float *a, int alpha, unsigned int n, bool_t *b);
+template void binary_cmp_scalar<int, float>(
+    BinaryCmpOp op, const int *a, float alpha, unsigned int n, bool_t *b);
+template void binary_cmp_scalar<int, int>(
+    BinaryCmpOp op, const int *a, int alpha, unsigned int n, bool_t *b);
+
+
+
+template<typename Ta, typename Tb>
+void binary_cmp_broadcast(BinaryCmpOp op, const Ta *a, const Tb *b,
+    unsigned int m, unsigned int n, bool broadcast_to_leading, bool_t *c) {
+  switch (op) {
+    case EQ_OP:
+      binary_broadcast<Ta, Tb, bool_t, eq_op>
+          (a, b, m, n, broadcast_to_leading, c);
+      break;
+    case GT_OP:
+      binary_broadcast<Ta, Tb, bool_t, gt_op>
+          (a, b, m, n, broadcast_to_leading, c);
+      break;
+    case GT_EQ_OP:
+      binary_broadcast<Ta, Tb, bool_t, gt_eq_op>
+          (a, b, m, n, broadcast_to_leading, c);
+      break;
+    case LT_OP:
+      binary_broadcast<Ta, Tb, bool_t, lt_op>
+          (a, b, m, n, broadcast_to_leading, c);
+      break;
+    case LT_EQ_OP:
+      binary_broadcast<Ta, Tb, bool_t, lt_eq_op>
+          (a, b, m, n, broadcast_to_leading, c);
+      break;
+    case NEQ_OP:
+      binary_broadcast<Ta, Tb, bool_t, neq_op>
+          (a, b, m, n, broadcast_to_leading, c);
+      break;
+  }
+}
+
+template void binary_cmp_broadcast<float, float>(
+    BinaryCmpOp op, const float *a, const float *b, unsigned int m,
+    unsigned int n, bool broadcast_to_leading, bool_t *c);
+template void binary_cmp_broadcast<float, int>(
+    BinaryCmpOp op, const float *a, const int *b, unsigned int m,
+    unsigned int n, bool broadcast_to_leading, bool_t *c);
+template void binary_cmp_broadcast<int, float>(
+    BinaryCmpOp op, const int *a, const float *b, unsigned int m,
+    unsigned int n, bool broadcast_to_leading, bool_t *c);
+template void binary_cmp_broadcast<int, int>(
+    BinaryCmpOp op, const int *a, const int *b, unsigned int m,
+    unsigned int n, bool broadcast_to_leading, bool_t *c);
+
+
+
+
+#define UNARY_OP(name, operation, inplace_operation) \
+  struct name { \
+    template <typename T> \
+    __device__ static void unary(volatile T a, volatile T &b) { \
+      operation; \
+    } \
+    template <typename T> \
+    __device__ static void unary_inplace(volatile T &a) { \
+      inplace_operation; \
+    } \
+  };
+
+UNARY_OP(abs_op, b = fabsf(a), a = fabsf(a))
+UNARY_OP(cos_op, b = cosf(a), a = cosf(a))
+UNARY_OP(exp_op, b = expf(a), a = expf(a))
+UNARY_OP(log_op, b = logf(a), a = logf(a))
+UNARY_OP(neg_op, b = -a, a = -a)
+UNARY_OP(relu_op, b = fmaxf(0.0, a), a = fmaxf(0.0, a))
+UNARY_OP(relu_d_op, b = a >= 0.0 ? 1.0 : 0.0, a = a >= 0.0 ? 1.0 : 0.0)
+UNARY_OP(sigmoid_op, b = 1.0/(1.0 + expf(-a));, a = 1.0/(1.0 + expf(-a)))
+UNARY_OP(sigmoid_d_op, T tmp = 1.0/(1.0 + expf(-a));  b = tmp*(1-tmp);,
+         T tmp = 1.0/(1.0 + expf(-a));  a = tmp*(1-tmp))
+UNARY_OP(sin_op, b = sinf(a), a = sinf(a))
+UNARY_OP(sqrt_op, b = sqrtf(a), a = sqrtf(a))
+UNARY_OP(tanh_op, b = tanhf(a), a = tanhf(a))
+UNARY_OP(tanh_d_op, T tmp = expf(2.0*a); b = (tmp-1.0)/(tmp+1.0);,
+         T tmp = expf(2.0*a); a = (tmp-1.0)/(tmp+1.0);)
+
+
+template<typename T, typename Op>
 __global__ void kernel_unary(const T *a, unsigned int n, T *b) {
   CUDA_GRID_STRIDE_LOOP(idx, n) {
-    if (op == ABS_OP) b[idx] = fabsf(a[idx]);
-    if (op == EXP_OP) b[idx] = expf(a[idx]);
-    if (op == LOG_OP) b[idx] = logf(a[idx]);
-    if (op == NEG_OP) b[idx] = -a[idx];
-    if (op == RELU_OP) b[idx] = fmaxf(0.0, a[idx]);
-    if (op == RELU_D_OP) b[idx] = 1.0/(1.0 + expf(-a[idx]));
-    if (op == SIGMOID_OP) b[idx] = 1.0/(1.0 + expf(-a[idx]));
-    if (op == SIGMOID_D_OP) {
-      T tmp = 1.0/(1.0 + expf(-a[idx]));
-      b[idx] = tmp*(1-tmp);
-    }
-    if (op == SQRT_OP) b[idx] = sqrtf(a[idx]);
-    if (op == TANH_OP) b[idx] = tanhf(a[idx]);
-    if (op == TANH_D_OP) {
-      T tmp = expf(2.0*a[idx]);
-      b[idx] = (tmp-1.0)/(tmp+1.0);
-    }
+    Op::unary(a[idx], b[idx]);
   }
 }
 
-template<typename T, UnaryOp op>
+template<typename T, typename Op>
+__global__ void kernel_unary_inplace(T *a, unsigned int n) {
+  CUDA_GRID_STRIDE_LOOP(idx, n) {
+    Op::unary_inplace(a[idx]);
+  }
+}
+
+template<typename T, typename Op>
 void unary(const T *a, unsigned int n, T *b) {
-  kernel_unary<T, op><<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>(a, n, b);
+  if (a == b) {
+    kernel_unary_inplace<T, Op><<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>(b, n);
+  } else {
+    kernel_unary<T, Op><<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>(a, n, b);
+  }
 }
 
 template<typename T>
 void unary(UnaryOp op, const T *a, unsigned int n, T *b) {
   switch (op) {
     case ABS_OP:
-      unary<T, ABS_OP>(a, n, b);
+      unary<T, abs_op>(a, n, b);
+      break;
+    case COS_OP:
+      unary<T, cos_op>(a, n, b);
       break;
     case EXP_OP:
-      unary<T, EXP_OP>(a, n, b);
+      unary<T, exp_op>(a, n, b);
       break;
     case LOG_OP:
-      unary<T, LOG_OP>(a, n, b);
+      unary<T, log_op>(a, n, b);
       break;
     case NEG_OP:
-      unary<T, NEG_OP>(a, n, b);
+      unary<T, neg_op>(a, n, b);
       break;
     case RELU_OP:
-      unary<T, RELU_OP>(a, n, b);
+      unary<T, relu_op>(a, n, b);
       break;
     case RELU_D_OP:
-      unary<T, RELU_D_OP>(a, n, b);
+      unary<T, relu_d_op>(a, n, b);
       break;
     case SIGMOID_OP:
-      unary<T, SIGMOID_OP>(a, n, b);
+      unary<T, sigmoid_op>(a, n, b);
       break;
     case SIGMOID_D_OP:
-      unary<T, SIGMOID_D_OP>(a, n, b);
+      unary<T, sigmoid_d_op>(a, n, b);
+      break;
+    case SIN_OP:
+      unary<T, sin_op>(a, n, b);
       break;
     case SQRT_OP:
-      unary<T, SQRT_OP>(a, n, b);
+      unary<T, sqrt_op>(a, n, b);
       break;
     case TANH_OP:
-      unary<T, TANH_OP>(a, n, b);
+      unary<T, tanh_op>(a, n, b);
       break;
     case TANH_D_OP:
-      unary<T, TANH_D_OP>(a, n, b);
+      unary<T, tanh_d_op>(a, n, b);
       break;
   }
 }
 template void unary<float>(UnaryOp op, const float *a, unsigned int n,
                            float *b);
 
-
-
-template<typename T, UnaryOp op>
-__global__ void kernel_unary_inplace(T *a, unsigned int n) {
-  CUDA_GRID_STRIDE_LOOP(idx, n) {
-    if (op == ABS_OP) a[idx] = fabsf(a[idx]);
-    if (op == EXP_OP) a[idx] = expf(a[idx]);
-    if (op == LOG_OP) a[idx] = logf(a[idx]);
-    if (op == NEG_OP) a[idx] = -a[idx];
-    if (op == RELU_OP) a[idx] = fmaxf(0.0, a[idx]);
-    if (op == RELU_D_OP) a[idx] = 1.0/(1.0 + expf(-a[idx]));
-    if (op == SIGMOID_OP) a[idx] = 1.0/(1.0 + expf(-a[idx]));
-    if (op == SIGMOID_D_OP) {
-      T tmp = 1.0/(1.0 + expf(-a[idx]));
-      a[idx] = tmp*(1-tmp);
-    }
-    if (op == SQRT_OP) a[idx] = sqrtf(a[idx]);
-    if (op == TANH_OP) a[idx] = tanhf(a[idx]);
-    if (op == TANH_D_OP) {
-      T tmp = expf(2.0*a[idx]);
-      a[idx] = (tmp-1.0)/(tmp+1.0);
-    }
-  }
-}
-
-template<typename T, UnaryOp op>
-void unary_inplace(T *a, unsigned int n) {
-  kernel_unary_inplace<T, op><<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>(a, n);
-}
-
-template<typename T>
-void unary_inplace(UnaryOp op, T *a, unsigned int n) {
-  switch (op) {
-    case ABS_OP:
-      unary_inplace<T, ABS_OP>(a, n);
-      break;
-    case EXP_OP:
-      unary_inplace<T, EXP_OP>(a, n);
-      break;
-    case LOG_OP:
-      unary_inplace<T, LOG_OP>(a, n);
-      break;
-    case NEG_OP:
-      unary_inplace<T, NEG_OP>(a, n);
-      break;
-    case RELU_OP:
-      unary_inplace<T, RELU_OP>(a, n);
-      break;
-    case RELU_D_OP:
-      unary_inplace<T, RELU_D_OP>(a, n);
-      break;
-    case SIGMOID_OP:
-      unary_inplace<T, SIGMOID_OP>(a, n);
-      break;
-    case SIGMOID_D_OP:
-      unary_inplace<T, SIGMOID_D_OP>(a, n);
-      break;
-    case SQRT_OP:
-      unary_inplace<T, SQRT_OP>(a, n);
-      break;
-    case TANH_OP:
-      unary_inplace<T, TANH_OP>(a, n);
-      break;
-    case TANH_D_OP:
-      unary_inplace<T, TANH_D_OP>(a, n);
-      break;
-  }
-}
-
-template void unary_inplace<float>(UnaryOp op, float *a, unsigned int n);
 
 
 
@@ -510,14 +515,6 @@ __global__ void kernel_clip(const T *a, T a_min, T a_max, unsigned int n,
 }
 
 template<typename T>
-void clip(const T *a, T a_min, T a_max, unsigned int n, T *b) {
-  kernel_clip<T><<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>(a, a_min, a_max, n, b);
-}
-
-template void clip<float>(const float *a, float a_min, float a_max,
-                          unsigned int n, float *b);
-
-template<typename T>
 __global__ void kernel_clip_inplace(T *a, T a_min, T a_max, unsigned int n) {
   CUDA_GRID_STRIDE_LOOP(idx, n) {
     a[idx] = fminf(fmaxf(a[idx], a_min), a_max);
@@ -525,12 +522,19 @@ __global__ void kernel_clip_inplace(T *a, T a_min, T a_max, unsigned int n) {
 }
 
 template<typename T>
-void clip_inplace(T *a, T a_min, T a_max, unsigned int n) {
-  kernel_clip_inplace<T><<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>
-      (a, a_min, a_max, n);
+void clip(const T *a, T a_min, T a_max, unsigned int n, T *b) {
+  if (a == b) {
+    kernel_clip_inplace<T><<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>
+        (b, a_min, a_max, n);
+  } else {
+    kernel_clip<T><<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>
+        (a, a_min, a_max, n, b);
+  }
 }
 
-template void clip_inplace<float>(float *a, float a_min, float a_max,
-                                  unsigned int n);
+template void clip<float>(const float *a, float a_min, float a_max,
+                          unsigned int n, float *b);
+template void clip<int>(const int *a, int a_min, int a_max, unsigned int n,
+                        int *b);
 
 }

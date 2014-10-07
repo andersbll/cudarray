@@ -7,7 +7,7 @@ def normalize_axis(axis, ndim):
     elif isinstance(axis, (int, long)):
         return (axis,)
     elif isinstance(axis, tuple):
-        return sorted(axis)
+        return tuple(sorted(axis))
     else:
         raise ValueError('invalid axis type')
 

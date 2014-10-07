@@ -51,8 +51,6 @@ def broadcast_type(shape1, shape2):
 
 def binary(op, x1, x2, out=None):
     if np.isscalar(x1) or np.isscalar(x2):
-        if np.isscalar(x1) and np.isscalar(x2):
-            return x1*x2
         if np.isscalar(x1):
             scalar = x1
             array = x2
@@ -61,7 +59,6 @@ def binary(op, x1, x2, out=None):
             scalar = x2
 
         # Create/check output array
-        inplace = False
         out_shape = array.shape
         if out is None:
             out = base.empty(out_shape, dtype=x1.dtype)
@@ -70,37 +67,28 @@ def binary(op, x1, x2, out=None):
                 raise ValueError('out.shape does not match result')
             if array.dtype != out.dtype:
                 raise ValueError('dtype mismatch')
-            if array._same_array(out):
-                inplace = True
         n = array.size
-        if inplace:
-            wrap._binary_scalar_inplace(op, array._data, scalar, n)
-        else:
-            wrap._binary_scalar(op, array._data, scalar, n, out._data)
+        wrap._binary_scalar(op, array._data, scalar, n, out._data)
         return out
 
-    if not x1.dtype == x2.dtype:
-        raise ValueError('dtype mismatch')
     # Create/check output array
-    inplace = False
     out_shape = broadcast_shape(x1.shape, x2.shape)
+    if x1.dtype == x2.dtype == np.dtype('int32'):
+        out_dtype = np.dtype('int32')
+    else:
+        out_dtype = np.dtype('float32')
     if out is None:
-        out = base.empty(out_shape, dtype=x1.dtype)
+        out = base.empty(out_shape, dtype=out_dtype)
     else:
         if out_shape != out.shape:
             raise ValueError('out.shape does not match result')
-        if x1.dtype != out.dtype:
+        if out_dtype != out.dtype:
             raise ValueError('dtype mismatch')
-        if x1._same_array(out):
-            inplace = True
 
     btype = broadcast_type(x1.shape, x2.shape)
     if btype == NO_BROADCAST:
         n = x1.size
-        if inplace:
-            wrap._binary_inplace(op, x1._data, x2._data, n)
-        else:
-            wrap._binary(op, x1._data, x2._data, n, out._data)
+        wrap._binary(op, x1._data, x2._data, n, out._data)
         return out
 
     # Calculate dimensions of the broadcast operation
@@ -111,13 +99,8 @@ def binary(op, x1, x2, out=None):
     else:
         n, m = size1, size2/size1
         x1, x2 = x2, x1
-        if x1._same_array(out):
-            inplace = True
     b_to_l = btype == BROADCAST_TO_LEADING
-    if inplace:
-        wrap._binary_broadcast_inplace(op, x1._data, x2._data, m, n, b_to_l)
-    else:
-        wrap._binary_broadcast(op, x1._data, x2._data, m, n, b_to_l, out._data)
+    wrap._binary_broadcast(op, x1._data, x2._data, m, n, b_to_l, out._data)
     return out
 
 
@@ -149,8 +132,83 @@ def minimum(x1, x2, out=None):
     return binary(wrap.min_op, x1, x2, out)
 
 
+def binary_cmp(op, x1, x2, out=None):
+    out_dtype = np.dtype('int32')
+    if np.isscalar(x1) or np.isscalar(x2):
+        if np.isscalar(x1):
+            scalar = x1
+            array = x2
+        else:
+            array = x1
+            scalar = x2
+
+        # Create/check output array
+        out_shape = array.shape
+        if out is None:
+            out = base.empty(out_shape, dtype=out_dtype)
+        else:
+            if out_shape != out.shape:
+                raise ValueError('out.shape does not match result')
+            if array.dtype != out.dtype:
+                raise ValueError('dtype mismatch')
+        n = array.size
+        wrap._binary_cmp_scalar(op, array._data, scalar, n, out._data)
+        return out
+
+    # Create/check output array
+    out_shape = broadcast_shape(x1.shape, x2.shape)
+    if out is None:
+        out = base.empty(out_shape, dtype=out_dtype)
+    else:
+        if out_shape != out.shape:
+            raise ValueError('out.shape does not match result')
+        if out_dtype != out.dtype:
+            raise ValueError('dtype mismatch')
+
+    btype = broadcast_type(x1.shape, x2.shape)
+    if btype == NO_BROADCAST:
+        n = x1.size
+        wrap._binary_cmp(op, x1._data, x2._data, n, out._data)
+        return out
+
+    # Calculate dimensions of the broadcast operation
+    size1 = x1.size
+    size2 = x2.size
+    if size1 > size2:
+        m, n = size1/size2, size2
+    else:
+        n, m = size1, size2/size1
+        x1, x2 = x2, x1
+    b_to_l = btype == BROADCAST_TO_LEADING
+    wrap._binary_cmp_broadcast(op, x1._data, x2._data, m, n, b_to_l, out._data)
+    return out
+
+
+def equal(x1, x2, out=None):
+    return binary_cmp(wrap.eq_op, x1, x2, out)
+
+
+def greater(x1, x2, out=None):
+    return binary_cmp(wrap.gt_op, x1, x2, out)
+
+
+def greater_equal(x1, x2, out=None):
+    return binary_cmp(wrap.gt_eq_op, x1, x2, out)
+
+
+def less(x1, x2, out=None):
+    return binary_cmp(wrap.lt_op, x1, x2, out)
+
+
+def less_equal(x1, x2, out=None):
+    return binary_cmp(wrap.lt_eq_op, x1, x2, out)
+
+
+def not_equal(x1, x2, out=None):
+    return binary_cmp(wrap.neq_op, x1, x2, out)
+
+
 def unary(op, x, out=None):
-    inplace = False
     out_shape = x.shape
     if out is None:
         out = base.empty(out_shape, dtype=x.dtype)
@@ -159,18 +217,17 @@ def unary(op, x, out=None):
             raise ValueError('out.shape does not match result')
         if not x.dtype == out.dtype:
             raise ValueError('dtype mismatch')
-        if x._same_array(out):
-            inplace = True
     n = x.size
-    if inplace:
-        wrap._unary_inplace(op, x._data, n)
-    else:
-        wrap._unary(op, x._data, n, out._data)
+    wrap._unary(op, x._data, n, out._data)
     return out
 
 
 def absolute(x, out=None):
     return unary(wrap.abs_op, x, out)
+
+
+def cos(x, out=None):
+    return unary(wrap.cos_op, x, out)
 
 
 def exp(x, out=None):
@@ -189,6 +246,10 @@ def negative(x, out=None):
     return unary(wrap.neg_op, x, out)
 
 
+def sin(x, out=None):
+    return unary(wrap.sin_op, x, out)
+
+
 def sqrt(x, out=None):
     return unary(wrap.sqrt_op, x, out)
 
@@ -198,7 +259,6 @@ def tanh(x, out=None):
 
 
 def clip(a, a_min, a_max, out=None):
-    inplace = False
     out_shape = a.shape
     if out is None:
         out = base.empty(out_shape, dtype=a.dtype)
@@ -207,11 +267,6 @@ def clip(a, a_min, a_max, out=None):
             raise ValueError('out.shape does not match result')
         if not a.dtype == out.dtype:
             raise ValueError('dtype mismatch')
-        if a._same_array(out):
-            inplace = True
     n = a.size
-    if inplace:
-        wrap._clip_inplace(a._data, a_min, a_max, n)
-    else:
-        wrap._clip(a._data, a_min, a_max, n, out._data)
+    wrap._clip(a._data, a_min, a_max, n, out._data)
     return out

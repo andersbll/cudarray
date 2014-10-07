@@ -8,6 +8,12 @@
 #include <cufft.h>
 
 
+namespace cudarray {
+
+typedef int bool_t;
+
+}
+
 
 #define CUDA_CHECK(condition) \
   { \
