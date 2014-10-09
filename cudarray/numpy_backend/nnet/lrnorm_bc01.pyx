@@ -18,15 +18,6 @@ def lrnorm_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
               DTYPE_t k):
     """
     imgs has shape (n_imgs, n_channels, img_h, img_w)
-    TODO: Optimer til cython : 
-    ('n_train ', 200)
-    ('n_valid ', 75)
-    ('n_test ', 150)
-    ('n_train ', 200)
-    ('n_valid ', 75)
-    ('n_test ', 150)
-    ncalls  tottime  percall  cumtime  percall 
-    85      9.543    0.112    9.543    0.112 
     """
 
     cdef DTYPE_t norm_window 
@@ -38,12 +29,14 @@ def lrnorm_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
     cdef uint half = N // 2
     cdef uint tailLength = N - half
 
-    cdef int max_channel
+    cdef uint max_channel
 
     cdef DTYPE_t a_i
     cdef DTYPE_t a_half
 
     tail = tailLength*[0.0]
+
+    cdef uint i, y, x, a, c
 
     for i in range(n_imgs):
         for y in range(img_h):
@@ -52,20 +45,37 @@ def lrnorm_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
                 tail = tailLength*[0.0]
 
                 for a in range(N + 1):
-                    norm_window += (imgs[i, a, y, x] ** 2)
+                    addToNormWindow(norm_window, imgs[i, a, y, x])                    
 
                 for c in range(n_channels):
                     a_i = imgs[i, c, y, x]
                     a_half = tail.pop(0)
                     tail.append(a_i)
                     #Normalazation 
-                    imgs[i, c, y, x] = a_i / ((k + alpha * norm_window) ** beta)
+                    imgs[i, c, y, x] = calcNormCal(a_i, norm_window, alpha, beta, k)
                     #Move the window for next channel
                     max_channel = half + c + 1
                     #Move window if possible 
                     if (max_channel < n_channels and (c >= N) ):
-                        norm_window += (imgs[i, max_channel, y, x] ** 2)
+                        addToNormWindow(norm_window, imgs[i, max_channel, y, x])
                         #Remove privius channel from sum
-                        norm_window -= (a_half ** 2)
+                        norm_window -= (a_half * a_half)
 
     return imgs
+
+@cython.profile(False)
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef inline DTYPE_t calcNormCal(DTYPE_t a_i,
+              DTYPE_t norm_window,
+              DTYPE_t alpha,
+              DTYPE_t beta,
+              DTYPE_t k):
+    return a_i / ((k + alpha * norm_window) ** beta)
+
+@cython.profile(False)
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef inline addToNormWindow(DTYPE_t norm_window,
+              DTYPE_t val):
+    norm_window += (val * val)
