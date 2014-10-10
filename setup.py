@@ -119,6 +119,7 @@ def numpy_extensions():
     cython_srcs = [
         'cudarray/numpy_backend/nnet/conv_bc01.pyx',
         'cudarray/numpy_backend/nnet/pool_bc01.pyx',
+        'cudarray/numpy_backend/nnet/lrnorm_bc01.pyx',
     ]
     include_dirs = [numpy.get_include()]
     return cythonize(cython_srcs, include_path=include_dirs)
