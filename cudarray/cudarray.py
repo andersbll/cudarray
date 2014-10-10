@@ -77,6 +77,9 @@ class CUDArray(object):
     def view(self):
         return CUDArray(self.shape, self.dtype, None, self._data)
 
+    def __len__(self):
+        return self.shape[0]
+
     def __add__(self, other):
         return elementwise.add(self, other)
 
