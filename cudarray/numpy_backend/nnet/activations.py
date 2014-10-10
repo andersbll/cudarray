@@ -10,13 +10,8 @@ def sigmoid_d(x):
     return s*(1-s)
 
 
-def tanh(x):
-    return np.tanh(x)
-
-
 def tanh_d(x):
-    e = np.exp(2*x)
-    return (e-1)/(e+1)
+    return 1-np.tanh(x)**2
 
 
 def relu(x):

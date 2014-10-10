@@ -468,8 +468,8 @@ UNARY_OP(sigmoid_d_op, T tmp = 1.0/(1.0 + expf(-a));  b = tmp*(1-tmp);,
 UNARY_OP(sin_op, b = sinf(a), a = sinf(a))
 UNARY_OP(sqrt_op, b = sqrtf(a), a = sqrtf(a))
 UNARY_OP(tanh_op, b = tanhf(a), a = tanhf(a))
-UNARY_OP(tanh_d_op, T tmp = expf(2.0*a); b = (tmp-1.0)/(tmp+1.0);,
-         T tmp = expf(2.0*a); a = (tmp-1.0)/(tmp+1.0);)
+UNARY_OP(tanh_d_op, T tmp = tanhf(a); b = 1-tmp*tmp;,
+         T tmp = tanhf(a); a = 1-tmp*tmp;)
 
 
 template<typename T, typename Op>
