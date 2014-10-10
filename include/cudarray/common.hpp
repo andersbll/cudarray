@@ -3,25 +3,12 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <sstream>
+#include <string>
 #include <cuda_runtime_api.h>
 #include <cublas_v2.h>
 #include <cufft.h>
 
-
-namespace cudarray {
-
-typedef int bool_t;
-
-}
-
-
-#define CUDA_CHECK(condition) \
-  { \
-    cudaError_t error = condition; \
-    if (error != cudaSuccess) { \
-        throw std::runtime_error(cudaGetErrorString(error)); \
-    } \
-  }
 
 
 const char *cublasErrorString(cublasStatus_t err);
@@ -44,16 +31,6 @@ const char *cufftErrorEnum(cufftResult error);
   }
 
 
-inline void cudaSyncCheck(const char *msg, const char *file, const int line);
-
-#ifdef DEBUG
-#define CUDA_DEBUG_SYNC(msg)
-#else
-#define CUDA_DEBUG_SYNC(msg)
-#endif
-//#define CUDA_DEBUG_SYNC(msg)
-//#define CUDA_DEBUG_SYNC(msg) cudaSyncCheck(msg, __FILE__, __LINE__)
-
 #define CUDA_GRID_STRIDE_LOOP(i, n) \
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; \
        i < n; \
@@ -67,8 +44,29 @@ inline void cudaSyncCheck(const char *msg, const char *file, const int line);
   ((n_threads + CUDA_NUM_THREADS - 1) / CUDA_NUM_THREADS)
 
 
+namespace cudarray {
 
-void create_ptr_list(float ***ptrs_dev, const float *base, int num, int stride, int reps=1, int rep_stride=0);
+typedef int bool_t;
+
+
+inline void cuda_check(cudaError_t status, const char *file, int line) {
+  if (status != cudaSuccess) {
+    std::ostringstream o;
+    o << file << ":" << line << ": " << cudaGetErrorString(status);
+    throw std::runtime_error(o.str());
+  }
+}
+
+#define CUDA_CHECK(status) { cuda_check((status), __FILE__, __LINE__); }
+
+#ifdef CUDA_SYNC
+#define CUDA_CHECK_LAST_ERROR \
+  CUDA_CHECK(cudaPeekAtLastError()); \
+  CUDA_CHECK(cudaDeviceSynchronize());
+#else
+#define CUDA_CHECK_LAST_ERROR \
+  CUDA_CHECK(cudaPeekAtLastError());
+#endif
 
 
 /*
@@ -81,29 +79,14 @@ public:
     return instance_;
   }
 
-  static void require_buffer_size(int idx, int size) {
-//    std::cout << "require_buffer_size(" << idx << ", " << size << ")" << std::endl;
+  inline static void *buffer(unsigned int size, unsigned int idx=0) {
     if (instance().buffer_sizes[idx] < size) {
-      instance().buffer_sizes[idx] = size;
       if (instance().buffers[idx]) {
-        cudaFree(instance().buffers[idx]);
-        CUDA_DEBUG_SYNC("Could not free buffer.");
-        instance().buffers[idx] = NULL;
+        CUDA_CHECK(cudaFree(instance().buffers[idx]));
       }
+      instance().buffer_sizes[idx] = size;
+      CUDA_CHECK(cudaMalloc(&instance().buffers[idx], size));
     }
-  }
-
-  inline static void *buffer(int idx=0) {
-//    std::cout << "buffer(" << idx << ")" << std::endl;
-    if (!instance().buffers[idx]) {
-      if (instance().buffer_sizes[idx] <= 0) {
-        throw std::runtime_error("No buffer size has been specified.");
-      }
-      CUDA_CHECK(cudaMalloc(&instance().buffers[idx],
-                            instance().buffer_sizes[idx]));
-    }
-    // XXX: remove this
-//    CUDA_CHECK(cudaMemset(instance().buffers[idx], 0, instance().buffer_sizes[idx]));
     return instance().buffers[idx];
   }
 
@@ -113,30 +96,29 @@ public:
 
 private:
   cublasHandle_t cublas_handle_;
-  void *buffers[3];
-  int buffer_sizes[3];
+  void *buffers[32];
+  unsigned int buffer_sizes[32];
 
   CUDA() {
-    for(int i = 0; i < 3; i++) {
+    for(int i = 0; i < 32; i++) {
         buffers[i] = NULL;
-        buffer_sizes[i] = -1;
+        buffer_sizes[i] = 0;
     }
+    buffer_sizes[0] = 99999999;
+    CUDA_CHECK(cudaMalloc(&buffers[0], buffer_sizes[0]));
     CUBLAS_CHECK(cublasCreate(&cublas_handle_));
   }
 
   ~CUDA() {
-//    if (buffer_) {
-//      // This segfaults with Theano (I the CUDA runtime is already shut down
-//      // at this point)
-////      CUDA_CHECK(cudaFree(buffer_));
-//    }
-//    cudaDeviceReset();
+    cudaDeviceReset();
   }
 
   CUDA(CUDA const&);
 
   void operator=(CUDA const&);
 };
+
+}
 
 
 #endif  // COMMON_HPP_
