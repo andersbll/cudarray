@@ -1,116 +1,107 @@
 #include "cudarray/common.hpp"
 #include "cudarray/image/img2win.hpp"
 
+
+namespace cudarray {
+
 inline static int ceil_div(int x, int y) {
   return (x + y - 1) / y;
 }
 
-template <int group_size>
-__global__ void img2win_kernel(const float *imgs, int n_threads, int n_imgs, int img_h,
-    int img_w, int out_h, int out_w, int win_h, int win_w, int pad_y,
-    int pad_x, int stride_y, int stride_x, float *out) {
+template <typename T, int group_size>
+__global__ void kernel_img2win(const T *imgs, int n_threads, int n_imgs,
+    int img_h, int img_w, int wins_h, int wins_w, int win_h, int win_w,
+    int pad_y, int pad_x, int stride_y, int stride_x, T *wins) {
   int win_size = win_h*win_w;
   CUDA_GRID_STRIDE_LOOP(idx, n_threads) {
-    int out_x = idx % out_w;
-    int out_y = (idx / out_w) % out_h;
+    int wins_x = idx % wins_w;
+    int wins_y = (idx / wins_w) % wins_h;
     // window offset
-    int k = (idx / out_w / out_h) % win_size;
-    // image index
-    int n = idx / out_w / out_h / win_size * group_size;
+    int k = (idx / wins_w / wins_h) % win_size;
+    // image idx
+    int n = idx / wins_w / wins_h / win_size * group_size;
 
-    int img_x = out_x * stride_x - pad_x + (k % win_w);
-    int img_y = out_y * stride_y - pad_y + k / win_w;
-    const float *img_ = imgs + (n*img_h + img_y)*img_w + img_x;
-    float *out_ = out + ((n*win_size + k)*out_h + out_y)*out_w + out_x;
-    float valid = img_x >= 0 && img_x < img_w && img_y >= 0 && img_y < img_h ? 1.0 : 0.0;
+    int img_x = wins_x * stride_x - pad_x + (k % win_w);
+    int img_y = wins_y * stride_y - pad_y + k / win_w;
+    imgs += (n*img_h + img_y)*img_w + img_x;
+    wins += ((n*win_size + k)*wins_h + wins_y)*wins_w + wins_x;
+    bool valid = img_x >= 0 && img_x < img_w && img_y >= 0 && img_y < img_h;
 
-    #pragma unroll
     for (int i = 0; i < group_size; ++i) {
-      // XXX: is this faster?
-      // *out_ = i+n < n_imgs ? *img_ : 0.0;
       if (i+n < n_imgs) {
-        *out_ = *img_ * valid;
+        if (valid) {
+          *wins = *imgs;
+        } else {
+          *wins = 0.0;
+        }
       }
-      out_ += win_size * out_h * out_w;
-      img_ += img_h * img_w;
+      wins += win_size * wins_h * wins_w;
+      imgs += img_h * img_w;
     }
   }
 }
 
-
-void img2win(const float *imgs, int n_imgs, int img_h, int img_w,
-    int win_h, int win_w, int pad_y, int pad_x, int stride_y, int stride_x,
-    float *out) {
-  int out_h = (img_h + 2*pad_y - win_h) / stride_y + 1;
-  int out_w = (img_w + 2*pad_x - win_w) / stride_x + 1;
-  int group_size = 32;
-  int n_threads = ceil_div(n_imgs, group_size) * win_h * win_w * out_h * out_w;
-//  std::cout << n_threads << "  " << n_imgs << "  " << win_h << "  " << win_w << "  " << pad_y << "  " << pad_x << "  " << stride_y << "  " << stride_x << std::endl;
-//  std::cout << n_imgs << "  " << group_size << "  " << ceil_div(n_imgs, group_size) << "  " << n_threads << "  " << CUDA_BLOCKS(n_threads) << "  " << CUDA_NUM_THREADS << std::endl;
-  img2win_kernel<32>
-      <<<CUDA_BLOCKS(n_threads), CUDA_NUM_THREADS>>>(
-      imgs, n_threads, n_imgs, img_h, img_w, out_h, out_w, win_h, win_w, pad_y, pad_x,
-      stride_y, stride_x, out
+template <typename T>
+void img2win(const T *imgs, int n_imgs, int img_h, int img_w, int win_h,
+    int win_w, int pad_y, int pad_x, int stride_y, int stride_x, T *wins) {
+  int wins_h = (img_h + 2*pad_y - win_h) / stride_y + 1;
+  int wins_w = (img_w + 2*pad_x - win_w) / stride_x + 1;
+  const int group_size = 32;
+  int n_threads = ceil_div(n_imgs, group_size)*win_h*win_w*wins_h*wins_w;
+  kernel_img2win<T, group_size>
+      <<<CUDA_BLOCKS(n_threads), CUDA_THREADS_PER_BLOCK>>>(
+      imgs, n_threads, n_imgs, img_h, img_w, wins_h, wins_w, win_h, win_w,
+      pad_y, pad_x, stride_y, stride_x, wins
   );
-  CUDA_DEBUG_SYNC("img2win failed");
+  CUDA_CHECK_LAST_ERROR;
 }
+template void img2win(const float *imgs, int n_imgs, int img_h, int img_w,
+    int win_h, int win_w, int pad_y, int pad_x, int stride_y, int stride_x,
+    float *wins);
 
 
 
-
-/*
-  imgs: nyx , n = n_imgs, y = img_h, x = img_w
-  out: nkyx , k = win_w*win_h, y = out_h, x = out_w
-  n_threads = n/g * k * out_h * out_w, g = group_size
-*/
-template <int group_size>
-__global__ void img2invwin_kernel(const float *imgs, int n_threads, int n_imgs, int img_h,
-    int img_w, int out_h, int out_w, int win_h, int win_w, int pad_y,
-    int pad_x, int stride_y, int stride_x, float *out) {
-  int win_size = win_h*win_w;
+template <typename T>
+__global__ void kernel_win2img(const T* wins, int n_threads, int n_imgs,
+    int img_h, int img_w, int wins_h, int wins_w, int win_h, int win_w,
+    int pad_y, int pad_x, int stride_y, int stride_x, T *imgs) {
   CUDA_GRID_STRIDE_LOOP(idx, n_threads) {
-    int out_x = idx % out_w;
-    int out_y = (idx / out_w) % out_h;
-    // window offset
-    int k = (idx / out_w / out_h) % win_size;
-    // image index
-    int n = idx / out_w / out_h / win_size * group_size;
+    int img_x = idx % img_w + pad_x;
+    int img_y = (idx / img_w) % img_h + pad_y;
+    int n = idx / img_w / img_h;
 
-    int img_x = (out_x - (k % win_w) + pad_x) / stride_x;
-    int img_y = (out_y - (k / win_w) + pad_y) / stride_y;
-    float valid = img_x % stride_x == 0 && img_y % stride_y == 0 ? 1.0 : 0.0;
-    img_x /= stride_x;
-    img_y /= stride_y;
+    int wins_x_start = (img_x < win_w) ? 0 : (img_x - win_w) / stride_x + 1;
+    int wins_x_end = min(img_x / stride_x + 1, wins_w);
+    int wins_y_start = (img_y < win_h) ? 0 : (img_y - win_h) / stride_y + 1;
+    int wins_y_end = min(img_y / stride_y + 1, wins_h);
 
-    const float *img_ = imgs + (n*img_h + img_y)*img_w + img_x;
-    float *out_ = out + ((n*win_size + k)*out_h + out_y)*out_w + out_x;
-    valid *= img_x >= 0 && img_x < img_w && img_y >= 0 && img_y < img_h ? 1.0 : 0.0;
+    int wins_y_offset = (1 - stride_y * win_w * wins_h) * wins_w;
+    int wins_x_offset = (1 - stride_x * wins_h * wins_w);
 
-    #pragma unroll
-    for (int i = 0; i < group_size; ++i) {
-      if (i+n < n_imgs) {
-        *out_ = *img_ * valid;
+    wins += (n * win_h * win_w + img_y * win_w + img_x) * wins_h * wins_w;
+    T sum = 0;
+    for (int wins_y = wins_y_start; wins_y < wins_y_end; ++wins_y) {
+      for (int wins_x = wins_x_start; wins_x < wins_x_end; ++wins_x) {
+        sum += wins[wins_y * wins_y_offset + wins_x * wins_x_offset];
       }
-      out_ += win_size * out_h * out_w;
-      img_ += img_h * img_w;
     }
+    imgs[idx] = sum;
   }
 }
 
+template <typename T>
+void win2img(const T *wins, int n_imgs, int img_h, int img_w, int win_h,
+    int win_w, int pad_y, int pad_x, int stride_y, int stride_x, T *imgs) {
+  int wins_h = (img_h + 2*pad_y - win_h) / stride_y + 1;
+  int wins_w = (img_w + 2*pad_x - win_w) / stride_x + 1;
+  int n_threads = n_imgs * img_h * img_w;
+  kernel_win2img<<<CUDA_BLOCKS(n_threads), CUDA_THREADS_PER_BLOCK>>>(
+      wins, n_threads, n_imgs, img_h, img_w, wins_h, wins_w, win_h, win_w,
+      pad_y, pad_x, stride_y, stride_x, imgs);
+  CUDA_CHECK_LAST_ERROR;
+}
 
-void img2invwin(const float *imgs, int n_imgs, int img_h, int img_w,
+template void win2img(const float *wins, int n_imgs, int img_h, int img_w,
     int win_h, int win_w, int pad_y, int pad_x, int stride_y, int stride_x,
-    float *out) {
-  int out_h = (img_h - 1) * stride_y - 2*pad_y + win_h;
-  int out_w = (img_w - 1) * stride_x - 2*pad_x + win_w;
-  int group_size = 32;
-  int n_threads = ceil_div(n_imgs, group_size) * win_h * win_w * out_h * out_w;
-//  std::cout << n_threads << "  " << n_imgs << "  " << win_h << "  " << win_w << "  " << pad_y << "  " << pad_x << "  " << stride_y << "  " << stride_x << std::endl;
-//  std::cout << n_imgs << "  " << group_size << "  " << ceil_div(n_imgs, group_size) << "  " << n_threads << "  " << CUDA_BLOCKS(n_threads) << "  " << CUDA_NUM_THREADS << std::endl;
-  img2invwin_kernel<32>
-      <<<CUDA_BLOCKS(n_threads), CUDA_NUM_THREADS>>>(
-      imgs, n_threads, n_imgs, img_h, img_w, out_h, out_w, win_h, win_w, pad_y, pad_x,
-      stride_y, stride_x, out
-  );
-  CUDA_DEBUG_SYNC("img2win failed");
+    float *imgs);
 }
