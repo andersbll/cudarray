@@ -7,7 +7,10 @@ endif
 
 CC = g++
 NVCC = nvcc
-SRCS = $(SRC_DIR)/common.cpp
+SRCS = $(SRC_DIR)/common.cpp \
+       $(SRC_DIR)/nnet/conv_bc01_matmul.cpp \
+       $(SRC_DIR)/nnet/pool_b01.cpp
+
 CUDA_SRCS = $(SRC_DIR)/elementwise.cu \
             $(SRC_DIR)/reduction.cu \
             $(SRC_DIR)/blas.cu \
@@ -15,7 +18,9 @@ CUDA_SRCS = $(SRC_DIR)/elementwise.cu \
             $(SRC_DIR)/image/img2win.cu
 
 OBJS = $(SRCS:.cpp=.o) $(CUDA_SRCS:.cu=.o)
-LIBCUDARRAY = $(BUILD_DIR)/libcudarray.so
+LIBCUDARRAY = libcudarray.so
+LIBCUDARRAY_BUILD = $(BUILD_DIR)/$(LIBCUDARRAY)
+LIBCUDARRAY_INSTALL = $(INSTALL_PREFIX)/lib/$(LIBCUDARRAY)
 
 INCLUDES = -I$(INCLUDE_DIR)
 C_FLAGS = -O3 -fPIC -Wall -Wfatal-errors
@@ -23,7 +28,7 @@ NVCC_FLAGS = -arch=sm_35 --use_fast_math -O3 --compiler-options '$(C_FLAGS)'
 LDFLAGS = -lcudart -lcublas -lcufft -lcurand
 
 
-$(LIBCUDARRAY) : $(OBJS)
+$(LIBCUDARRAY_BUILD) : $(OBJS)
 	mkdir -p $(BUILD_DIR)
 	$(CC) -shared $(C_FLAGS) -o $@ $^ $(LDFLAGS)
 
@@ -33,14 +38,15 @@ $(LIBCUDARRAY) : $(OBJS)
 %.o : %.cu
 	$(NVCC) $(NVCC_FLAGS) $(INCLUDES) -c -o $@ $<
 
-all: $(LIBCUDARRAY)
+all: $(LIBCUDARRAY_BUILD)
 
-.PHONY: install
-install: $(LIBCUDARRAY)
-	cp $(LIBCUDARRAY) $(INSTALL_PREFIX)/lib
+$(LIBCUDARRAY_INSTALL) : $(LIBCUDARRAY_BUILD)
+	cp $(LIBCUDARRAY_BUILD) $(LIBCUDARRAY_INSTALL)
+
+install: $(INSTALL_PREFIX)/lib/$(LIBCUDARRAY)
 
 uninstall:
-	rm $(INSTALL_PREFIX)/lib/libcudarray.so
+	rm $(LIBCUDARRAY_INSTALL)
 
 .PHONY: clean
 clean:
