@@ -1,25 +1,11 @@
 import numpy as np
-
-
 import cudarray_wrap.elementwise as wrap
 import base
 
 
-NO_BROADCAST = 0
-BROADCAST_TO_LEADING = 1
-BROADCAST_TO_TRAILING = 2
-
-
-def broadcast_shape(shape1, shape2):
-    if len(shape1) > len(shape2) or np.prod(shape1) > np.prod(shape2):
-        return shape1
-    else:
-        return shape2
-
-
 def broadcast_type(shape1, shape2):
     if shape1 == shape2:
-        return NO_BROADCAST
+        return None
 
     error = ValueError('operands could not be broadcast together with shapes '
                        + str(shape1) + ' ' + str(shape2))
@@ -28,8 +14,6 @@ def broadcast_type(shape1, shape2):
     len_diff = len(shape1) - len(shape2)
     if len_diff > 0:
         shape2 = (1,)*len_diff + shape2
-    elif len_diff < 0:
-        shape1 = (1,)*(-len_diff) + shape1
 
     # Find out which axes to broadcast
     b_axes = []
@@ -41,12 +25,39 @@ def broadcast_type(shape1, shape2):
                 raise error
 
     ndim = len(shape1)
+    # Detect leading broadcast
     if b_axes == range(len(b_axes)):
-        return BROADCAST_TO_LEADING
-    elif b_axes == range(ndim-len(b_axes), ndim):
-        return BROADCAST_TO_TRAILING
-    else:
-        raise error
+        k = 1
+        m = np.prod([shape1[a] for a in b_axes])
+        n = np.prod(shape1) // m
+        return wrap.btype_leading, k, m, n
+    # Detect trailing broadcast
+    if b_axes == range(ndim-len(b_axes), ndim):
+        k = 1
+        m = np.prod([shape1[a] for a in b_axes])
+        n = np.prod(shape1) // m
+        return wrap.btype_trailing, k, m, n
+    # Detect inner broadcast
+    if b_axes == range(b_axes[0], b_axes[0] + len(b_axes)):
+        k = np.prod(shape1[:b_axes[0]])
+        m = np.prod(shape1[b_axes[0]:b_axes[-1]+1])
+        n = np.prod(shape1[b_axes[-1]+1:])
+        return wrap.btype_inner, k, m, n
+    # Detect outer broadcast
+    for i in range(1, len(b_axes)):
+        if b_axes[i-1] + 1 != b_axes[i]:
+            split_idx = i
+            break
+    b_axes_leading = b_axes[:split_idx]
+    b_axes_trailing = b_axes[split_idx:]
+    if (b_axes_leading == range(len(b_axes_leading))
+            and b_axes_trailing == range(ndim-len(b_axes_trailing), ndim)):
+        k = np.prod(shape1[:b_axes_leading[-1]+1])
+        m = np.prod(shape1[b_axes_leading[-1]+1:b_axes_trailing[0]])
+        n = np.prod(shape1[b_axes_trailing[0]:])
+        return wrap.btype_outer, k, m, n
+
+    raise error
 
 
 def binary(op, x1, x2, out=None):
@@ -58,50 +69,49 @@ def binary(op, x1, x2, out=None):
             array = x1
             scalar = x2
 
-        # Create/check output array
-        out_shape = array.shape
-        if out is None:
-            out = base.empty(out_shape, dtype=x1.dtype)
+        if array.dtype == np.dtype('int32') and isinstance(scalar, (int)):
+            out_dtype = np.dtype('int32')
         else:
-            if out_shape != out.shape:
+            out_dtype = np.dtype('float32')
+
+        # Create/check output array
+        if out is None:
+            out = base.empty(array.shape, dtype=out_dtype)
+        else:
+            if out.shape != array.shape:
                 raise ValueError('out.shape does not match result')
-            if array.dtype != out.dtype:
+            if out.dtype != out_dtype:
                 raise ValueError('dtype mismatch')
         n = array.size
         wrap._binary_scalar(op, array._data, scalar, n, out._data)
         return out
 
-    # Create/check output array
-    out_shape = broadcast_shape(x1.shape, x2.shape)
     if x1.dtype == x2.dtype == np.dtype('int32'):
         out_dtype = np.dtype('int32')
     else:
         out_dtype = np.dtype('float32')
+
+    # Create/check output array
+    if x1.size < x2.size:
+        x1, x2 = x2, x1
     if out is None:
-        out = base.empty(out_shape, dtype=out_dtype)
+        out = base.empty(x1.shape, dtype=out_dtype)
     else:
-        if out_shape != out.shape:
+        if out.shape != x1.shape:
             raise ValueError('out.shape does not match result')
-        if out_dtype != out.dtype:
+        if out.dtype != out_dtype:
             raise ValueError('dtype mismatch')
 
     btype = broadcast_type(x1.shape, x2.shape)
-    if btype == NO_BROADCAST:
+    if btype is None:
         n = x1.size
         wrap._binary(op, x1._data, x2._data, n, out._data)
         return out
-
-    # Calculate dimensions of the broadcast operation
-    size1 = x1.size
-    size2 = x2.size
-    if size1 > size2:
-        m, n = size1/size2, size2
     else:
-        n, m = size1, size2/size1
-        x1, x2 = x2, x1
-    b_to_l = btype == BROADCAST_TO_LEADING
-    wrap._binary_broadcast(op, x1._data, x2._data, m, n, b_to_l, out._data)
-    return out
+        btype, k, m, n = btype
+        wrap._binary_broadcast(op, btype, x1._data, x2._data, k, m, n,
+                               out._data)
+        return out
 
 
 def add(x1, x2, out=None):
@@ -156,13 +166,14 @@ def binary_cmp(op, x1, x2, out=None):
         return out
 
     # Create/check output array
-    out_shape = broadcast_shape(x1.shape, x2.shape)
+    if len(x2.shape) > len(x2.shape) or x2.size > x1.size:
+        x1, x2 = x2, x1
     if out is None:
-        out = base.empty(out_shape, dtype=out_dtype)
+        out = base.empty(x1.shape, dtype=out_dtype)
     else:
-        if out_shape != out.shape:
+        if out.shape != x1.shape:
             raise ValueError('out.shape does not match result')
-        if out_dtype != out.dtype:
+        if out.dtype != out_dtype:
             raise ValueError('dtype mismatch')
 
     btype = broadcast_type(x1.shape, x2.shape)

@@ -6,6 +6,10 @@
 
 namespace cudarray {
 
+enum BroadcastType {
+  BROADCAST_INNER, BROADCAST_LEADING, BROADCAST_OUTER, BROADCAST_TRAILING,
+};
+
 enum BinaryOp {
   ADD_OP, DIV_OP, MAX_B_OP, MIN_B_OP, MUL_OP, POW_OP, SUB_OP,
 };
@@ -18,8 +22,8 @@ void binary_scalar(BinaryOp op, const Ta *a, Talpha alpha, unsigned int n,
                    Tb *b);
 
 template<typename Ta, typename Tb, typename Tc>
-void binary_broadcast(BinaryOp op, const Ta *a, const Tb *b, unsigned int m,
-                      unsigned int n, bool broadcast_to_leading, Tc *c);
+void binary_broadcast(BinaryOp op, BroadcastType btype, const Ta *a,
+    const Tb *b, unsigned int k, unsigned int m, unsigned int n, Tc *c);
 
 
 enum BinaryCmpOp {
@@ -35,8 +39,8 @@ void binary_cmp_scalar(BinaryCmpOp op, const Ta *a, Talpha alpha,
                        unsigned int n, bool_t *b);
 
 template<typename Ta, typename Tb>
-void binary_cmp_broadcast(BinaryCmpOp op, const Ta *a, const Tb *b,
-    unsigned int m, unsigned int n, bool broadcast_to_leading, bool_t *c);
+void binary_cmp_broadcast(BinaryCmpOp op, BroadcastType btype, const Ta *a,
+    const Tb *b, unsigned int k, unsigned int m, unsigned int n, bool_t *c);
 
 
 enum UnaryOp {

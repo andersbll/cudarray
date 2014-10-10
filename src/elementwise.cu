@@ -171,11 +171,12 @@ template void binary_scalar<int, int, int>(
 
 
 
-template<typename Ta, typename Tb, typename Tc, typename Op, bool broadcast_type>
+
+template<typename Ta, typename Tb, typename Tc, typename Op, bool broadcast_leading>
 __global__ void kernel_binary_broadcast(
     const Ta *a, const Tb *b, unsigned int m, unsigned int n, Tc *c) {
   CUDA_GRID_STRIDE_LOOP(idx, m*n) {
-    if (broadcast_type) {
+    if (broadcast_leading) {
       Op::binary(a[idx], b[idx % n], c[idx]);
     } else {
       Op::binary(a[idx], b[idx / m], c[idx]);
@@ -183,11 +184,11 @@ __global__ void kernel_binary_broadcast(
   }
 }
 
-template<typename Ta, typename Tb, typename Op, bool broadcast_type>
+template<typename Ta, typename Tb, typename Op, bool broadcast_leading>
 __global__ void kernel_binary_broadcast_inplace(
     Ta *a, const Tb *b, unsigned int m, unsigned int n) {
   CUDA_GRID_STRIDE_LOOP(idx, m*n) {
-    if (broadcast_type) {
+    if (broadcast_leading) {
       Op::binary_inplace(a[idx], b[idx % n]);
     } else {
       Op::binary_inplace(a[idx], b[idx / m]);
@@ -195,84 +196,126 @@ __global__ void kernel_binary_broadcast_inplace(
   }
 }
 
-template<typename Ta, typename Tb, typename Tc, typename Op, bool broadcast_type>
+template<typename Ta, typename Tb, typename Tc, typename Op, bool broadcast_leading>
 void binary_broadcast(const Ta *a, const Tb *b, unsigned int m,
                         unsigned int n, Tc *c) {
   if (c == (Tc *) a) {
-    kernel_binary_broadcast_inplace<Ta, Tb, Op, broadcast_type>
-        <<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>
+    kernel_binary_broadcast_inplace<Ta, Tb, Op, broadcast_leading>
+        <<<CUDA_BLOCKS(m*n), CUDA_NUM_THREADS>>>
         ((Ta *) c, b, m, n);
   } else if (c == (Tc *) b) {
-    kernel_binary_broadcast_inplace<Tb, Ta, Op, broadcast_type>
-        <<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>
+    kernel_binary_broadcast_inplace<Tb, Ta, Op, broadcast_leading>
+        <<<CUDA_BLOCKS(m*n), CUDA_NUM_THREADS>>>
         ((Tb *) b, a, m, n);
 
   } else {
-    kernel_binary_broadcast<Ta, Tb, Tc, Op, broadcast_type>
-        <<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>
+    kernel_binary_broadcast<Ta, Tb, Tc, Op, broadcast_leading>
+        <<<CUDA_BLOCKS(m*n), CUDA_NUM_THREADS>>>
         (a, b, m, n, c);
   }
 }
 
-template<typename Ta, typename Tb, typename Tc, typename Op>
-void binary_broadcast(const Ta *a, const Tb *b, unsigned int m,
-                        unsigned int n, bool broadcast_to_leading, Tc *c) {
-  if (broadcast_to_leading) {
-    binary_broadcast<Ta, Tb, Tc, Op, true>(a, b, m, n, c);
+template<typename Ta, typename Tb, typename Tc, typename Op, bool broadcast_inner>
+__global__ void kernel_binary_broadcast(const Ta *a, const Tb *b,
+    unsigned int k, unsigned int m, unsigned int n, Tc *c) {
+  CUDA_GRID_STRIDE_LOOP(idx, k*m*n) {
+    if (broadcast_inner) {
+      Op::binary(a[idx], b[idx / k / n], c[idx]);
+    } else {
+      Op::binary(a[idx], b[(idx / n) % m], c[idx]);
+    }
+  }
+}
+
+template<typename Ta, typename Tb, typename Op, bool broadcast_inner>
+__global__ void kernel_binary_broadcast_inplace(Ta *a, const Tb *b,
+    unsigned int k, unsigned int m, unsigned int n) {
+  CUDA_GRID_STRIDE_LOOP(idx, k*m*n) {
+    if (broadcast_inner) {
+      Op::binary_inplace(a[idx], b[idx / k / n]);
+    } else {
+      Op::binary_inplace(a[idx], b[(idx / n) % m]);
+    }
+  }
+}
+
+template<typename Ta, typename Tb, typename Tc, typename Op, bool broadcast_inner>
+void binary_broadcast(const Ta *a, const Tb *b, unsigned int k, unsigned int m,
+                      unsigned int n, Tc *c) {
+  if (c == (Tc *) a) {
+    kernel_binary_broadcast_inplace<Ta, Tb, Op, broadcast_inner>
+        <<<CUDA_BLOCKS(k*m*n), CUDA_NUM_THREADS>>>
+        ((Ta *) c, b, k, m, n);
+  } else if (c == (Tc *) b) {
+    kernel_binary_broadcast_inplace<Tb, Ta, Op, broadcast_inner>
+        <<<CUDA_BLOCKS(k*m*n), CUDA_NUM_THREADS>>>
+        ((Tb *) b, a, k, m, n);
+
   } else {
-    binary_broadcast<Ta, Tb, Tc, Op, false>(a, b, m, n, c);
+    kernel_binary_broadcast<Ta, Tb, Tc, Op, broadcast_inner>
+        <<<CUDA_BLOCKS(k*m*n), CUDA_NUM_THREADS>>>
+        (a, b, k, m, n, c);
+  }
+}
+
+template<typename Ta, typename Tb, typename Tc, typename Op>
+void binary_broadcast(BroadcastType btype, const Ta *a, const Tb *b,
+    unsigned int k, unsigned int m, unsigned int n, Tc *c) {
+  switch (btype) {
+    case BROADCAST_INNER:
+      binary_broadcast<Ta, Tb, Tc, Op, true>(a, b, k, m, n, c);
+    case BROADCAST_LEADING:
+      binary_broadcast<Ta, Tb, Tc, Op, true>(a, b, m, n, c);
+      break;
+    case BROADCAST_OUTER:
+      binary_broadcast<Ta, Tb, Tc, Op, false>(a, b, k, m, n, c);
+      break;
+    case BROADCAST_TRAILING:
+      binary_broadcast<Ta, Tb, Tc, Op, false>(a, b, m, n, c);
+      break;
   }
 }
 
 template<typename Ta, typename Tb, typename Tc>
-void binary_broadcast(BinaryOp op, const Ta *a, const Tb *b, unsigned int m,
-                       unsigned int n, bool broadcast_to_leading, Tc *c) {
+void binary_broadcast(BinaryOp op, BroadcastType btype, const Ta *a,
+    const Tb *b, unsigned int k, unsigned int m, unsigned int n, Tc *c) {
   switch (op) {
     case ADD_OP:
-      binary_broadcast<Ta, Tb, Tc, add_op>
-          (a, b, m, n, broadcast_to_leading, c);
+      binary_broadcast<Ta, Tb, Tc, add_op>(btype, a, b, k, m, n, c);
       break;
     case DIV_OP:
-      binary_broadcast<Ta, Tb, Tc, div_op>
-          (a, b, m, n, broadcast_to_leading, c);
+      binary_broadcast<Ta, Tb, Tc, div_op>(btype, a, b, k, m, n, c);
       break;
     case MAX_B_OP:
-      binary_broadcast<Ta, Tb, Tc, max_op>
-          (a, b, m, n, broadcast_to_leading, c);
+      binary_broadcast<Ta, Tb, Tc, max_op>(btype, a, b, k, m, n, c);
       break;
     case MIN_B_OP:
-      binary_broadcast<Ta, Tb, Tc, min_op>
-          (a, b, m, n, broadcast_to_leading, c);
+      binary_broadcast<Ta, Tb, Tc, min_op>(btype, a, b, k, m, n, c);
       break;
     case MUL_OP:
-      binary_broadcast<Ta, Tb, Tc, mul_op>
-          (a, b, m, n, broadcast_to_leading, c);
+      binary_broadcast<Ta, Tb, Tc, mul_op>(btype, a, b, k, m, n, c);
       break;
     case POW_OP:
-      binary_broadcast<Ta, Tb, Tc, pow_op>
-          (a, b, m, n, broadcast_to_leading, c);
+      binary_broadcast<Ta, Tb, Tc, pow_op>(btype, a, b, k, m, n, c);
       break;
     case SUB_OP:
-      binary_broadcast<Ta, Tb, Tc, sub_op>
-          (a, b, m, n, broadcast_to_leading, c);
+      binary_broadcast<Ta, Tb, Tc, sub_op>(btype, a, b, k, m, n, c);
       break;
   }
 }
 
 template void binary_broadcast<float, float, float>(
-    BinaryOp op, const float *a, const float *b, unsigned int m,
-    unsigned int n, bool broadcast_to_leading, float *c);
+    BinaryOp op, BroadcastType btype, const float *a, const float *b,
+    unsigned int k, unsigned int m, unsigned int n, float *c);
 template void binary_broadcast<float, int, float>(
-    BinaryOp op, const float *a, const int *b, unsigned int m, unsigned int n,
-    bool broadcast_to_leading, float *c);
+    BinaryOp op, BroadcastType btype, const float *a, const int *b,
+    unsigned int k, unsigned int m, unsigned int n, float *c);
 template void binary_broadcast<int, float, float>(
-    BinaryOp op, const int *a, const float *b, unsigned int m,
-    unsigned int n, bool broadcast_to_leading, float *c);
+    BinaryOp op, BroadcastType btype, const int *a, const float *b,
+    unsigned int k, unsigned int m, unsigned int n, float *c);
 template void binary_broadcast<int, int, int>(
-    BinaryOp op, const int *a, const int *b, unsigned int m, unsigned int n,
-    bool broadcast_to_leading, int *c);
-
-
+    BinaryOp op, BroadcastType btype, const int *a, const int *b,
+    unsigned int k, unsigned int m,unsigned int n, int *c);
 
 
 
@@ -356,49 +399,46 @@ template void binary_cmp_scalar<int, int>(
 
 
 
+
 template<typename Ta, typename Tb>
-void binary_cmp_broadcast(BinaryCmpOp op, const Ta *a, const Tb *b,
-    unsigned int m, unsigned int n, bool broadcast_to_leading, bool_t *c) {
+void binary_cmp_broadcast(BinaryCmpOp op, BroadcastType btype, const Ta *a,
+    const Tb *b, unsigned int k, unsigned int m, unsigned int n, bool_t *c) {
   switch (op) {
     case EQ_OP:
-      binary_broadcast<Ta, Tb, bool_t, eq_op>
-          (a, b, m, n, broadcast_to_leading, c);
+      binary_broadcast<Ta, Tb, bool_t, eq_op>(btype, a, b, k, m, n, c);
       break;
     case GT_OP:
-      binary_broadcast<Ta, Tb, bool_t, gt_op>
-          (a, b, m, n, broadcast_to_leading, c);
+      binary_broadcast<Ta, Tb, bool_t, gt_op>(btype, a, b, k, m, n, c);
       break;
     case GT_EQ_OP:
-      binary_broadcast<Ta, Tb, bool_t, gt_eq_op>
-          (a, b, m, n, broadcast_to_leading, c);
+      binary_broadcast<Ta, Tb, bool_t, gt_eq_op>(btype, a, b, k, m, n, c);
       break;
     case LT_OP:
-      binary_broadcast<Ta, Tb, bool_t, lt_op>
-          (a, b, m, n, broadcast_to_leading, c);
+      binary_broadcast<Ta, Tb, bool_t, lt_op>(btype, a, b, k, m, n, c);
       break;
     case LT_EQ_OP:
-      binary_broadcast<Ta, Tb, bool_t, lt_eq_op>
-          (a, b, m, n, broadcast_to_leading, c);
+      binary_broadcast<Ta, Tb, bool_t, lt_eq_op>(btype, a, b, k, m, n, c);
       break;
     case NEQ_OP:
-      binary_broadcast<Ta, Tb, bool_t, neq_op>
-          (a, b, m, n, broadcast_to_leading, c);
+      binary_broadcast<Ta, Tb, bool_t, neq_op>(btype, a, b, k, m, n, c);
       break;
   }
 }
 
 template void binary_cmp_broadcast<float, float>(
-    BinaryCmpOp op, const float *a, const float *b, unsigned int m,
-    unsigned int n, bool broadcast_to_leading, bool_t *c);
+    BinaryCmpOp op, BroadcastType btype, const float *a, const float *b,
+    unsigned int k, unsigned int m, unsigned int n, bool_t *c);
 template void binary_cmp_broadcast<float, int>(
-    BinaryCmpOp op, const float *a, const int *b, unsigned int m,
-    unsigned int n, bool broadcast_to_leading, bool_t *c);
+    BinaryCmpOp op, BroadcastType btype, const float *a, const int *b,
+    unsigned int k, unsigned int m, unsigned int n, bool_t *c);
 template void binary_cmp_broadcast<int, float>(
-    BinaryCmpOp op, const int *a, const float *b, unsigned int m,
-    unsigned int n, bool broadcast_to_leading, bool_t *c);
+    BinaryCmpOp op, BroadcastType btype, const int *a, const float *b,
+    unsigned int k, unsigned int m, unsigned int n, bool_t *c);
 template void binary_cmp_broadcast<int, int>(
-    BinaryCmpOp op, const int *a, const int *b, unsigned int m,
-    unsigned int n, bool broadcast_to_leading, bool_t *c);
+    BinaryCmpOp op, BroadcastType btype, const int *a, const int *b,
+    unsigned int k, unsigned int m, unsigned int n, bool_t *c);
+
+
 
 
 

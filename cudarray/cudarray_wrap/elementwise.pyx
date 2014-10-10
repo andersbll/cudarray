@@ -2,6 +2,10 @@ cimport numpy as np
 from .array_data cimport ArrayData
 cimport elementwise
 
+btype_inner = BROADCAST_INNER
+btype_leading = BROADCAST_LEADING
+btype_outer = BROADCAST_OUTER
+btype_trailing = BROADCAST_TRAILING
 
 add_op = ADD_OP
 div_op = DIV_OP
@@ -89,24 +93,25 @@ def _binary_scalar(BinaryOp op, ArrayData a, alpha, unsigned int n,
                          % (str(a.dtype), type(alpha)))
 
 
-def _binary_broadcast(BinaryOp op, ArrayData a, ArrayData b, unsigned int m,
-                     unsigned int n, bool broadcast_to_leading, ArrayData c):
+def _binary_broadcast(BinaryOp op, BroadcastType btype, ArrayData a,
+        ArrayData b, unsigned int k, unsigned int m, unsigned int n,
+        ArrayData c):
     if isfloat(a) and isfloat(b):
         elementwise.binary_broadcast[float, float, float](
-            op, <const float *>a.dev_ptr, <const float *>b.dev_ptr, m, n,
-            broadcast_to_leading, <float *>c.dev_ptr)
+            op, btype, <const float *>a.dev_ptr, <const float *>b.dev_ptr, k,
+            m, n, <float *>c.dev_ptr)
     elif isfloat(a) and isint(b):
         elementwise.binary_broadcast[float, int, float](
-            op, <const float *>a.dev_ptr, <const int *>b.dev_ptr, m, n,
-            broadcast_to_leading, <float *>c.dev_ptr)
+            op, btype, <const float *>a.dev_ptr, <const int *>b.dev_ptr, k, m,
+            n, <float *>c.dev_ptr)
     elif isint(a) and isfloat(b):
         elementwise.binary_broadcast[int, float, float](
-            op, <const int *>a.dev_ptr, <const float *>b.dev_ptr, m, n,
-            broadcast_to_leading, <float *>c.dev_ptr)
+            op, btype, <const int *>a.dev_ptr, <const float *>b.dev_ptr, k, m,
+            n, <float *>c.dev_ptr)
     elif isint(a) and isint(b):
         elementwise.binary_broadcast[int, int, int](
-            op, <const int *>a.dev_ptr, <const int *>b.dev_ptr, m, n,
-            broadcast_to_leading, <int *>c.dev_ptr)
+            op, btype, <const int *>a.dev_ptr, <const int *>b.dev_ptr, k, m, n,
+            <int *>c.dev_ptr)
     else:
         raise ValueError('types (%s, %s) not implemented'
                          % (str(a.dtype), str(b.dtype)))
@@ -150,24 +155,24 @@ def _binary_cmp_scalar(BinaryCmpOp op, ArrayData a, alpha, unsigned int n,
                          % (str(a.dtype), type(alpha)))
 
 
-def _binary_cmp_broadcast(BinaryCmpOp op, ArrayData a, ArrayData b,
-    unsigned int m, unsigned int n, bool broadcast_to_leading, ArrayData c):
+def _binary_cmp_broadcast(BinaryCmpOp op, BroadcastType btype, ArrayData a,
+    ArrayData b, unsigned int k, unsigned int m, unsigned int n, ArrayData c):
     if isfloat(a) and isfloat(b):
         elementwise.binary_cmp_broadcast[float, float](
-            op, <const float *>a.dev_ptr, <const float *>b.dev_ptr, m, n,
-            broadcast_to_leading, <bool_t *>c.dev_ptr)
+            op, btype, <const float *>a.dev_ptr, <const float *>b.dev_ptr, k,
+            m, n, <bool_t *>c.dev_ptr)
     elif isfloat(a) and isint(b):
         elementwise.binary_cmp_broadcast[float, int](
-            op, <const float *>a.dev_ptr, <const int *>b.dev_ptr, m, n,
-            broadcast_to_leading, <bool_t *>c.dev_ptr)
+            op, btype, <const float *>a.dev_ptr, <const int *>b.dev_ptr, k, m,
+            n, <bool_t *>c.dev_ptr)
     elif isint(a) and isfloat(b):
         elementwise.binary_cmp_broadcast[int, float](
-            op, <const int *>a.dev_ptr, <const float *>b.dev_ptr, m, n,
-            broadcast_to_leading, <bool_t *>c.dev_ptr)
+            op, btype, <const int *>a.dev_ptr, <const float *>b.dev_ptr, k, m,
+            n, <bool_t *>c.dev_ptr)
     elif isint(a) and isint(b):
         elementwise.binary_cmp_broadcast[int, int](
-            op, <const int *>a.dev_ptr, <const int *>b.dev_ptr, m, n,
-            broadcast_to_leading, <bool_t *>c.dev_ptr)
+            op, btype, <const int *>a.dev_ptr, <const int *>b.dev_ptr, k, m, n,
+            <bool_t *>c.dev_ptr)
     else:
         raise ValueError('types (%s, %s) not implemented'
                          % (str(a.dtype), str(b.dtype)))
