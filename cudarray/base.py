@@ -64,3 +64,5 @@ def reshape(a, newshape):
     a_reshaped = a.view()
     a_reshaped.shape = newshape
     return a_reshaped
+
+float_ = np.float32
