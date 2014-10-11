@@ -1,6 +1,7 @@
 import numpy as np
 
 from .cudarray import CUDArray
+from .elementwise import multiply
 
 
 def array(object, dtype=None, copy=True):
@@ -64,5 +65,10 @@ def reshape(a, newshape):
     a_reshaped = a.view()
     a_reshaped.shape = newshape
     return a_reshaped
+
+
+def copyto(dst, src):
+    multiply(src, 1.0, dst)
+
 
 float_ = np.float32
