@@ -60,7 +60,7 @@ def broadcast_type(shape1, shape2):
     raise error
 
 
-def binary(op, x1, x2, out=None):
+def binary(op, x1, x2, out=None, cmp_op=False):
     if np.isscalar(x1) or np.isscalar(x2):
         if np.isscalar(x1):
             scalar = x1
@@ -69,7 +69,8 @@ def binary(op, x1, x2, out=None):
             array = x1
             scalar = x2
 
-        if array.dtype == np.dtype('int32') and isinstance(scalar, (int)):
+        if (array.dtype == np.dtype('int32') and isinstance(scalar, (int))
+                or cmp_op):
             out_dtype = np.dtype('int32')
         else:
             out_dtype = np.dtype('float32')
@@ -83,10 +84,13 @@ def binary(op, x1, x2, out=None):
             if out.dtype != out_dtype:
                 raise ValueError('dtype mismatch')
         n = array.size
-        wrap._binary_scalar(op, array._data, scalar, n, out._data)
+        if cmp_op:
+            wrap._binary_cmp_scalar(op, array._data, scalar, n, out._data)
+        else:
+            wrap._binary_scalar(op, array._data, scalar, n, out._data)
         return out
 
-    if x1.dtype == x2.dtype == np.dtype('int32'):
+    if x1.dtype == x2.dtype == np.dtype('int32') or cmp_op:
         out_dtype = np.dtype('int32')
     else:
         out_dtype = np.dtype('float32')
@@ -105,12 +109,19 @@ def binary(op, x1, x2, out=None):
     btype = broadcast_type(x1.shape, x2.shape)
     if btype is None:
         n = x1.size
-        wrap._binary(op, x1._data, x2._data, n, out._data)
+        if cmp_op:
+            wrap._binary_cmp(op, x1._data, x2._data, n, out._data)
+        else:
+            wrap._binary(op, x1._data, x2._data, n, out._data)
         return out
     else:
         btype, k, m, n = btype
-        wrap._binary_broadcast(op, btype, x1._data, x2._data, k, m, n,
-                               out._data)
+        if cmp_op:
+            wrap._binary_cmp_broadcast(op, btype, x1._data, x2._data, k, m, n,
+                                       out._data)
+        else:
+            wrap._binary_broadcast(op, btype, x1._data, x2._data, k, m, n,
+                                   out._data)
         return out
 
 
@@ -142,81 +153,28 @@ def minimum(x1, x2, out=None):
     return binary(wrap.min_op, x1, x2, out)
 
 
-def binary_cmp(op, x1, x2, out=None):
-    out_dtype = np.dtype('int32')
-    if np.isscalar(x1) or np.isscalar(x2):
-        if np.isscalar(x1):
-            scalar = x1
-            array = x2
-        else:
-            array = x1
-            scalar = x2
-
-        # Create/check output array
-        out_shape = array.shape
-        if out is None:
-            out = base.empty(out_shape, dtype=out_dtype)
-        else:
-            if out_shape != out.shape:
-                raise ValueError('out.shape does not match result')
-            if array.dtype != out.dtype:
-                raise ValueError('dtype mismatch')
-        n = array.size
-        wrap._binary_cmp_scalar(op, array._data, scalar, n, out._data)
-        return out
-
-    # Create/check output array
-    if len(x2.shape) > len(x2.shape) or x2.size > x1.size:
-        x1, x2 = x2, x1
-    if out is None:
-        out = base.empty(x1.shape, dtype=out_dtype)
-    else:
-        if out.shape != x1.shape:
-            raise ValueError('out.shape does not match result')
-        if out.dtype != out_dtype:
-            raise ValueError('dtype mismatch')
-
-    btype = broadcast_type(x1.shape, x2.shape)
-    if btype == NO_BROADCAST:
-        n = x1.size
-        wrap._binary_cmp(op, x1._data, x2._data, n, out._data)
-        return out
-
-    # Calculate dimensions of the broadcast operation
-    size1 = x1.size
-    size2 = x2.size
-    if size1 > size2:
-        m, n = size1/size2, size2
-    else:
-        n, m = size1, size2/size1
-        x1, x2 = x2, x1
-    b_to_l = btype == BROADCAST_TO_LEADING
-    wrap._binary_cmp_broadcast(op, x1._data, x2._data, m, n, b_to_l, out._data)
-    return out
-
-
 def equal(x1, x2, out=None):
-    return binary_cmp(wrap.eq_op, x1, x2, out)
+    return binary(wrap.eq_op, x1, x2, out, True)
 
 
 def greater(x1, x2, out=None):
-    return binary_cmp(wrap.gt_op, x1, x2, out)
+    return binary(wrap.gt_op, x1, x2, out, True)
 
 
 def greater_equal(x1, x2, out=None):
-    return binary_cmp(wrap.gt_eq_op, x1, x2, out)
+    return binary(wrap.gt_eq_op, x1, x2, out, True)
 
 
 def less(x1, x2, out=None):
-    return binary_cmp(wrap.lt_op, x1, x2, out)
+    return binary(wrap.lt_op, x1, x2, out, True)
 
 
 def less_equal(x1, x2, out=None):
-    return binary_cmp(wrap.lt_eq_op, x1, x2, out)
+    return binary(wrap.lt_eq_op, x1, x2, out, True)
 
 
 def not_equal(x1, x2, out=None):
-    return binary_cmp(wrap.neq_op, x1, x2, out)
+    return binary(wrap.neq_op, x1, x2, out, True)
 
 
 def unary(op, x, out=None):
