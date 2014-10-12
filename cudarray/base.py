@@ -71,4 +71,6 @@ def copyto(dst, src):
     multiply(src, 1.0, dst)
 
 
+bool_ = np.int32
+int_ = np.int32
 float_ = np.float32
