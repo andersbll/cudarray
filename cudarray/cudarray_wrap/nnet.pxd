@@ -26,3 +26,6 @@ cdef extern from 'cudarray/nnet/pool_b01.hpp' namespace 'cudarray':
         int img_h, int img_w, int win_h, int win_w, int pad_y, int pad_x,
         int stride_y, int stride_x, T* imgs_d);
 
+
+cdef extern from 'cudarray/nnet/one_hot.hpp' namespace 'cudarray':
+    void one_hot_encode[T](const int *labels, int n_classes, int n, T *out)

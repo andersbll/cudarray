@@ -97,3 +97,10 @@ def _max_pool_b01_bprop(ArrayData out_d, ArrayData mask, int n_imgs, img_shape,
     else:
         raise ValueError('type %s not implemented' % str(out_d.dtype))
 
+
+def _one_hot_encode(ArrayData labels, int n_classes, int n, ArrayData out):
+    if out.dtype == np.dtype('float32'):
+        nnet.one_hot_encode(<int *>labels.dev_ptr, n_classes, n,
+                            <float *> out.dev_ptr)
+    else:
+        raise ValueError('type %s not implemented' % str(out.dtype))

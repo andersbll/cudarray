@@ -15,7 +15,8 @@ CUDA_SRCS = $(SRC_DIR)/elementwise.cu \
             $(SRC_DIR)/reduction.cu \
             $(SRC_DIR)/blas.cu \
             $(SRC_DIR)/random.cu \
-            $(SRC_DIR)/image/img2win.cu
+            $(SRC_DIR)/image/img2win.cu \
+            $(SRC_DIR)/nnet/one_hot.cu
 
 OBJS = $(SRCS:.cpp=.o) $(CUDA_SRCS:.cu=.o)
 LIBCUDARRAY = libcudarray.so
