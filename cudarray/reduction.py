@@ -34,28 +34,44 @@ def reduce_type(axis, ndim):
     raise ValueError('reduction of middle axes not implemented')
 
 
-def reduction(op, a, axis=None, dtype=None, out=None, keepdims=False):
+def reduction(op, a, axis=None, dtype=None, out=None, keepdims=False,
+              to_int_op=False):
     axis = normalize_axis(axis, a.ndim)
     out_shape = reduce_shape(a.shape, axis, keepdims)
-    if out is None:
-        out = base.empty(out_shape, a.dtype)
+
+    if to_int_op:
+        out_dtype = np.dtype('int32')
     else:
-        if not out_shape == out.shape:
+        out_dtype = a.dtype
+
+    if out is None:
+        out = base.empty(out_shape, out_dtype)
+    else:
+        if not out.shape == out_shape:
             raise ValueError('out.shape does not match result')
-        if not a.dtype == out.dtype:
+        if not out.dtype == out_dtype:
             raise ValueError('dtype mismatch')
 
     rtype = reduce_type(axis, a.ndim)
     if rtype == REDUCE_ALL:
-        wrap._reduce(op, a._data, a.size, out._data)
+        if to_int_op:
+            wrap._reduce_to_int(op, a._data, a.size, out._data)
+        else:
+            wrap._reduce(op, a._data, a.size, out._data)
     elif rtype == REDUCE_LEADING:
         n = np.prod(out_shape)
         m = a.size / n
-        wrap._reduce_mat(op, a._data, m, n, True, out._data)
+        if to_int_op:
+            wrap._reduce_mat_to_int(op, a._data, m, n, True, out._data)
+        else:
+            wrap._reduce_mat(op, a._data, m, n, True, out._data)
     else:
         m = np.prod(out_shape)
         n = a.size / m
-        wrap._reduce_mat(op, a._data, m, n, False, out._data)
+        if to_int_op:
+            wrap._reduce_mat_to_int(op, a._data, m, n, False, out._data)
+        else:
+            wrap._reduce_mat(op, a._data, m, n, False, out._data)
     return out
 
 
@@ -73,3 +89,11 @@ def amin(a, axis=None, dtype=None, out=None, keepdims=False):
 
 def sum(a, axis=None, dtype=None, out=None, keepdims=False):
     return reduction(wrap.sum_op, a, axis, dtype, out, keepdims)
+
+
+def argmax(a, axis=None, dtype=None, out=None, keepdims=False):
+    return reduction(wrap.argmax_op, a, axis, dtype, out, keepdims, True)
+
+
+def argmin(a, axis=None, dtype=None, out=None, keepdims=False):
+    return reduction(wrap.argmin_op, a, axis, dtype, out, keepdims, True)

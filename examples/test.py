@@ -4,14 +4,13 @@ import os
 import numpy as np
 
 os.environ['CUDARRAY_BACKEND'] = 'cuda'
-#os.environ['CUDARRAY_BACKEND'] = 'numpy'
 import cudarray as ca
 
 
 def test_dot():
-    a = np.random.normal(size=(5,5))
-    b = np.random.normal(size=(5,5))
-    c_np = np.dot(a,b)
+    a = np.random.normal(size=(5, 5))
+    b = np.random.normal(size=(5, 5))
+    c_np = np.dot(a, b)
 
     a = ca.array(a)
     b = ca.array(b)
@@ -23,7 +22,6 @@ def test_dot():
     ca.dot(a, b, c_ca)
     print(np.allclose(c_np, np.array(c_ca)))
 
-
     a_np = np.random.normal(size=(5))
     b_np = np.random.normal(size=(5))
     a_ca = ca.array(a_np)
@@ -32,7 +30,6 @@ def test_dot():
     c_ca = ca.dot(a_ca, b_ca)
     print(np.allclose(c_np, np.array(c_ca)))
 
-
     a_np = np.random.normal(size=(5, 5))
     b_np = np.random.normal(size=(5, 5))
     a_ca = ca.array(a_np)
@@ -40,7 +37,6 @@ def test_dot():
     c_np = np.dot(a_np.T, b_np)
     c_ca = ca.dot(a_ca.T, b_ca)
     print(np.allclose(c_np, np.array(c_ca)))
-
 
     a_np = np.random.normal(size=(3, 4))
     b_np = np.random.normal(size=(5, 4))
@@ -65,7 +61,6 @@ def test_dot():
     c_np = np.dot(a_np.T, b_np.T)
     c_ca = ca.dot(a_ca.T, b_ca.T)
     print(np.allclose(c_np, np.array(c_ca)))
-
 
     a_np = np.random.normal(size=(4))
     b_np = np.random.normal(size=(4, 5))
@@ -99,8 +94,9 @@ def test_dot():
     c_ca = ca.dot(a_ca.T, b_ca)
     print(np.allclose(c_np, np.array(c_ca)))
 
+
 def test_multiply():
-    a_np = np.ones((5,5))
+    a_np = np.ones((5, 5))
     b_np = np.arange(5)
     a_ca = ca.array(a_np)
     b_ca = ca.array(b_np)
@@ -108,7 +104,7 @@ def test_multiply():
     c_np = np.multiply(a_np, b_np, a_np)
     print(np.allclose(c_np, np.array(c_ca)))
 
-    a_np = np.ones((3,3))
+    a_np = np.ones((3, 3))
     b_np = np.arange(3)
     a_ca = ca.array(a_np)
     b_ca = ca.array(b_np)
@@ -116,34 +112,30 @@ def test_multiply():
     c_ca = ca.multiply(a_ca, b_ca)
     print(np.allclose(c_np, np.array(c_ca)))
 
-
-    a_np = np.ones((3,3))
-    b_np = np.arange(3).reshape(1,3)
+    a_np = np.ones((3, 3))
+    b_np = np.arange(3).reshape(1, 3)
     a_ca = ca.array(a_np)
     b_ca = ca.array(b_np)
     c_np = np.multiply(a_np, b_np)
     c_ca = ca.multiply(a_ca, b_ca)
     print(np.allclose(c_np, np.array(c_ca)))
 
-
-    a_np = np.ones((3,3))
-    b_np = np.arange(3).reshape(3,1)
+    a_np = np.ones((3, 3))
+    b_np = np.arange(3).reshape(3, 1)
     a_ca = ca.array(a_np)
     b_ca = ca.array(b_np)
 
     c_np = np.multiply(a_np, b_np)
     c_ca = ca.multiply(a_ca, b_ca)
     print(np.allclose(c_np, np.array(c_ca)))
-
 
     a_np = np.ones((3, 3, 4))
-    b_np = np.arange(3).reshape(3,1,1)
+    b_np = np.arange(3).reshape(3, 1, 1)
     a_ca = ca.array(a_np)
     b_ca = ca.array(b_np)
     c_np = np.multiply(a_np, b_np)
     c_ca = ca.multiply(a_ca, b_ca)
     print(np.allclose(c_np, np.array(c_ca)))
-
 
     a_np = np.ones((3, 3, 4))
     b_np = np.arange(4)
@@ -153,15 +145,13 @@ def test_multiply():
     c_ca = ca.multiply(a_ca, b_ca)
     print(np.allclose(c_np, np.array(c_ca)))
 
-
     a_np = np.arange(3)
-    b_np = np.ones((3,3))
+    b_np = np.ones((3, 3))
     a_ca = ca.array(a_np)
     b_ca = ca.array(b_np)
     c_np = np.multiply(a_np, b_np)
     c_ca = ca.multiply(a_ca, b_ca)
     print(np.allclose(c_np, np.array(c_ca)))
-
 
     a_np = np.arange(4)
     b_np = np.ones((3, 3, 4))
@@ -172,7 +162,7 @@ def test_multiply():
     print(np.allclose(c_np, np.array(c_ca)))
 
     a_np = np.ones((2, 7, 3, 5, 6))
-    b_np = np.arange(3).reshape(1,1,3,1,1)
+    b_np = np.arange(3).reshape(1, 1, 3, 1, 1)
     a_ca = ca.array(a_np)
     b_ca = ca.array(b_np)
     c_np = np.multiply(a_np, b_np)
@@ -187,11 +177,8 @@ def test_multiply():
     c_ca = ca.multiply(a_ca, b_ca)
     print(np.allclose(c_np, np.array(c_ca)))
 
-    return
-
-    a = np.random.normal(size=(5,5))
+    a = np.random.normal(size=(5, 5))
     a_ca = ca.array(a)
-
     c_np = np.multiply(a, 3)
     c_ca = ca.multiply(a_ca, 3)
     print(np.allclose(c_np, np.array(c_ca)))
@@ -200,10 +187,9 @@ def test_multiply():
     c_ca = ca.multiply(a_ca, 3, a_ca)
     print(np.allclose(c_np, np.array(c_ca)))
 
-
-    a = np.random.normal(size=(5,5))
+    a = np.random.normal(size=(5, 5))
     a_ca = ca.array(a)
-    b = np.random.normal(size=(5,5))
+    b = np.random.normal(size=(5, 5))
     b_ca = ca.array(b)
 
     c_np = np.multiply(a, b, a)
@@ -214,9 +200,10 @@ def test_multiply():
     c_ca = ca.multiply(a_ca, b_ca)
     print(np.allclose(c_np, np.array(c_ca)))
 
+
 def test_binary():
-    a_np = np.random.normal(size=(5,5))
-    b_np = np.random.normal(size=(5,5))
+    a_np = np.random.normal(size=(5, 5))
+    b_np = np.random.normal(size=(5, 5))
     a_ca = ca.array(a_np)
     b_ca = ca.array(b_np)
 
@@ -228,13 +215,12 @@ def test_binary():
     ca.add(a_ca, b_ca, a_ca)
     print(np.allclose(a_np, np.array(a_ca)))
 
-
     np.multiply(a_np, b_np, a_np)
     ca.multiply(a_ca, b_ca, a_ca)
     print(np.allclose(a_np, np.array(a_ca)))
 
-    a_np = np.random.normal(size=(5,5))
-    b_np = np.random.normal(size=(5,5)) > 0
+    a_np = np.random.normal(size=(5, 5))
+    b_np = np.random.normal(size=(5, 5)) > 0
     a_ca = ca.array(a_np)
     b_ca = ca.array(b_np)
     c_np = np.multiply(a_np, b_np)
@@ -243,8 +229,8 @@ def test_binary():
 
 
 def test_binary_cmp():
-    a_np = np.random.normal(size=(5,5))
-    b_np = np.random.normal(size=(5,5))
+    a_np = np.random.normal(size=(5, 5))
+    b_np = np.random.normal(size=(5, 5))
     a_ca = ca.array(a_np)
     b_ca = ca.array(b_np)
 
@@ -256,7 +242,6 @@ def test_binary_cmp():
     c_ca = ca.greater(a_ca, 0.1)
     print(np.allclose(c_np, np.array(c_ca)))
 
-
     c_np = np.less(a_np, 0.1)
     c_ca = ca.less(a_ca, 0.1)
     print(np.allclose(c_np, np.array(c_ca)))
@@ -267,14 +252,14 @@ def test_binary_cmp():
 
 
 def test_sum():
-    a_np = np.random.normal(size=(5,5))
+    a_np = np.random.normal(size=(5, 5))
     a_ca = ca.array(a_np)
 
     s_np = np.sum(a_np)
     s_ca = ca.sum(a_ca)
     print(np.allclose(s_np, np.array(s_ca)))
 
-    a_np = np.random.normal(size=(5,5))
+    a_np = np.random.normal(size=(5, 5))
     a_ca = ca.array(a_np)
 
     s_np = np.sum(a_np, 0)
@@ -298,27 +283,27 @@ def test_sum():
 
 
 def test_random():
-    a_np = np.random.normal(size=(1000,1000), loc=3, scale=10)
-    a_ca = ca.random.normal(size=(1000,1000), loc=3, scale=10)
+    a_np = np.random.normal(size=(1000, 1000), loc=3, scale=10)
+    a_ca = ca.random.normal(size=(1000, 1000), loc=3, scale=10)
     a_ca = np.array(a_ca)
     print(np.mean(a_np), np.mean(a_ca))
     print(np.std(a_np), np.std(a_ca))
 
-    a_np = np.random.uniform(size=(1000,1000), low=0, high=1)
-    a_ca = ca.random.uniform(size=(1000,1000), low=0, high=1)
+    a_np = np.random.uniform(size=(1000, 1000), low=0, high=1)
+    a_ca = ca.random.uniform(size=(1000, 1000), low=0, high=1)
     a_ca = np.array(a_ca)
     print(np.mean(a_np), np.mean(a_ca))
     print(np.std(a_np), np.std(a_ca))
 
-    a_np = np.random.uniform(size=(1000,1000), low=-10, high=30)
-    a_ca = ca.random.uniform(size=(1000,1000), low=-10, high=30)
+    a_np = np.random.uniform(size=(1000, 1000), low=-10, high=30)
+    a_ca = ca.random.uniform(size=(1000, 1000), low=-10, high=30)
     a_ca = np.array(a_ca)
     print(np.mean(a_np), np.mean(a_ca))
     print(np.std(a_np), np.std(a_ca))
 
 
 def test_reduce():
-    a_np = np.random.normal(size=(5,5))
+    a_np = np.random.normal(size=(5, 5))
     a_ca = ca.array(a_np)
     c_np = np.sum(a_np)
     c_ca = ca.sum(a_ca)
@@ -350,15 +335,23 @@ def test_reduce():
     c_ca = ca.sum(a_ca, axis=(1, 2))
     print(np.allclose(c_np, np.array(c_ca)))
 
+    c_np = np.argmin(a_np, axis=0)
+    c_ca = ca.argmin(a_ca, axis=0)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+    c_np = np.argmin(a_np, axis=2)
+    c_ca = ca.argmin(a_ca, axis=2)
+    print(np.allclose(c_np, np.array(c_ca)))
+
 
 def run():
-#    test_dot()
+    test_dot()
     test_multiply()
-#    test_binary()
-#    test_binary_cmp()
-#    test_sum()
-#    test_random()
-#    test_reduce()
+    test_binary()
+    test_binary_cmp()
+    test_sum()
+    test_random()
+    test_reduce()
     return
 
 

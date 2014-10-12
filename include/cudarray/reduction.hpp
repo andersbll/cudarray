@@ -18,6 +18,13 @@ template<typename T>
 void reduce_mat(ReduceOp op, const T *a, unsigned int m, unsigned int n,
                 bool reduce_leading, T *b);
 
+template<typename T>
+void reduce_to_int(ReduceToIntOp op, const T *a, unsigned int n, int *b);
+
+template<typename T>
+void reduce_mat_to_int(ReduceToIntOp op, const T *a, unsigned int m,
+                       unsigned int n, bool reduce_leading, int *b);
+
 }
 
 #endif // REDUCTION_HPP_
