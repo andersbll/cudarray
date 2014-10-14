@@ -13,16 +13,15 @@ class CUDArray(object):
         self.isbool = False
         if dtype is None:
             if np_data is None:
-                dtype = np.dtype('float32')
+                dtype = np.dtype(base.float_)
             else:
                 dtype = np_data.dtype
-        if dtype == np.dtype('float64'):
-            dtype = np.dtype('float32')
-        if dtype == np.dtype('int64'):
-            dtype = np.dtype('int32')
-        if dtype == np.dtype('bool'):
-            # TODO: figure out if bool should stay as char
-            dtype = np.dtype('int32')
+        if np.issubdtype(dtype, float):
+            dtype = np.dtype(base.float_)
+        elif np.issubdtype(dtype, int):
+            dtype = np.dtype(base.int_)
+        elif np.issubdtype(dtype, bool):
+            dtype = np.dtype(base.bool_)
             self.isbool = True
         if np_data is not None:
             np_data = np.require(np_data, dtype=dtype, requirements='C')
@@ -30,7 +29,6 @@ class CUDArray(object):
             self._data = ArrayData(self.size, dtype, np_data)
         else:
             self._data = array_data
-#        self._array_owner = array_owner
 
     def __array__(self):
         np_array = np.empty(self.shape, dtype=self.dtype)
