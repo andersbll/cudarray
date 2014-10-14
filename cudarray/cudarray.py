@@ -6,7 +6,8 @@ import base
 
 
 class CUDArray(object):
-    def __init__(self, shape, dtype=None, np_data=None, array_data=None):
+    def __init__(self, shape, dtype=None, np_data=None, array_data=None,
+                 array_owner=None):
         self.shape = shape
         self.transposed = False
         self.isbool = False
@@ -29,6 +30,7 @@ class CUDArray(object):
             self._data = ArrayData(self.size, dtype, np_data)
         else:
             self._data = array_data
+#        self._array_owner = array_owner
 
     def __array__(self):
         np_array = np.empty(self.shape, dtype=self.dtype)
@@ -148,3 +150,75 @@ class CUDArray(object):
 
     def __ineg__(self):
         return elementwise.negative(self, self)
+
+    def __getitem__(self, indices):
+        # Standardize indices to a list of slices
+        indices = _require_list(indices)
+        if len(indices) > len(self.shape):
+            raise IndexError('too many indices for array')
+        for i, idx in enumerate(indices):
+            if idx is Ellipsis:
+                len_diff = self.ndim - len(indices)
+                indices = indices[:i] + [slice(None)]*len_diff + indices[i:]
+                return self[indices]
+            elif isinstance(idx, slice):
+                pass
+            elif isinstance(idx, int):
+                indices[i] = slice(int(idx))
+            else:
+                raise IndexError('only integers, slices and ellipsis are '
+                                 + 'valid indices')
+
+        # Determine view shape
+        view_shape = []
+        for idx, dim in zip(indices, self.shape):
+            if idx.step is not None:
+                raise NotImplementedError('only contiguous indices are '
+                                          + 'supported')
+            if idx == slice(None):
+                view_shape.append(dim)
+            if idx.start is not None:
+                start = idx.start if idx.start >= 0 else dim - idx.start
+                stop = idx.stop if idx.stop >= 0 else dim - idx.stop
+                view_shape.append(stop-start)
+        view_shape = tuple(view_shape)
+        if len(indices) < len(self.shape):
+            view_shape += self.shape[len(indices):]
+
+        # Verify contiguous memory indexing
+        is_not_full = map(lambda (idx, dim): idx.start is not None,
+                          zip(indices, self.shape))
+        first_full = next((i for i, full in enumerate(is_not_full)
+                           if not full), len(is_not_full))
+        if (any(is_not_full[first_full:])):
+            raise NotImplementedError('only contiguous indices are supported')
+
+        # Determine offset and size of view
+        offset = 0
+        for axis, idx in enumerate(indices):
+            start = 0
+            if idx.start is not None:
+                start = idx.start
+            elif idx.stop is not None:
+                start = idx.stop
+            offset += start * int(np.prod(self.shape[axis+1:]))
+        size = int(np.prod(view_shape))
+
+        # Construct view
+        data_view = ArrayData(size, self.dtype, owner=self._data,
+                              offset=offset)
+        return CUDArray(view_shape, self.dtype, np_data=None,
+                        array_data=data_view)
+
+    def __setitem__(self, indices, c):
+        view = self.__getitem__(indices)
+        base.copyto(view, c)
+
+
+def _require_list(x):
+    if isinstance(x, list):
+        return x
+    elif isinstance(x, tuple):
+        return list(x)
+    else:
+        return [x]
