@@ -344,7 +344,36 @@ def test_reduce():
     print(np.allclose(c_np, np.array(c_ca)))
 
 
+def test_indexing():
+    a_np = np.ones((3, 3, 3)) * np.arange(3)
+    a_ca = ca.array(a_np)
+
+    print(np.allclose(a_np[0], np.array(a_ca[0])))
+    print(np.allclose(a_np[1], np.array(a_ca[1])))
+    print(np.allclose(a_np[0, :, :], np.array(a_ca[0, :, :])))
+    print(np.allclose(a_np[2, :, :], np.array(a_ca[2, :, :])))
+    print(np.allclose(a_np[1, 1, :], np.array(a_ca[1, 1, :])))
+    print(np.allclose(a_np[1, 1, 1], np.array(a_ca[1, 1, 1])))
+    print(np.allclose(a_np[1:3, :, :], np.array(a_ca[1:3, :, :])))
+
+    a_np = np.ones((3, 3, 3)) * np.arange(3)
+    a_ca = ca.array(a_np)
+    b_np = np.random.random(size=(3, 3))
+    b_ca = ca.array(b_np)
+
+    a_np[1] = b_np
+    a_ca[1] = b_ca
+    print(np.allclose(a_np, np.array(a_ca)))
+
+    b_np = np.random.random(size=(3))
+    b_ca = ca.array(b_np)
+    a_np[1, 2] = b_np
+    a_ca[1, 2] = b_ca
+    print(np.allclose(a_np, np.array(a_ca)))
+
+
 def run():
+    test_indexing()
     test_dot()
     test_multiply()
     test_binary()
@@ -352,7 +381,6 @@ def run():
     test_sum()
     test_random()
     test_reduce()
-    return
 
 
 if __name__ == '__main__':
