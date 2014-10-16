@@ -1,3 +1,5 @@
+from functools import reduce
+import operator
 import numpy as np
 
 from .cudarray_wrap.array_data import ArrayData
@@ -8,6 +10,7 @@ import base
 class CUDArray(object):
     def __init__(self, shape, dtype=None, np_data=None, array_data=None,
                  array_owner=None):
+        shape = _require_iterable(shape)
         self.shape = shape
         self.transposed = False
         self.isbool = False
@@ -16,11 +19,11 @@ class CUDArray(object):
                 dtype = np.dtype(base.float_)
             else:
                 dtype = np_data.dtype
-        if np.issubdtype(dtype, float):
+        if dtype == np.dtype('float64'):
             dtype = np.dtype(base.float_)
-        elif np.issubdtype(dtype, int):
+        elif dtype == np.dtype('int64'):
             dtype = np.dtype(base.int_)
-        elif np.issubdtype(dtype, bool):
+        elif dtype == np.dtype('bool'):
             dtype = np.dtype(base.bool_)
             self.isbool = True
         if np_data is not None:
@@ -60,7 +63,7 @@ class CUDArray(object):
 
     @property
     def nbytes(self):
-        return np.prod(self.shape)*self.itemsize
+        return self.size*self.itemsize
 
     @property
     def ndim(self):
@@ -68,7 +71,7 @@ class CUDArray(object):
 
     @property
     def size(self):
-        return np.prod(self.shape)
+        return _prod(self.shape)
 
     @property
     def T(self):
@@ -150,60 +153,64 @@ class CUDArray(object):
         return elementwise.negative(self, self)
 
     def __getitem__(self, indices):
+        if isinstance(indices, int):
+            # Speedup case with a single index
+            view_shape = self.shape[1:]
+            view_size = _prod(view_shape)
+            offset = indices * view_size
+            data_view = ArrayData(view_size, self.dtype, owner=self._data,
+                                  offset=offset)
+            return CUDArray(view_shape, self.dtype, np_data=None,
+                            array_data=data_view)
+
         # Standardize indices to a list of slices
-        indices = _require_list(indices)
         if len(indices) > len(self.shape):
             raise IndexError('too many indices for array')
-        for i, idx in enumerate(indices):
-            if idx is Ellipsis:
-                len_diff = self.ndim - len(indices)
-                indices = indices[:i] + [slice(None)]*len_diff + indices[i:]
-                return self[indices]
-            elif isinstance(idx, slice):
-                pass
-            elif isinstance(idx, int):
-                indices[i] = slice(int(idx))
-            else:
-                raise IndexError('only integers, slices and ellipsis are '
-                                 + 'valid indices')
 
-        # Determine view shape
         view_shape = []
-        for idx, dim in zip(indices, self.shape):
-            if idx.step is not None:
+        rest_must_be_contiguous = False
+        offset = 0
+        for i, dim in enumerate(self.shape):
+            start = 0
+            stop = dim
+            append_dim = True
+            if i < len(indices):
+                idx = indices[i]
+                if isinstance(idx, int):
+                    append_dim = False
+                    start = idx
+                    stop = idx+1
+                elif isinstance(idx, slice):
+                    if idx.start is not None:
+                        start = idx.start
+                    if idx.stop is not None:
+                        stop = idx.stop
+                    if idx.step is not None:
+                        raise NotImplementedError('only contiguous indices '
+                                                  + 'are supported')
+                elif idx is Ellipsis:
+                    diff = self.ndim - len(indices)
+                    indices = indices[:i] + [slice(None)]*diff + indices[i:]
+                    return self[indices]
+                else:
+                    raise IndexError('only integers, slices and ellipsis are '
+                                     + 'valid indices')
+
+            view_dim = stop-start
+            offset = offset * dim + start
+            if append_dim:
+                view_shape.append(view_dim)
+            if rest_must_be_contiguous and view_dim > 1 and view_dim < dim:
                 raise NotImplementedError('only contiguous indices are '
                                           + 'supported')
-            if idx == slice(None):
-                view_shape.append(dim)
-            if idx.start is not None:
-                start = idx.start if idx.start >= 0 else dim - idx.start
-                stop = idx.stop if idx.stop >= 0 else dim - idx.stop
-                view_shape.append(stop-start)
+            if view_dim > 1:
+                rest_must_be_contiguous = True
+
         view_shape = tuple(view_shape)
-        if len(indices) < len(self.shape):
-            view_shape += self.shape[len(indices):]
-
-        # Verify contiguous memory indexing
-        is_not_full = map(lambda (idx, dim): idx.start is not None,
-                          zip(indices, self.shape))
-        first_full = next((i for i, full in enumerate(is_not_full)
-                           if not full), len(is_not_full))
-        if (any(is_not_full[first_full:])):
-            raise NotImplementedError('only contiguous indices are supported')
-
-        # Determine offset and size of view
-        offset = 0
-        for axis, idx in enumerate(indices):
-            start = 0
-            if idx.start is not None:
-                start = idx.start
-            elif idx.stop is not None:
-                start = idx.stop
-            offset += start * int(np.prod(self.shape[axis+1:]))
-        size = int(np.prod(view_shape))
+        view_size = _prod(view_shape)
 
         # Construct view
-        data_view = ArrayData(size, self.dtype, owner=self._data,
+        data_view = ArrayData(view_size, self.dtype, owner=self._data,
                               offset=offset)
         return CUDArray(view_shape, self.dtype, np_data=None,
                         array_data=data_view)
@@ -213,10 +220,12 @@ class CUDArray(object):
         base.copyto(view, c)
 
 
-def _require_list(x):
-    if isinstance(x, list):
+def _prod(x):
+    return reduce(operator.mul, x, 1)
+
+
+def _require_iterable(x):
+    if hasattr(x, '__iter__'):
         return x
-    elif isinstance(x, tuple):
-        return list(x)
     else:
         return [x]
