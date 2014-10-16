@@ -6,6 +6,6 @@ cdef cudaCheck(cudaError_t status):
     else:
         raise ValueError(cudaGetErrorString(status))
 
-cdef cudaSyncCheck():
+cpdef cudaSyncCheck():
     cudaCheck(cudaDeviceSynchronize())
     cudaCheck(cudaGetLastError())    
