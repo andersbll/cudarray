@@ -303,6 +303,15 @@ def test_random():
 
 
 def test_reduce():
+    a_np = np.random.normal(size=(1024,))
+    a_ca = ca.array(a_np)
+    c_np = np.sum(a_np)
+    c_ca = ca.sum(a_ca)
+    print(np.allclose(c_np, np.array(c_ca)))
+    c_np = np.mean(a_np)
+    c_ca = ca.mean(a_ca)
+    print(np.allclose(c_np, np.array(c_ca)))
+
     a_np = np.random.normal(size=(5, 5))
     a_ca = ca.array(a_np)
     c_np = np.sum(a_np)
