@@ -15,7 +15,7 @@ class PoolB01(object):
     def fprop(self, imgs, poolout=None):
         poolout_shape = self.output_shape(imgs.shape)
         if poolout is None:
-            poolout = ca.empty(poolout_shape, dtype=imgs.dtype)
+            poolout = np.zeros(poolout_shape, dtype=imgs.dtype)
         else:
             if poolout_shape != poolout.shape:
                 raise ValueError('poolout.shape does not match result')
@@ -24,13 +24,15 @@ class PoolB01(object):
 
         img_shape = imgs.shape[-2:]
         n_imgs = np.prod(imgs.shape[:-2])
-
+        switches = None
         pool_bc01(imgs = imgs,
-              win_shape = self.win_shape,
-              strides = self.strides,
+              win_shape = (2, 2),
+              strides = (2, 2),
               poolout = poolout,
-              switches = self.mask)
+              switches = switches)
 
+        self.mask = switches
+        print ("BACK")
         return poolout
 
     def bprop(self, img_shape, poolout_d, imgs_d=None):

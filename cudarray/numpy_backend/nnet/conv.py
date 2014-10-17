@@ -24,7 +24,7 @@ class ConvBC01(object):
             if convout.dtype != imgs.dtype:
                 raise ValueError('dtype mismatch')
 
-        convout = conv_bc01(imgs, filters, convout)
+        convout = conv_bc01(imgs, filters,(0,0),(0,0), convout)
 
         return convout
 

@@ -21,8 +21,8 @@ cdef inline int int_min(int a, int b): return a if a <= b else b
 def pool_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
               tuple win_shape,
               tuple strides,
+              np.ndarray[DTYPE_t, ndim=4] poolout,
               uint type = POOL_MAX,
-              np.ndarray[DTYPE_t, ndim=4] poolout = None,
               np.ndarray[np.int_t, ndim=5] switches = None):
     """ Multi-image, multi-channel pooling
     imgs has shape (n_imgs, n_channels, img_h, img_w)
@@ -31,34 +31,39 @@ def pool_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
     poolout has shape (n_imgs, n_channels, img_h//stride_y, img_w//stride_x)
     switches has shape (n_imgs, n_channels, img_h//stride_y, img_w//stride_x, 2)
     """
-
+    print("start")
     cdef uint pool_h = win_shape[0] 
     cdef uint pool_w = win_shape[1]
     cdef uint pool_size = pool_h * pool_w
     cdef uint stride_x = strides[1] 
     cdef uint stride_y = strides[0] 
-
+    print("pool and stide ")
     cdef uint n_imgs = imgs.shape[0]
     cdef uint n_channels = imgs.shape[1]
     cdef uint img_h = imgs.shape[2]
     cdef uint img_w = imgs.shape[3]
-
-    cdef uint out_h = img_h // stride_y
-    cdef uint out_w = img_w // stride_x
-
+    print("images ")
+    cdef uint out_h = poolout.shape[2]
+    cdef uint out_w = poolout.shape[3]
+    print("images 2")
     cdef int pool_h_top = pool_h // 2 - 1 + pool_h % 2
     cdef int pool_h_bottom = pool_h // 2 + 1
     cdef int pool_w_left = pool_w // 2 - 1 + pool_w % 2
     cdef int pool_w_right = pool_w // 2 + 1
-
+    print("pool hw")
     if (poolout == None):
+        print("pool in ")
         poolout = np.empty(shape=(n_imgs, n_channels, img_h//stride_y, img_w//stride_x),
                            dtype=DTYPE)
+        print("pool out")
 
+    print("pool done")
     if (switches == None):
-        switches = np.empty(shape=(n_imgs, n_channels, img_h//stride_y, img_w//stride_x, 2),
-                           dtype=DTYPE)
+        print("switch in")
+        switches = np.empty(shape=(n_imgs, n_channels, img_h//stride_y, img_w//stride_x, 2), dtype=np.int_)
+        print("switch")
 
+    print("switch done")
 
     if not n_imgs == poolout.shape[0] == switches.shape[0]:
         raise ValueError('Mismatch in number of images.')
@@ -76,7 +81,7 @@ def pool_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
     cdef uint img_y_max = 0
     cdef uint img_x_max = 0
     cdef DTYPE_t value, new_value
-
+    print("begin Loop")
     for i in range(n_imgs):
         for c in range(n_channels):
             for y_out in range(out_h):
@@ -108,7 +113,7 @@ def pool_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
                         switches[i, c, y_out, x_out, 1] = img_x_max
                     else:
                         poolout[i, c, y_out, x_out] = value / pool_size
-
+    print("begin Loop end")
 
 @cython.boundscheck(False)
 @cython.wraparound(False)

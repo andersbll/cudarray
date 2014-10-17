@@ -18,19 +18,20 @@ cdef inline int int_min(int a, int b) nogil: return a if a <= b else b
 @cython.wraparound(False)
 def conv_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
               np.ndarray[DTYPE_t, ndim=4] filters,
+              tuple padding,
+              tuple strides,
               np.ndarray[DTYPE_t, ndim=4] convout = None):
     """ Multi-image, multi-channel convolution
     imgs has shape (n_imgs, n_channels_in, img_h, img_w)
-    filters has shape (n_channels_in, n_channels_out, img_h, img_w)
-    convout has shape (n_imgs, n_channels_out, img_h, img_w)
+    filters has shape (n_channels_out, n_channels_in, filter_h, filter_w)
     """
     # TODO: support padding and striding  
 
     cdef uint n_imgs = imgs.shape[0]
     cdef uint img_h = imgs.shape[2]
     cdef uint img_w = imgs.shape[3]
-    cdef uint n_channels_in = filters.shape[0]
-    cdef uint n_channels_out = filters.shape[1]
+    cdef uint n_channels_in = filters.shape[1]
+    cdef uint n_channels_out = filters.shape[0]
     cdef uint fil_h = filters.shape[2]
     cdef uint fil_w = filters.shape[3]
 
@@ -54,28 +55,18 @@ def conv_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
             raise ValueError('Mismatch in number of channels between filters and convout.')
         if n_imgs != convout.shape[0]:
             raise ValueError('Mismatch in number of images between imgs and convout.')
-        if img_h != convout.shape[2] or img_w != convout.shape[3]:
-            raise ValueError('Mismatch in image shape between imgs and convout.')
     
 
     #mid_off only add one to max iff filter is of an uneaven sice 
-    mid_off_h = 0
-    mid_off_w = 0
-    if mid_off_h % 2 == 1:
-        mid_off_h = 1 
+    mid_off_h = fil_h % 2
+    mid_off_w = fil_w % 2
 
-    if mid_off_w % 2 == 1:
-        mid_off_w = 1 
-
-#    with nogil, parallel(num_threads=8):
-#        for i in prange(n_imgs):
-#            value = 0.0
     for i in range(n_imgs):
         for c_out in range(n_channels_out):
-            for y in range(img_h):
+            for y in range(fil_mid_h, img_h-fil_mid_h-1+mid_off_h):
                 y_off_min = int_max(-y, -fil_mid_h)
                 y_off_max = int_min(img_h-y, fil_mid_h+mid_off_h)
-                for x in range(img_w):
+                for x in range(fil_mid_w, img_w-fil_mid_w-1+mid_off_w):
                     x_off_min = int_max(-x, -fil_mid_w)
                     x_off_max = int_min(img_w-x, fil_mid_w+mid_off_w)
                     value = 0.0
@@ -83,10 +74,10 @@ def conv_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
                         for x_off in range(x_off_min, x_off_max):
                             img_y = <uint>(y + y_off)
                             img_x = <uint>(x + x_off)
-                            fil_y = <uint>(fil_mid_w + y_off)
-                            fil_x = <uint>(fil_mid_h + x_off)
+                            fil_y = <uint>(fil_mid_h + y_off)
+                            fil_x = <uint>(fil_mid_w + x_off)
                             for c_in in range(n_channels_in):
-                                value += imgs[i, c_in, img_y, img_x] * filters[c_in, c_out, fil_y, fil_x]
+                                value += imgs[i, c_in, img_y, img_x] * filters[c_out, c_in, fil_y, fil_x]
                     convout[i, c_out, y, x] = value
 
     return convout
