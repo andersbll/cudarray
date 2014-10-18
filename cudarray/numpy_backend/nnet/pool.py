@@ -8,31 +8,36 @@ class PoolB01(object):
         self.win_shape = win_shape
         self.padding = padding
         self.strides = strides
-        if method not in ['max']:
+        if method not in ['max', 'men']:
             raise ValueError('invalid pooling method')
+        if method == 'max':
+            self.method = 0
+        elif method == 'men':
+            self.method = 1
+
         self.mask = None
 
     def fprop(self, imgs, poolout=None):
         poolout_shape = self.output_shape(imgs.shape)
         if poolout is None:
-            poolout = np.zeros(poolout_shape, dtype=imgs.dtype)
+            poolout = ca.empty(poolout_shape, dtype=imgs.dtype)
         else:
             if poolout_shape != poolout.shape:
                 raise ValueError('poolout.shape does not match result')
             if imgs.dtype != poolout.dtype:
                 raise ValueError('dtype mismatch')
 
-        img_shape = imgs.shape[-2:]
-        n_imgs = np.prod(imgs.shape[:-2])
-        switches = None
-        pool_bc01(imgs = imgs,
-              win_shape = (2, 2),
-              strides = (2, 2),
-              poolout = poolout,
-              switches = switches)
+        if self.mask is None or self.mask.shape[:-1] != poolout_shape:
+            self.mask = ca.empty(poolout_shape + (2,), dtype=np.dtype('int_'))
 
-        self.mask = switches
-        print ("BACK")
+        pool_bc01(imgs=imgs,
+                  win_shape=self.win_shape,
+                  strides=self.strides,
+                  padding=self.padding,
+                  poolout=poolout,
+                  type=self.method,
+                  switches=self.mask)
+
         return poolout
 
     def bprop(self, img_shape, poolout_d, imgs_d=None):
@@ -47,17 +52,13 @@ class PoolB01(object):
             if imgs_d.dtype != poolout_d.dtype:
                 raise ValueError('dtype mismatch')
 
-        n_imgs = np.prod(n_imgs_shape)
-        wrap._max_pool_b01_bprop(
-            poolout_d._data, self.mask._data, n_imgs, img_shape,
-            self.win_shape, self.padding, self.strides, imgs_d._data
-        )
-
-        bprop_pool_bc01(poolout_grad = poolout_d,
-                    win_shape = self.win_shape,
-                    strides = self.strides,
-                    switches = self.mask,
-                    imgs_grad = imgs_d)
+        bprop_pool_bc01(poolout_grad=poolout_d,
+                        win_shape=self.win_shape,
+                        strides=self.strides,
+                        padding=self.padding,
+                        type=self.method,
+                        switches=self.mask,
+                        imgs_grad=imgs_d)
         return imgs_d
 
     def output_shape(self, imgs_shape):

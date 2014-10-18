@@ -125,9 +125,6 @@ def conv_bc01_bprop(np.ndarray[DTYPE_t, ndim=4] imgs,
     cdef uint padding_h = padding[0]
     cdef uint padding_w = padding[1]
 
-    cdef uint out_h = convout_d.shape[2]
-    cdef uint out_w = convout_d.shape[3]
-
     imgs_grad[...] = 0
     filters_grad[...] = 0
     for i in range(n_imgs):

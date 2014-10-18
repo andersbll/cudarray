@@ -34,11 +34,10 @@ class ConvBC01(object):
 
     def bprop(self, imgs, filters, convout_d, to_filters=True, to_imgs=True,
               filters_d=None, imgs_d=None):
-        b, c, img_h, img_w = imgs.shape
-        f, c_filters, filter_h, filter_w = filters.shape
-        b_convout, f_convout, convout_h, convout_w = convout_d.shape
-        img_shape = (img_h, img_w)
-        filter_shape = (filter_h, filter_w)
+        b, c, _, _ = imgs.shape
+        f, c_filters, _, _ = filters.shape
+        b_convout, f_convout, _, _ = convout_d.shape
+
         if b != b_convout:
             raise ValueError('batch mismatch')
         if f != f_convout:
@@ -55,14 +54,13 @@ class ConvBC01(object):
         if imgs_d is None:
             imgs_d = ca.empty(imgs.shape, dtype=imgs.dtype)
 
-        conv_bc01_bprop(
-                    imgs=imgs,
-                    convout_d=convout_d,
-                    filters=filters,
-                    padding=self.padding,
-                    strides= self.strides,
-                    imgs_grad=imgs_d,
-                    filters_grad=filters_d)
+        conv_bc01_bprop(imgs=imgs,
+                        convout_d=convout_d,
+                        filters=filters,
+                        padding=self.padding,
+                        strides=self.strides,
+                        imgs_grad=imgs_d,
+                        filters_grad=filters_d)
 
         return filters_d, imgs_d
 
@@ -73,4 +71,3 @@ class ConvBC01(object):
                      (img_w + 2*self.padding[1] - filter_shape[1])
                      / self.strides[1] + 1)
         return (b, n_filters) + out_shape
-
