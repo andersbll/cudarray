@@ -24,7 +24,11 @@ class ConvBC01(object):
             if convout.dtype != imgs.dtype:
                 raise ValueError('dtype mismatch')
 
-        convout = conv_bc01(imgs, filters,(0,0),(0,0), convout)
+        conv_bc01(imgs=imgs,
+                  filters=filters,
+                  padding=self.padding,
+                  strides=self.strides,
+                  convout=convout)
 
         return convout
 
@@ -45,36 +49,28 @@ class ConvBC01(object):
         if imgs.dtype != filters.dtype != convout_d.dtype:
             raise ValueError('dtype mismatch')
 
-        if to_filters or to_imgs:
-            if filters_d is None:
-                filters_d = ca.empty(filters.shape, dtype=filters.dtype)
-            else:
-                if filters_d.shape != filters.shape:
-                    raise ValueError('filters_d.shape does not match result')
-                if filters_d.dtype != filters.dtype:
-                    raise ValueError('dtype mismatch')
+        if filters_d is None:
+            filters_d = ca.empty(filters.shape, dtype=filters.dtype)
 
-            if imgs_d is None:
-                imgs_d = ca.empty(imgs.shape, dtype=imgs.dtype)
-            else:
-                if imgs_d.shape != imgs.shape:
-                    raise ValueError('imgs_d.shape does not match result')
-                if imgs_d.dtype != imgs.dtype:
-                    raise ValueError('dtype mismatch')
+        if imgs_d is None:
+            imgs_d = ca.empty(imgs.shape, dtype=imgs.dtype)
 
-            conv_bc01_bprop(imgs = imgs,
-                    convout_d = convout_d,
-                    filters = filters,
-                    imgs_grad = imgs_d,
-                    filters_grad = filters_d)
-            
+        conv_bc01_bprop(
+                    imgs=imgs,
+                    convout_d=convout_d,
+                    filters=filters,
+                    padding=self.padding,
+                    strides= self.strides,
+                    imgs_grad=imgs_d,
+                    filters_grad=filters_d)
 
         return filters_d, imgs_d
 
     def output_shape(self, imgs_shape, n_filters, filter_shape):
         b, _, img_h, img_w = imgs_shape
-        out_shape = ((img_h + 2*0 - filter_shape[0])
-                      + 1,
-                     (img_w + 2*0 - filter_shape[1])
-                      + 1)
+        out_shape = ((img_h + 2*self.padding[0] - filter_shape[0])
+                     / self.strides[0] + 1,
+                     (img_w + 2*self.padding[1] - filter_shape[1])
+                     / self.strides[1] + 1)
         return (b, n_filters) + out_shape
+
