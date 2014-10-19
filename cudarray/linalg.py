@@ -1,8 +1,7 @@
 import numpy as np
 
-from cudarray_wrap import blas
-
-import base
+from .cudarray_wrap import blas
+from . import cudarray
 
 
 def matmul_shape(a_shape, b_shape):
@@ -43,7 +42,7 @@ def dot(a, b, out=None):
 
     out_shape = matmul_shape(a.shape, b.shape)
     if out is None:
-        out = base.empty(out_shape, dtype=a.dtype)
+        out = cudarray.empty(out_shape, dtype=a.dtype)
     else:
         if out_shape != out.shape:
             raise ValueError('out.shape does not match result')

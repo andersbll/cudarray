@@ -4,7 +4,7 @@ import numpy as np
 def normalize_axis(axis, ndim):
     if axis is None:
         return tuple(range(ndim))
-    elif isinstance(axis, (int, long)):
+    elif isinstance(axis, int):
         return (axis,)
     elif isinstance(axis, tuple):
         return tuple(sorted(axis))
@@ -13,7 +13,7 @@ def normalize_axis(axis, ndim):
 
 
 def normalize_shape(shape):
-    if isinstance(shape, (int, long)):
+    if isinstance(shape, int):
         return (shape,)
     elif isinstance(shape, tuple):
         return shape

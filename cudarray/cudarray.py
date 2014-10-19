@@ -3,8 +3,8 @@ import operator
 import numpy as np
 
 from .cudarray_wrap.array_data import ArrayData
-import elementwise
-import base
+from . import elementwise
+from . import base
 
 
 class CUDArray(object):
@@ -119,6 +119,12 @@ class CUDArray(object):
     def __idiv__(self, other):
         return elementwise.divide(self, other, self)
 
+    def __truediv__(self, other):
+        return elementwise.divide(self, other)
+
+    def __itruediv__(self, other):
+        return elementwise.divide(self, other, self)
+
     def __pow__(self, other):
         return elementwise.power(self, other)
 
@@ -217,7 +223,47 @@ class CUDArray(object):
 
     def __setitem__(self, indices, c):
         view = self.__getitem__(indices)
-        base.copyto(view, c)
+        copyto(view, c)
+
+
+def array(object, dtype=None, copy=True):
+    np_array = np.array(object)
+    return CUDArray(np_array.shape, np_data=np_array)
+
+
+def empty(shape, dtype=None):
+    return CUDArray(shape, dtype=dtype)
+
+
+def empty_like(a, dtype=None):
+    if not isinstance(a, (np.ndarray, CUDArray)):
+        a = np.array(a)
+    return CUDArray(a.shape, dtype=a.dtype)
+
+
+def ones(shape, dtype=None):
+    return array(np.ones(shape, dtype=dtype))
+
+
+def ones_like(a, dtype=None):
+    if not isinstance(a, (np.ndarray, CUDArray)):
+        a = np.array(a)
+    return array(np.ones_like(a, dtype=dtype))
+
+
+def zeros(shape, dtype=np.float32):
+    # TODO: use fill()
+    return array(np.zeros(shape, dtype=dtype))
+
+
+def zeros_like(a, dtype=None):
+    if not isinstance(a, (np.ndarray, CUDArray)):
+        a = np.array(a)
+    return array(np.zeros_like(a, dtype=dtype))
+
+
+def copyto(dst, src):
+    elementwise.multiply(src, 1.0, dst)
 
 
 def _prod(x):

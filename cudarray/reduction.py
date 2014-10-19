@@ -1,7 +1,7 @@
 import numpy as np
 
-import cudarray_wrap.reduction as wrap
-import base
+from .cudarray_wrap import reduction as wrap
+from .import cudarray
 from .helpers import normalize_axis
 
 
@@ -45,7 +45,7 @@ def reduction(op, a, axis=None, dtype=None, out=None, keepdims=False,
         out_dtype = a.dtype
 
     if out is None:
-        out = base.empty(out_shape, out_dtype)
+        out = cudarray.empty(out_shape, out_dtype)
     else:
         if not out.shape == out_shape:
             raise ValueError('out.shape does not match result')

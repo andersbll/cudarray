@@ -1,7 +1,7 @@
 import numpy as np
 
-import cudarray_wrap.random as wrap
-import base
+from .cudarray_wrap import random as wrap
+from . import cudarray
 from .helpers import normalize_shape
 
 
@@ -18,7 +18,7 @@ def normal(loc=0.0, scale=1.0, size=None):
     n = np.prod(size)
     # cuRAND number generation requires an even number of elements.
     n = n if n % 2 == 0 else n + 1
-    out = base.empty(n)
+    out = cudarray.empty(n)
     wrap._random_normal(out._data, loc, scale, n)
     out.shape = size
     return out
@@ -31,7 +31,7 @@ def uniform(low=0.0, high=1.0, size=None):
     n = np.prod(size)
     # cuRAND number generation requires an even number of elements.
     n = n if n % 2 == 0 else n + 1
-    out = base.empty(n)
+    out = cudarray.empty(n)
     wrap._random_uniform(out._data, low, high, n)
     out.shape = size
     return out
