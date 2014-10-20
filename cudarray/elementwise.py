@@ -193,6 +193,8 @@ def unary(op, x, out=None):
 
 def absolute(x, out=None):
     return unary(wrap.abs_op, x, out)
+abs = absolute
+fabs = absolute
 
 
 def cos(x, out=None):
