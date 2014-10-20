@@ -96,10 +96,11 @@ def conv_bc01_bprop(np.ndarray[DTYPE_t, ndim=4] imgs,
     filters has shape (n_channels_out, n_channels_in, img_h, img_w)
     convout has shape (n_imgs, n_channels_out, img_h, img_w)
     """
-
+    cdef uint img_h = imgs.shape[2]
+    cdef uint img_w = imgs.shape[3]
     cdef uint n_imgs = convout_d.shape[0]
-    cdef uint img_h = convout_d.shape[2]
-    cdef uint img_w = convout_d.shape[3]
+    cdef uint convout_d_h = convout_d.shape[2]
+    cdef uint convout_d_w = convout_d.shape[3]
     cdef uint n_channels_convout = filters.shape[0]
     cdef uint n_channels_imgs = filters.shape[1]
     cdef uint fil_h = filters.shape[2]
@@ -129,11 +130,11 @@ def conv_bc01_bprop(np.ndarray[DTYPE_t, ndim=4] imgs,
     filters_grad[...] = 0
     for i in range(n_imgs):
         for c_convout in range(n_channels_convout):
-            for y in range(img_h):
+            for y in range(convout_d_h):
                 img_y_center = y*stride_h+fil_mid_h
                 y_off_min = int_max(-img_y_center, -padding_h-fil_mid_h)
                 y_off_max = int_min(img_h-img_y_center, fil_mid_h+mid_off_h-padding_h)
-                for x in range(img_w):
+                for x in range(convout_d_w):
                     convout_d_value = convout_d[i, c_convout, y, x]
                     img_x_center = x*stride_w+fil_mid_w
                     x_off_min = int_max(-img_x_center, -padding_w-fil_mid_w)
