@@ -92,17 +92,18 @@ def conv_bc01_bprop(np.ndarray[DTYPE_t, ndim=4] imgs,
                     np.ndarray[DTYPE_t, ndim=4] imgs_grad,
                     np.ndarray[DTYPE_t, ndim=4] filters_grad):
     """ Back-propagate gradients of multi-image, multi-channel convolution
-    imgs has shape (n_imgs, n_channels_in, img_h, img_w)
-    filters has shape (n_channels_out, n_channels_in, img_h, img_w)
-    convout has shape (n_imgs, n_channels_out, img_h, img_w)
+    imgs has shape (b, c, img_h, img_w)
+    filters has shape (f, c_filters, img_h, img_w)
+    convout has shape (b_convout, f_convout, img_h, img_w)
     """
+    cdef uint img_channels = imgs.shape[1]
     cdef uint img_h = imgs.shape[2]
     cdef uint img_w = imgs.shape[3]
-    cdef uint n_imgs = convout_d.shape[0]
+    cdef uint b_convout = convout_d.shape[0]
+    cdef uint f_convout = convout_d.shape[1]
     cdef uint convout_d_h = convout_d.shape[2]
     cdef uint convout_d_w = convout_d.shape[3]
-    cdef uint n_channels_convout = filters.shape[0]
-    cdef uint n_channels_imgs = filters.shape[1]
+
     cdef uint fil_h = filters.shape[2]
     cdef uint fil_w = filters.shape[3]
     cdef int fil_mid_h = fil_h // 2
@@ -128,8 +129,8 @@ def conv_bc01_bprop(np.ndarray[DTYPE_t, ndim=4] imgs,
 
     imgs_grad[...] = 0
     filters_grad[...] = 0
-    for i in range(n_imgs):
-        for c_convout in range(n_channels_convout):
+    for i in range(b_convout):
+        for c_convout in range(f_convout):
             for y in range(convout_d_h):
                 img_y_center = y*stride_h+fil_mid_h
                 y_off_min = int_max(-img_y_center, -padding_h-fil_mid_h)
@@ -146,7 +147,7 @@ def conv_bc01_bprop(np.ndarray[DTYPE_t, ndim=4] imgs,
                             img_x = <uint>(img_x_center + x_off)
                             fil_y = <uint>(fil_mid_h + padding_h + y_off)
                             fil_x = <uint>(fil_mid_w + padding_w + x_off)
-                            for c_imgs in range(n_channels_imgs):
-                                imgs_grad[i, c_imgs, img_y, img_x] += filters[c_imgs, c_convout, fil_y, fil_x] * convout_d_value
+                            for c_imgs in range(img_channels):
+                                imgs_grad[i, c_imgs, img_y, img_x] += filters[c_convout, c_imgs, fil_y, fil_x] * convout_d_value
                                 filters_grad[c_convout, c_imgs, fil_y, fil_x] += imgs[i, c_imgs, img_y, img_x] * convout_d_value
 #    filters_grad[...] /= n_imgs
