@@ -10,8 +10,7 @@ from theano.sandbox.cuda.basic_ops import gpu_from_host, host_from_gpu
 from pylearn2.sandbox.cuda_convnet.filter_acts import FilterActs
 from pylearn2.sandbox.cuda_convnet.weight_acts import WeightActs
 from pylearn2.sandbox.cuda_convnet.img_acts import ImageActs
-from theano_ops.conv_bc01_fft import (ConvBC01, ConvBC01ImgsGrad,
-                                      ConvBC01FiltersGrad)
+
 import cudarray as ca
 
 
@@ -123,7 +122,6 @@ def benchmark(n_imgs, n_channels, img_shape, n_filters, filter_shape, pad):
     dfilters_ca = np.array(dfilters_ca_fun())
 
     print('bprop_filters')
-#    print(np.array(dfilters_ca)[-1,-1,...] / dfilters_cc[-1,-1,...])
     print('         correct: ' + str(allclose(dfilters_ca, dfilters_cc)))
     duration_cc = avg_running_time(dfilters_cc_fun)
     duration_ca = avg_running_time(dfilters_ca_fun)
@@ -146,17 +144,17 @@ def run():
         (128, 384, (16, 16), 384, (3, 3), 0),
         # From Sander Dieleman
         # http://benanne.github.io/2014/05/12/fft-convolutions-in-theano.html
-#        (64, 3, (96, 96), 128, (16, 16), 0),
-#        (64, 128, (32, 32), 64, (8, 8), 0),
-#        (128, 32, (54, 54), 64, (6, 6), 0),
-#        (128, 128, (16, 16), 128, (8, 8), 0),
-#        (128, 1024, (32, 32), 128, (4, 4), 0), # out of memory error
+        (64, 3, (96, 96), 128, (16, 16), 0),
+        (64, 128, (32, 32), 64, (8, 8), 0),
+        (128, 32, (54, 54), 64, (6, 6), 0),
+        (128, 128, (16, 16), 128, (8, 8), 0),
+        (128, 1024, (32, 32), 128, (4, 4), 0),
         # Exotic shapes and padding
         (5, 3, (5, 5), 16, (3, 3), 1),
         (64, 32, (32, 32), 32, (5, 5), 2),
         (64, 1, (17, 19), 32, (7, 7), 4),
         (64, 3, (9, 16), 32, (7, 7), 4),
-#         Typical CNN layers for CIFAR-10
+        # Typical CNN layers for CIFAR-10
         (128, 3, (32, 32), 64, (5, 5), 2),
         (128, 64, (16, 16), 64, (5, 5), 2),
         (128, 64, (8, 8), 64, (5, 5), 2),
