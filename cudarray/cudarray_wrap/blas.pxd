@@ -11,3 +11,12 @@ cdef extern from "cudarray/blas.hpp" namespace 'cudarray':
     void gemm[T](const T *A, const T *B, TransposeOp transA,
                  TransposeOp transB, unsigned int m, unsigned int n,
                  unsigned int k, T alpha, T beta, T *C);
+
+    cdef cppclass BLASBatch[T]:
+        BLASBatch(const T *A, const T *B, T *C, unsigned int batch_size,
+                  int Astride, int Bstride, int Cstride)
+
+        BLASBatch(const T **A, const T **B, T **C, unsigned int batch_size)
+
+        void gemm(TransposeOp transA, TransposeOp transB, unsigned int m,
+                  unsigned int n, unsigned int k, T alpha, T beta)

@@ -95,6 +95,22 @@ def test_dot():
     print(np.allclose(c_np, np.array(c_ca)))
 
 
+def test_batch_dot():
+    batch_size = 10
+    a_np = np.random.normal(size=(batch_size, 5, 5))
+    b_np = np.random.normal(size=(batch_size, 5, 5))
+    c_np = np.empty_like(a_np)
+    for i in range(batch_size):
+        c_np[i] = np.dot(a_np[i], b_np[i])
+
+    a_ca = ca.array(a_np)
+    b_ca = ca.array(b_np)
+    c_ca = ca.array(c_np)
+    bdot = ca.batch.Dot(a_ca, b_ca, c_ca)
+    bdot.perform()
+    print(np.allclose(c_np, np.array(c_ca)))
+
+
 def test_multiply():
     a_np = np.ones((5, 5))
     b_np = np.arange(5)

@@ -75,4 +75,77 @@ template void gemm<float>(const float *A, const float *B, TransposeOp transA,
     TransposeOp transB, unsigned int m, unsigned int n, unsigned int k,
     float alpha, float beta, float *C);
 
+
+template <typename T>
+T **dev_ptrs(const T *base, int num, int stride) {
+  T *ptrs_host[num];
+  int idx = 0;
+  for(int n = 0; n < num; ++n){
+    ptrs_host[idx] = (T *) base + n * stride;
+    idx++;
+  }
+  T **ptrs_dev;
+  CUDA_CHECK(cudaMalloc((void **) &ptrs_dev, num*sizeof(T *)));
+  CUDA_CHECK(cudaMemcpy(ptrs_dev, ptrs_host, num*sizeof(T *),
+                        cudaMemcpyHostToDevice));
+  return ptrs_dev;
+}
+
+
+template <typename T>
+BLASBatch<T>::BLASBatch(const T **As, const T **Bs, T **Cs,
+    unsigned int batch_size) : batch_size(batch_size) {
+  size_t ptrs_size = batch_size * sizeof(T **);
+  CUDA_CHECK(cudaMalloc((void **) &As_dev, ptrs_size));
+  CUDA_CHECK(cudaMemcpy(As_dev, As, batch_size*sizeof(float *),
+                        cudaMemcpyHostToDevice));
+  CUDA_CHECK(cudaMalloc((void **) &Bs_dev, ptrs_size));
+  CUDA_CHECK(cudaMemcpy(Bs_dev, Bs, batch_size*sizeof(float *),
+                        cudaMemcpyHostToDevice));
+  CUDA_CHECK(cudaMalloc((void **) &Cs_dev, ptrs_size));
+  CUDA_CHECK(cudaMemcpy(Cs_dev, Cs, batch_size*sizeof(float *),
+                        cudaMemcpyHostToDevice));
+}
+
+
+template <typename T>
+BLASBatch<T>::BLASBatch(const T *A, const T *B, T *C,
+    unsigned int batch_size, int Astride, int Bstride, int Cstride)
+    : batch_size(batch_size) {
+  As_dev = (const float **) dev_ptrs(A, batch_size, Astride);
+  Bs_dev = (const float **) dev_ptrs(B, batch_size, Bstride);
+  Cs_dev = dev_ptrs(C, batch_size, Cstride);
+}
+
+template <typename T>
+BLASBatch<T>::~BLASBatch() {
+  CUDA_CHECK(cudaFree(As_dev));
+  CUDA_CHECK(cudaFree(Bs_dev));
+  CUDA_CHECK(cudaFree(Cs_dev));
+}
+
+
+cublasStatus_t cublas_gemm_batched(cublasHandle_t handle,
+    cublasOperation_t transA, cublasOperation_t transB, int m, int n, int k,
+    const float *alpha, const float *Aarray[], int lda, const float *Barray[],
+    int ldb, const float *beta, float *Carray[], int ldc, int batchCount) {
+  return cublasSgemmBatched(handle, transA, transB, m, n, k, alpha, Aarray,
+      lda, Barray, ldb, beta, Carray, ldc, batchCount);
+}
+
+template <typename T>
+void BLASBatch<T>::gemm(TransposeOp transA, TransposeOp transB, unsigned int m,
+                        unsigned int n, unsigned int k, T alpha, T beta) {
+  int lda = (transA == OP_NO_TRANS) ? k : m;
+  int ldb = (transB == OP_NO_TRANS) ? n : k;
+  int ldc = n;
+  cublasOperation_t cuTransA = (cublasOperation_t) transA;
+  cublasOperation_t cuTransB = (cublasOperation_t) transB;
+  CUBLAS_CHECK(cublas_gemm_batched(CUDA::cublas_handle(), cuTransB, cuTransA,
+      n, m, k, &alpha, Bs_dev, ldb, As_dev, lda, &beta, Cs_dev, ldc,
+      batch_size));
+}
+
+template class BLASBatch<float>;
+
 }

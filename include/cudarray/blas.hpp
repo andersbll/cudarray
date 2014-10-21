@@ -25,6 +25,25 @@ void gemm(const T *A, const T *B, TransposeOp transA, TransposeOp transB,
           unsigned int m, unsigned int n, unsigned int k, T alpha, T beta,
           T *C);
 
+
+template <typename T>
+class BLASBatch {
+public:
+  BLASBatch(const T **A, const T **B, T **C, unsigned int batch_size);
+  BLASBatch(const T *A, const T *B, T *C, unsigned int batch_size, int Astride,
+            int Bstride, int Cstride);
+
+  ~BLASBatch();
+
+  void gemm(TransposeOp transA, TransposeOp transB, unsigned int m,
+            unsigned int n, unsigned int k, T alpha, T beta);
+private:
+  unsigned int batch_size;
+  const float **As_dev;
+  const float **Bs_dev;
+  float **Cs_dev;
+};
+
 }
 
 #endif // BLAS_HPP_
