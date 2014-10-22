@@ -3,9 +3,17 @@ from ..cudarray_wrap import nnet as wrap
 
 
 class ConvBC01(object):
-    def __init__(self, padding, strides):
+    def __init__(self, padding, strides, impl='cudnn'):
         self.padding = padding
         self.strides = strides
+        self.impl = impl
+        if impl == 'matmul':
+            self.conv_cudnn = None
+        elif impl == 'cudnn':
+            from ..cudarray_wrap import cudnn
+            self.conv_cudnn = cudnn.conv_bc01_cudnn(padding, strides)
+        else:
+            raise ValueError('invalid implementation: %s' % impl)
 
     def fprop(self, imgs, filters, convout=None):
         b, c, img_h, img_w = imgs.shape
@@ -14,7 +22,8 @@ class ConvBC01(object):
             raise ValueError('channel mismatch')
         if imgs.dtype != filters.dtype:
             raise ValueError('dtype mismatch')
-
+        img_shape = (img_h, img_w)
+        filter_shape = (filter_h, filter_w)
         convout_shape = self.output_shape(imgs.shape, f, (filter_h, filter_w))
         if convout is None:
             convout = ca.empty(convout_shape, dtype=imgs.dtype)
@@ -23,10 +32,17 @@ class ConvBC01(object):
                 raise ValueError('convout.shape does not match result')
             if convout.dtype != imgs.dtype:
                 raise ValueError('dtype mismatch')
-        wrap._conv_bc01_matmul(
-            imgs._data, filters._data, b, c, f, (img_h, img_w),
-            (filter_h, filter_w), self.padding, self.strides, convout._data
-        )
+        if self.impl == 'matmul':
+            wrap._conv_bc01_matmul(
+                imgs._data, filters._data, b, c, f, img_shape, filter_shape,
+                self.padding, self.strides, convout._data
+            )
+        elif self.impl == 'cudnn':
+            self.conv_cudnn.fprop(
+                imgs._data, filters._data, b, c, f, img_shape, filter_shape,
+                convout._data
+            )
+
         return convout
 
     def bprop(self, imgs, filters, convout_d, to_filters=True, to_imgs=True,
@@ -54,10 +70,11 @@ class ConvBC01(object):
                     raise ValueError('filters_d.shape does not match result')
                 if filters_d.dtype != filters.dtype:
                     raise ValueError('dtype mismatch')
-            wrap._conv_bc01_matmul_bprop_filters(
-                imgs._data, convout_d._data, b, c, f, img_shape,
-                filter_shape, self.padding, self.strides, filters_d._data
-            )
+            if self.impl == 'matmul':
+                wrap._conv_bc01_matmul_bprop_filters(
+                    imgs._data, convout_d._data, b, c, f, img_shape,
+                    filter_shape, self.padding, self.strides, filters_d._data
+                )
 
         if to_imgs:
             if imgs_d is None:
@@ -67,10 +84,14 @@ class ConvBC01(object):
                     raise ValueError('imgs_d.shape does not match result')
                 if imgs_d.dtype != imgs.dtype:
                     raise ValueError('dtype mismatch')
-            wrap._conv_bc01_matmul_bprop_imgs(
-                filters._data, convout_d._data, b, c, f, img_shape,
-                filter_shape, self.padding, self.strides, imgs_d._data
-            )
+            if self.impl == 'matmul':
+                wrap._conv_bc01_matmul_bprop_imgs(
+                    filters._data, convout_d._data, b, c, f, img_shape,
+                    filter_shape, self.padding, self.strides, imgs_d._data
+                )
+
+        if self.impl == 'cudnn':
+            self.conv_cudnn.bprop(imgs, filters, convout_d, imgs_d, filters_d)
 
         return filters_d, imgs_d
 
