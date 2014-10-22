@@ -1,6 +1,6 @@
 import numpy as np
-import cudarray_wrap.elementwise as wrap
-import base
+from .cudarray_wrap import elementwise as wrap
+import cudarray
 
 
 def broadcast_type(shape1, shape2):
@@ -26,19 +26,19 @@ def broadcast_type(shape1, shape2):
 
     ndim = len(shape1)
     # Detect leading broadcast
-    if b_axes == range(len(b_axes)):
+    if b_axes == list(range(len(b_axes))):
         k = 1
         m = np.prod([shape1[a] for a in b_axes])
         n = np.prod(shape1) // m
         return wrap.btype_leading, k, m, n
     # Detect trailing broadcast
-    if b_axes == range(ndim-len(b_axes), ndim):
+    if b_axes == list(range(ndim-len(b_axes), ndim)):
         k = 1
         m = np.prod([shape1[a] for a in b_axes])
         n = np.prod(shape1) // m
         return wrap.btype_trailing, k, m, n
     # Detect inner broadcast
-    if b_axes == range(b_axes[0], b_axes[0] + len(b_axes)):
+    if b_axes == list(range(b_axes[0], b_axes[0] + len(b_axes))):
         k = np.prod(shape1[:b_axes[0]])
         m = np.prod(shape1[b_axes[0]:b_axes[-1]+1])
         n = np.prod(shape1[b_axes[-1]+1:])
@@ -50,8 +50,9 @@ def broadcast_type(shape1, shape2):
             break
     b_axes_leading = b_axes[:split_idx]
     b_axes_trailing = b_axes[split_idx:]
-    if (b_axes_leading == range(len(b_axes_leading))
-            and b_axes_trailing == range(ndim-len(b_axes_trailing), ndim)):
+    if (b_axes_leading == list(range(len(b_axes_leading)))
+            and b_axes_trailing == list(range(ndim-len(b_axes_trailing),
+                                              ndim))):
         k = np.prod(shape1[:b_axes_leading[-1]+1])
         m = np.prod(shape1[b_axes_leading[-1]+1:b_axes_trailing[0]])
         n = np.prod(shape1[b_axes_trailing[0]:])
@@ -77,7 +78,7 @@ def binary(op, x1, x2, out=None, cmp_op=False):
 
         # Create/check output array
         if out is None:
-            out = base.empty(array.shape, dtype=out_dtype)
+            out = cudarray.empty(array.shape, dtype=out_dtype)
         else:
             if out.shape != array.shape:
                 raise ValueError('out.shape does not match result')
@@ -99,7 +100,7 @@ def binary(op, x1, x2, out=None, cmp_op=False):
     if x1.size < x2.size:
         x1, x2 = x2, x1
     if out is None:
-        out = base.empty(x1.shape, dtype=out_dtype)
+        out = cudarray.empty(x1.shape, dtype=out_dtype)
     else:
         if out.shape != x1.shape:
             raise ValueError('out.shape does not match result')
@@ -180,7 +181,7 @@ def not_equal(x1, x2, out=None):
 def unary(op, x, out=None):
     out_shape = x.shape
     if out is None:
-        out = base.empty(out_shape, dtype=x.dtype)
+        out = cudarray.empty(out_shape, dtype=x.dtype)
     else:
         if not out_shape == out.shape:
             raise ValueError('out.shape does not match result')
@@ -232,7 +233,7 @@ def tanh(x, out=None):
 def clip(a, a_min, a_max, out=None):
     out_shape = a.shape
     if out is None:
-        out = base.empty(out_shape, dtype=a.dtype)
+        out = cudarray.empty(out_shape, dtype=a.dtype)
     else:
         if not out_shape == out.shape:
             raise ValueError('out.shape does not match result')

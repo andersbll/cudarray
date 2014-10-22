@@ -30,4 +30,4 @@ cdef extern from "cuda_runtime_api.h":
                                 cudaMemcpyKind kind, cudaStream_t stream=*)
 
 cdef cudaCheck(cudaError_t status)
-cdef cudaSyncCheck()
+cpdef cudaSyncCheck()
