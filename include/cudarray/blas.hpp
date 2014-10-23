@@ -44,6 +44,46 @@ private:
   float **Cs_dev;
 };
 
+
+const char* cublas_message(cublasStatus_t status);
+
+inline void cublas_check(cublasStatus_t status, const char *file, int line) {
+  if (status != CUBLAS_STATUS_SUCCESS) {
+    std::ostringstream o;
+    o << file << ":" << line << ": " << cublas_message(status);
+    throw std::runtime_error(o.str());
+  }
+}
+
+#define CUBLAS_CHECK(status) { cublas_check((status), __FILE__, __LINE__); }
+
+
+/*
+  Singleton class to handle cuBLAS resources.
+*/
+class CUBLAS {
+public:
+  inline static CUBLAS &instance() {
+    static CUBLAS instance_;
+    return instance_;
+  }
+
+  inline static cublasHandle_t &handle() {
+    return instance().handle_;
+  }
+
+private:
+  cublasHandle_t handle_;
+  CUBLAS() {
+    CUBLAS_CHECK(cublasCreate(&handle_));
+  }
+  ~CUBLAS() {
+    CUBLAS_CHECK(cublasDestroy(handle_));
+  }
+  CUBLAS(CUBLAS const&);
+  void operator=(CUBLAS const&);
+};
+
 }
 
 #endif // BLAS_HPP_

@@ -6,20 +6,8 @@
 #include <sstream>
 #include <string>
 #include <cuda_runtime_api.h>
-#include <cublas_v2.h>
 #include <cufft.h>
 
-
-
-const char *cublasErrorString(cublasStatus_t err);
-
-#define CUBLAS_CHECK(condition) \
-  { \
-    cublasStatus_t status = condition; \
-    if (status != CUBLAS_STATUS_SUCCESS) { \
-        throw std::runtime_error(cublasErrorString(status)); \
-    } \
-  }
 
 
 const char *cufftErrorEnum(cufftResult error);
@@ -90,12 +78,8 @@ public:
     return instance().buffers[idx];
   }
 
-  inline static cublasHandle_t &cublas_handle() {
-    return instance().cublas_handle_;
-  }
 
 private:
-  cublasHandle_t cublas_handle_;
   void *buffers[32];
   unsigned int buffer_sizes[32];
 
@@ -106,11 +90,10 @@ private:
     }
     buffer_sizes[0] = 99999999;
     CUDA_CHECK(cudaMalloc(&buffers[0], buffer_sizes[0]));
-    CUBLAS_CHECK(cublasCreate(&cublas_handle_));
   }
 
   ~CUDA() {
-    cudaDeviceReset();
+//    cudaDeviceReset();
   }
 
   CUDA(CUDA const&);

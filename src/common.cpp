@@ -3,29 +3,6 @@
 #include "cudarray/common.hpp"
 
 
-const char *cublasErrorString(cublasStatus_t error){
-	switch(error) {
-		case CUBLAS_STATUS_SUCCESS :
-			return "operation completed successfully";
-		case CUBLAS_STATUS_NOT_INITIALIZED :
-			return "CUBLAS library not initialized";
-		case CUBLAS_STATUS_ALLOC_FAILED :
-			return "resource allocation failed";
-		case CUBLAS_STATUS_INVALID_VALUE :
-			return "unsupported numerical value was passed to function";
-		case CUBLAS_STATUS_ARCH_MISMATCH :
-			return "function requires an architectural feature absent from \
-			the architecture of the device";
-		case CUBLAS_STATUS_MAPPING_ERROR :
-			return "access to GPU memory space failed";
-		case CUBLAS_STATUS_EXECUTION_FAILED :
-			return "GPU program failed to execute";
-		case CUBLAS_STATUS_INTERNAL_ERROR :
-			return "an internal CUBLAS operation failed";
-		default :
-			return "other cuBLAS error";
-	}
-}
 
 const char *cufftErrorEnum(cufftResult error) {
     switch (error) {
