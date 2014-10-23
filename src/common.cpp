@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include "cudarray/common.hpp"
 
 
@@ -55,7 +56,7 @@ const char *cufftErrorEnum(cufftResult error) {
 
 
 inline void cudaSyncCheck(const char *msg, const char *file, const int line) {
-  cudaDeviceSynchronize();
+//  cudaDeviceSynchronize();
   cudaError_t err = cudaGetLastError();
   if (cudaSuccess != err) {
     fprintf(stderr, "%s(%i):\nCUDA error : (%d) %s\n", file, line, (int)err,
