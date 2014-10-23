@@ -91,7 +91,10 @@ class ConvBC01(object):
                 )
 
         if self.impl == 'cudnn':
-            self.conv_cudnn.bprop(imgs, filters, convout_d, imgs_d, filters_d)
+            imgs_ = imgs_d._data if to_filters else None
+            filters_ = filters_d._data if to_filters else None
+            self.conv_cudnn.bprop(imgs._data, filters._data, convout_d._data,
+                                  imgs_, filters_)
 
         return filters_d, imgs_d
 

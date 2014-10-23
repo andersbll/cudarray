@@ -1,15 +1,6 @@
 cimport numpy as np
-from .array_data cimport ArrayData
+from .array_data cimport ArrayData, float_ptr
 cimport cudnn
-
-
-cdef float *float_ptr(array):
-    cdef float *ptr;
-    if array is None:
-        ptr = NULL
-    else:
-        ptr = <float *> (<ArrayData> array._data).dev_ptr
-    return ptr
 
 
 cdef class PoolBC01CuDNN_f:
@@ -32,10 +23,8 @@ cdef class PoolBC01CuDNN_f:
               ArrayData poolout):
         cdef int img_h = img_shape[0]
         cdef int img_w = img_shape[1]
-        self.ptr.fprop(
-            <const float *> imgs.dev_ptr, n_imgs, n_channels, img_h, img_w,
-            <float *> poolout.dev_ptr
-        )
+        self.ptr.fprop(float_ptr(imgs), n_imgs, n_channels, img_h, img_w,
+                       float_ptr(poolout))
 
     def bprop(self, ArrayData imgs, ArrayData poolout, ArrayData poolout_d,
               ArrayData imgs_d):
@@ -67,15 +56,17 @@ cdef class ConvBC01CuDNN_f:
         cdef int img_w = img_shape[1]
         cdef int filter_h = filter_shape[0]
         cdef int filter_w = filter_shape[1]
-        self.ptr.fprop(
-            <const float *> imgs.dev_ptr, <const float *> filters.dev_ptr,
-            n_imgs, n_channels, n_filters, img_h, img_w, filter_h, filter_w,
-            <float *> convout.dev_ptr
-        )
+        self.ptr.fprop(float_ptr(imgs), float_ptr(filters), n_imgs, n_channels,
+            n_filters, img_h, img_w, filter_h, filter_w, float_ptr(convout))
 
-    def bprop(self, imgs, filters, convout_d, imgs_d, filters_d):
+    def bprop(self, ArrayData imgs, ArrayData filters, ArrayData convout_d,
+              ArrayData imgs_d, ArrayData filters_d):
+        cdef float *imgs_d_ptr = <float *>NULL if imgs_d is None \
+                                               else float_ptr(imgs_d)
+        cdef float *filters_d_ptr = <float *>NULL if filters_d is None \
+                                                  else float_ptr(filters_d)
         self.ptr.bprop(float_ptr(imgs), float_ptr(filters),
-            float_ptr(convout_d), float_ptr(imgs_d), float_ptr(filters_d))
+                       float_ptr(convout_d), imgs_d_ptr, filters_d_ptr)
 
 
 def conv_bc01_cudnn(padding, strides):

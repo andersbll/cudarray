@@ -1,6 +1,7 @@
 cimport numpy as np
-from .array_data cimport ArrayData
 cimport elementwise
+from .array_data cimport (ArrayData, bool_ptr, float_ptr, int_ptr, is_int,
+                          is_float)
 
 btype_inner = BROADCAST_INNER
 btype_leading = BROADCAST_LEADING
@@ -37,38 +38,16 @@ lt_eq_op = LT_EQ_OP
 neq_op = NEQ_OP
 
 
-def isfloat(x):
-    if isinstance(x, float):
-        return True
-    elif isinstance(x, ArrayData):
-        return x.dtype == np.dtype('float32')
-    else:
-        return False
-
-
-def isint(x):
-    if isinstance(x, (int, long)):
-        return True
-    elif isinstance(x, ArrayData):
-        return x.dtype == np.dtype('int32')
-    else:
-        return False
-
-
 def _binary(BinaryOp op, ArrayData a, ArrayData b, unsigned int n,
-           ArrayData c):
-    if isfloat(a) and isfloat(b):
-        elementwise.binary[float, float, float](op, <const float *>a.dev_ptr,
-            <const float *>b.dev_ptr, n, <float *>c.dev_ptr)
-    elif isfloat(a) and isint(b):
-        elementwise.binary[float, int, float](op, <const float *>a.dev_ptr,
-            <const int *>b.dev_ptr, n, <float *>c.dev_ptr)
-    elif isint(a) and isfloat(b):
-        elementwise.binary[int, float, float](op, <const int *>a.dev_ptr,
-            <const float *>b.dev_ptr, n, <float *>c.dev_ptr)
-    elif isint(a) and isint(b):
-        elementwise.binary[int, int, int](op, <const int *>a.dev_ptr,
-            <const int *>b.dev_ptr, n, <int *>c.dev_ptr)
+            ArrayData c):
+    if is_float(a) and is_float(b):
+        elementwise.binary(op, float_ptr(a), float_ptr(b), n, float_ptr(c))
+    elif is_float(a) and is_int(b):
+        elementwise.binary(op, float_ptr(a), int_ptr(b), n, float_ptr(c))
+    elif is_int(a) and is_float(b):
+        elementwise.binary(op, int_ptr(a), float_ptr(b), n, float_ptr(c))
+    elif is_int(a) and is_int(b):
+        elementwise.binary(op, int_ptr(a), int_ptr(b), n, int_ptr(c))
     else:
         raise ValueError('types (%s, %s) not implemented'
                          % (str(a.dtype), str(b.dtype)))
@@ -76,18 +55,17 @@ def _binary(BinaryOp op, ArrayData a, ArrayData b, unsigned int n,
 
 def _binary_scalar(BinaryOp op, ArrayData a, alpha, unsigned int n,
                    ArrayData b):
-    if isfloat(a) and isfloat(alpha):
-        elementwise.binary_scalar[float, float, float](op,
-            <const float *>a.dev_ptr, <float>alpha, n, <float *>b.dev_ptr)
-    elif isfloat(a) and isint(alpha):
-        elementwise.binary_scalar[float, int, float](op,
-            <const float *>a.dev_ptr, <int>alpha, n, <float *>b.dev_ptr)
-    elif isint(a) and isfloat(alpha):
-        elementwise.binary_scalar[int, float, float](op,
-            <const int *>a.dev_ptr, <float>alpha, n, <float *>b.dev_ptr)
-    elif isint(a) and isint(alpha):
-        elementwise.binary_scalar[int, int, int](op, <const int *>a.dev_ptr,
-            <int>alpha, n, <int *>b.dev_ptr)
+    if is_float(a) and isinstance(alpha,  float):
+        elementwise.binary_scalar(op, float_ptr(a), <float>alpha, n,
+                                  float_ptr(b))
+    elif is_float(a) and isinstance(alpha,  int):
+        elementwise.binary_scalar(op, float_ptr(a), <int>alpha, n,
+                                  float_ptr(b))
+    elif is_int(a) and isinstance(alpha,  float):
+        elementwise.binary_scalar(op, int_ptr(a), <float>alpha, n,
+                                  float_ptr(b))
+    elif is_int(a) and isinstance(alpha,  int):
+        elementwise.binary_scalar(op, int_ptr(a), <int>alpha, n, int_ptr(b))
     else:
         raise ValueError('types (%s, %s) not implemented'
                          % (str(a.dtype), type(alpha)))
@@ -96,22 +74,18 @@ def _binary_scalar(BinaryOp op, ArrayData a, alpha, unsigned int n,
 def _binary_broadcast(BinaryOp op, BroadcastType btype, ArrayData a,
         ArrayData b, unsigned int k, unsigned int m, unsigned int n,
         ArrayData c):
-    if isfloat(a) and isfloat(b):
-        elementwise.binary_broadcast[float, float, float](
-            op, btype, <const float *>a.dev_ptr, <const float *>b.dev_ptr, k,
-            m, n, <float *>c.dev_ptr)
-    elif isfloat(a) and isint(b):
-        elementwise.binary_broadcast[float, int, float](
-            op, btype, <const float *>a.dev_ptr, <const int *>b.dev_ptr, k, m,
-            n, <float *>c.dev_ptr)
-    elif isint(a) and isfloat(b):
-        elementwise.binary_broadcast[int, float, float](
-            op, btype, <const int *>a.dev_ptr, <const float *>b.dev_ptr, k, m,
-            n, <float *>c.dev_ptr)
-    elif isint(a) and isint(b):
-        elementwise.binary_broadcast[int, int, int](
-            op, btype, <const int *>a.dev_ptr, <const int *>b.dev_ptr, k, m, n,
-            <int *>c.dev_ptr)
+    if is_float(a) and is_float(b):
+        elementwise.binary_broadcast(op, btype, float_ptr(a), float_ptr(b), k,
+                                     m, n, float_ptr(c))
+    elif is_float(a) and is_int(b):
+        elementwise.binary_broadcast(op, btype, float_ptr(a), int_ptr(b), k, m,
+                                     n, float_ptr(c))
+    elif is_int(a) and is_float(b):
+        elementwise.binary_broadcast(op, btype, int_ptr(a), float_ptr(b), k, m,
+                                     n, float_ptr(c))
+    elif is_int(a) and is_int(b):
+        elementwise.binary_broadcast(op, btype, int_ptr(a), int_ptr(b), k, m,
+                                     n, int_ptr(c))
     else:
         raise ValueError('types (%s, %s) not implemented'
                          % (str(a.dtype), str(b.dtype)))
@@ -119,18 +93,18 @@ def _binary_broadcast(BinaryOp op, BroadcastType btype, ArrayData a,
 
 def _binary_cmp(BinaryCmpOp op, ArrayData a, ArrayData b, unsigned int n,
            ArrayData c):
-    if isfloat(a) and isfloat(b):
-        elementwise.binary_cmp[float, float](op, <const float *>a.dev_ptr,
-            <const float *>b.dev_ptr, n, <bool_t *>c.dev_ptr)
-    elif isfloat(a) and isint(b):
-        elementwise.binary_cmp[float, int](op, <const float *>a.dev_ptr,
-            <const int *>b.dev_ptr, n, <bool_t *>c.dev_ptr)
-    elif isint(a) and isfloat(b):
-        elementwise.binary_cmp[float, int](op, <const float *>a.dev_ptr,
-            <const int *>b.dev_ptr, n, <bool_t *>c.dev_ptr)
-    elif isint(a) and isint(b):
-        elementwise.binary_cmp[int, int](op, <const int *>a.dev_ptr,
-            <const int *>b.dev_ptr, n, <bool_t *>c.dev_ptr)
+    if is_float(a) and is_float(b):
+        elementwise.binary_cmp[float, float](op, float_ptr(a), float_ptr(b), n,
+                               bool_ptr(c))
+    elif is_float(a) and is_int(b):
+        elementwise.binary_cmp[float, int](op, float_ptr(a), int_ptr(b), n,
+                               bool_ptr(c))
+    elif is_int(a) and is_float(b):
+        elementwise.binary_cmp[int, float](op, int_ptr(a), float_ptr(b), n,
+                               bool_ptr(c))
+    elif is_int(a) and is_int(b):
+        elementwise.binary_cmp[int, int](op, int_ptr(a), int_ptr(b), n,
+                               bool_ptr(c))
     else:
         raise ValueError('types (%s, %s) not implemented'
                          % (str(a.dtype), str(b.dtype)))
@@ -138,18 +112,18 @@ def _binary_cmp(BinaryCmpOp op, ArrayData a, ArrayData b, unsigned int n,
 
 def _binary_cmp_scalar(BinaryCmpOp op, ArrayData a, alpha, unsigned int n,
                        ArrayData b):
-    if isfloat(a) and isfloat(alpha):
-        elementwise.binary_cmp_scalar[float, float](op,
-            <const float *>a.dev_ptr, <float>alpha, n, <bool_t *>b.dev_ptr)
-    elif isfloat(a) and isint(alpha):
-        elementwise.binary_cmp_scalar[float, int](op,
-            <const float *>a.dev_ptr, <int>alpha, n, <bool_t *>b.dev_ptr)
-    elif isint(a) and isfloat(alpha):
-        elementwise.binary_cmp_scalar[int, float](op,
-            <const int *>a.dev_ptr, <float>alpha, n, <bool_t *>b.dev_ptr)
-    elif isint(a) and isint(alpha):
-        elementwise.binary_cmp_scalar[int, int](op, <const int *>a.dev_ptr,
-            <int>alpha, n, <bool_t *>b.dev_ptr)
+    if is_float(a) and isinstance(alpha,  float):
+        elementwise.binary_cmp_scalar[float, float](op, float_ptr(a), alpha, n,
+                                                    bool_ptr(b))
+    elif is_float(a) and isinstance(alpha,  int):
+        elementwise.binary_cmp_scalar[float, int](op, float_ptr(a), alpha, n,
+                                                  bool_ptr(b))
+    elif is_int(a) and isinstance(alpha,  float):
+        elementwise.binary_cmp_scalar[int, float](op, int_ptr(a), alpha, n,
+                                                  bool_ptr(b))
+    elif is_int(a) and isinstance(alpha,  int):
+        elementwise.binary_cmp_scalar[int, int](op, int_ptr(a), alpha, n,
+                                                bool_ptr(b))
     else:
         raise ValueError('types (%s, %s) not implemented'
                          % (str(a.dtype), type(alpha)))
@@ -157,41 +131,34 @@ def _binary_cmp_scalar(BinaryCmpOp op, ArrayData a, alpha, unsigned int n,
 
 def _binary_cmp_broadcast(BinaryCmpOp op, BroadcastType btype, ArrayData a,
     ArrayData b, unsigned int k, unsigned int m, unsigned int n, ArrayData c):
-    if isfloat(a) and isfloat(b):
-        elementwise.binary_cmp_broadcast[float, float](
-            op, btype, <const float *>a.dev_ptr, <const float *>b.dev_ptr, k,
-            m, n, <bool_t *>c.dev_ptr)
-    elif isfloat(a) and isint(b):
-        elementwise.binary_cmp_broadcast[float, int](
-            op, btype, <const float *>a.dev_ptr, <const int *>b.dev_ptr, k, m,
-            n, <bool_t *>c.dev_ptr)
-    elif isint(a) and isfloat(b):
-        elementwise.binary_cmp_broadcast[int, float](
-            op, btype, <const int *>a.dev_ptr, <const float *>b.dev_ptr, k, m,
-            n, <bool_t *>c.dev_ptr)
-    elif isint(a) and isint(b):
-        elementwise.binary_cmp_broadcast[int, int](
-            op, btype, <const int *>a.dev_ptr, <const int *>b.dev_ptr, k, m, n,
-            <bool_t *>c.dev_ptr)
+    if is_float(a) and is_float(b):
+        elementwise.binary_cmp_broadcast[float, float](op, btype, float_ptr(a),
+            float_ptr(b), k, m, n, bool_ptr(c))
+    elif is_float(a) and is_int(b):
+        elementwise.binary_cmp_broadcast[float, int](op, btype, float_ptr(a), 
+            int_ptr(b), k, m, n, bool_ptr(c))
+    elif is_int(a) and is_float(b):
+        elementwise.binary_cmp_broadcast[int, float](op, btype, int_ptr(a),
+            float_ptr(b), k, m, n, bool_ptr(c))
+    elif is_int(a) and is_int(b):
+        elementwise.binary_cmp_broadcast[int, int](op, btype, int_ptr(a),
+            int_ptr(b), k, m, n, bool_ptr(c))
     else:
         raise ValueError('types (%s, %s) not implemented'
                          % (str(a.dtype), str(b.dtype)))
 
 
 def _unary(UnaryOp op, ArrayData a, unsigned int n, ArrayData b):
-    if isfloat(a):
-        elementwise.unary[float](op, <const float *>a.dev_ptr, n,
-                                 <float *>b.dev_ptr)
+    if is_float(a):
+        elementwise.unary(op, float_ptr(a), n, float_ptr(b))
     else:
         raise ValueError('type %s not implemented' % str(a.dtype))
 
 
 def _clip(ArrayData a, a_min, a_max, unsigned int n, ArrayData b):
-    if isfloat(a):
-        elementwise.clip[float](<const float *>a.dev_ptr, <float> a_min,
-                                <float> a_max, n, <float *>b.dev_ptr)
-    elif isint(a):
-        elementwise.clip[int](<const int *>a.dev_ptr, <int> a_min,
-                                <int> a_max, n, <int *>b.dev_ptr)
+    if is_float(a):
+        elementwise.clip[float](float_ptr(a), a_min, a_max, n, float_ptr(b))
+    elif is_int(a):
+        elementwise.clip[int](int_ptr(a), a_min, a_max, n, int_ptr(b))
     else:
         raise ValueError('type %s not implemented' % str(a.dtype))

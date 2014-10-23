@@ -20,12 +20,12 @@ cdef extern from 'cudarray/elementwise.hpp' namespace 'cudarray':
         SUB_OP
 
     void binary[Ta, Tb, Tc](BinaryOp op, const Ta *a, const Tb *b,
-                            unsigned int n, Tc *c);
+                            unsigned int n, Tc *c)
     void binary_scalar[Ta, Talpha, Tb](BinaryOp op, const Ta *a, Talpha alpha,
-                                       unsigned int n, Tb *b);
+                                       unsigned int n, Tb *b)
     void binary_broadcast[Ta, Tb, Tc](BinaryOp op, BroadcastType btype,
         const Ta *a, const Tb *b, unsigned int k, unsigned int m,
-        unsigned int n, Tc *c);
+        unsigned int n, Tc *c)
 
 
     enum BinaryCmpOp:
@@ -37,14 +37,14 @@ cdef extern from 'cudarray/elementwise.hpp' namespace 'cudarray':
         NEQ_OP
 
     void binary_cmp[Ta, Tb](BinaryCmpOp op, const Ta *a, const Tb *b,
-                            unsigned int n, bool_t *c);
+                            unsigned int n, bool_t *c)
 
     void binary_cmp_scalar[Ta, Talpha](BinaryCmpOp op, const Ta *a,
-        Talpha alpha, unsigned int n, bool_t *b);
+        Talpha alpha, unsigned int n, bool_t *b)
 
     void binary_cmp_broadcast[Ta, Tb](BinaryCmpOp op, BroadcastType btype,
         const Ta *a, const Tb *b, unsigned int k, unsigned int m,
-        unsigned int n, bool_t *c);
+        unsigned int n, bool_t *c)
 
 
     enum UnaryOp:
@@ -62,6 +62,6 @@ cdef extern from 'cudarray/elementwise.hpp' namespace 'cudarray':
         TANH_OP
         TANH_D_OP
 
-    void unary[T](UnaryOp op, const T *a, unsigned int n, T *b);
+    void unary[T](UnaryOp op, const T *a, unsigned int n, T *b)
 
-    void clip[T](const T *a, T a_min, T a_max, unsigned int n, T *b);
+    void clip[T](const T *a, T a_min, T a_max, unsigned int n, T *b)

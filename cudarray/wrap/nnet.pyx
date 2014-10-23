@@ -1,7 +1,6 @@
 cimport numpy as np
-
 cimport nnet
-from .array_data cimport ArrayData
+from .array_data cimport ArrayData, float_ptr, int_ptr, is_float
 
 
 def _conv_bc01_matmul(ArrayData imgs, ArrayData filters, int n_imgs,
@@ -15,11 +14,10 @@ def _conv_bc01_matmul(ArrayData imgs, ArrayData filters, int n_imgs,
     cdef int pad_x = padding[1]
     cdef int stride_y = strides[0]
     cdef int stride_x = strides[1]
-
-    if imgs.dtype == np.dtype('float32'):
-        nnet.conv_bc01_matmul(<float *>imgs.dev_ptr, <float *>filters.dev_ptr,
+    if is_float(imgs):
+        nnet.conv_bc01_matmul(float_ptr(imgs), float_ptr(filters),
             n_imgs, n_channels, n_filters, img_h, img_w, filter_h, filter_w,
-            pad_y, pad_x, stride_y, stride_x, <float *>convout.dev_ptr)
+            pad_y, pad_x, stride_y, stride_x, float_ptr(convout))
     else:
         raise ValueError('type %s not implemented' % str(imgs.dtype))
 
@@ -35,10 +33,11 @@ def _conv_bc01_matmul_bprop_filters(ArrayData imgs, ArrayData convout_d,
     cdef int pad_x = padding[1]
     cdef int stride_y = strides[0]
     cdef int stride_x = strides[1]
-    if imgs.dtype == np.dtype('float32'):
-        nnet.conv_bc01_matmul_bprop_filters(<float *>imgs.dev_ptr, <float *>convout_d.dev_ptr,
-            n_imgs, n_channels, n_filters, img_h, img_w, filter_h, filter_w,
-            pad_y, pad_x, stride_y, stride_x, <float *>filters_d.dev_ptr)
+    if is_float(imgs):
+        nnet.conv_bc01_matmul_bprop_filters(float_ptr(imgs),
+            float_ptr(convout_d), n_imgs, n_channels, n_filters, img_h, img_w,
+            filter_h, filter_w, pad_y, pad_x, stride_y, stride_x,
+            float_ptr(filters_d))
     else:
         raise ValueError('type %s not implemented' % str(imgs.dtype))
 
@@ -54,10 +53,11 @@ def _conv_bc01_matmul_bprop_imgs(ArrayData filters, ArrayData convout_d,
     cdef int pad_x = padding[1]
     cdef int stride_y = strides[0]
     cdef int stride_x = strides[1]
-    if filters.dtype == np.dtype('float32'):
-        nnet.conv_bc01_matmul_bprop_imgs(<float *>filters.dev_ptr, <float *>convout_d.dev_ptr,
-            n_imgs, n_channels, n_filters, img_h, img_w, filter_h, filter_w,
-            pad_y, pad_x, stride_y, stride_x, <float *>imgs_d.dev_ptr)
+    if is_float(filters):
+        nnet.conv_bc01_matmul_bprop_imgs(float_ptr(filters),
+            float_ptr(convout_d), n_imgs, n_channels, n_filters, img_h, img_w,
+            filter_h, filter_w, pad_y, pad_x, stride_y, stride_x,
+            float_ptr(imgs_d))
     else:
         raise ValueError('type %s not implemented' % str(filters.dtype))
 
@@ -72,10 +72,10 @@ def _max_pool_b01(ArrayData imgs, int n_imgs, img_shape, win_shape, padding,
     cdef int pad_x = padding[1]
     cdef int stride_y = strides[0]
     cdef int stride_x = strides[1]
-    if imgs.dtype == np.dtype('float32'):
-        nnet.max_pool_b01(<float *>imgs.dev_ptr, n_imgs, img_h, img_w,
+    if is_float(imgs):
+        nnet.max_pool_b01(float_ptr(imgs), n_imgs, img_h, img_w,
             win_h, win_w, pad_y, pad_x, stride_y, stride_x,
-            <float *>out.dev_ptr, <int *>mask.dev_ptr)
+            float_ptr(out), int_ptr(mask))
     else:
         raise ValueError('type %s not implemented' % str(imgs.dtype))
 
@@ -90,17 +90,16 @@ def _max_pool_b01_bprop(ArrayData out_d, ArrayData mask, int n_imgs, img_shape,
     cdef int pad_x = padding[1]
     cdef int stride_y = strides[0]
     cdef int stride_x = strides[1]
-    if out_d.dtype == np.dtype('float32'):
-        nnet.max_pool_b01_bprob(<float *>out_d.dev_ptr, <int *>mask.dev_ptr,
+    if is_float(out_d):
+        nnet.max_pool_b01_bprob(float_ptr(out_d), int_ptr(mask),
             n_imgs, img_h, img_w, win_h, win_w, pad_y, pad_x, stride_y,
-            stride_x, <float *> imgs_d.dev_ptr)
+            stride_x, float_ptr(imgs_d))
     else:
         raise ValueError('type %s not implemented' % str(out_d.dtype))
 
 
 def _one_hot_encode(ArrayData labels, int n_classes, int n, ArrayData out):
-    if out.dtype == np.dtype('float32'):
-        nnet.one_hot_encode(<int *>labels.dev_ptr, n_classes, n,
-                            <float *> out.dev_ptr)
+    if is_float(out):
+        nnet.one_hot_encode(int_ptr(labels), n_classes, n, float_ptr(out))
     else:
         raise ValueError('type %s not implemented' % str(out.dtype))
