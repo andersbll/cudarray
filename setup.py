@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import sys
 import fnmatch
 import numpy
 
@@ -10,129 +11,61 @@ from Cython.Distutils import build_ext
 from Cython.Distutils.extension import Extension
 
 
-def find_files(root_dir, filename_pattern):
-    matches = []
-    for root, dirnames, filenames in os.walk(root_dir):
-        for filename in fnmatch.filter(filenames, filename_pattern):
-            matches.append(os.path.join(root, filename))
-    return matches
-
-
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 
 def cuda_extensions():
+    cuda_dir = os.getenv('CUDA_DIR', '/usr/local/cuda')
+    if not os.path.exists(cuda_dir):
+        raise IOError('CUDA directory does not exist: %s' % cuda_dir)
+    cuda_include_dir = os.path.join(cuda_dir, 'include')
+    cuda_library_dir = os.path.join(cuda_dir, 'lib64')
+    if not os.path.exists(cuda_library_dir):
+        # Use lib if lib64 does not exist
+        cuda_library_dir = os.path.join(cuda_dir, 'lib')
+
+    library_dirs = [cuda_library_dir]
+    prefix = os.getenv('INSTALL_PREFIX')
+    if prefix is not None:
+        library_dirs.append(os.path.join(prefix, 'lib'))
+
     cudarray_dir = './cudarray'
     cudarray_include_dir = './include'
-    cuda_include_dir = '/usr/local/cuda/include'
-    cudarray_lib_dir = './build'
     include_dirs = [cuda_include_dir, cudarray_include_dir,
                     numpy.get_include()]
     cython_include_dirs = ['./cudarray/wrap']
     extra_compile_args = ['-O3', '-fPIC', '-Wall', '-Wfatal-errors']
-    extra_link_args = ['-L/usr/local/cuda/lib64', '-fPIC']
+    libraries = ['cudart', 'cudarray']
+    extra_link_args = ['-fPIC']
     language = 'c++'
 
-    cudart_ext = Extension(
-        name='cudarray.wrap.cudart',
-        sources=[os.path.join(cudarray_dir, 'wrap', 'cudart.pyx')],
-        libraries=['cudart'],
-        include_dirs=include_dirs,
-        language=language,
-        cython_include_dirs=cython_include_dirs,
-        extra_compile_args=extra_compile_args,
-        extra_link_args=extra_link_args,
-    )
-
-    array_data_ext = Extension(
-        name='cudarray.wrap.array_data',
-        sources=[os.path.join(cudarray_dir, 'wrap',
-                 'array_data.pyx')],
-        libraries=['cudart'],
-        include_dirs=include_dirs,
-        library_dirs=[cudarray_lib_dir],
-        language=language,
-        cython_include_dirs=cython_include_dirs,
-        extra_compile_args=extra_compile_args,
-        extra_link_args=extra_link_args,
-    )
-
-    elementwise_ext = Extension(
-        name='cudarray.wrap.elementwise',
-        sources=[os.path.join(cudarray_dir, 'wrap',
-                 'elementwise.pyx')],
-        libraries=['cudarray'],
-        library_dirs=[cudarray_lib_dir],
-        include_dirs=include_dirs,
-        cython_include_dirs=cython_include_dirs,
-        language=language,
-        extra_compile_args=extra_compile_args,
-        extra_link_args=extra_link_args,
-    )
-
-    reduction_ext = Extension(
-        name='cudarray.wrap.reduction',
-        sources=[os.path.join(cudarray_dir, 'wrap', 'reduction.pyx')],
-        libraries=['cudarray'],
-        library_dirs=[cudarray_lib_dir],
-        include_dirs=include_dirs,
-        cython_include_dirs=cython_include_dirs,
-        language=language,
-        extra_compile_args=extra_compile_args,
-        extra_link_args=extra_link_args,
-    )
-
-    blas_ext = Extension(
-        name='cudarray.wrap.blas',
-        sources=[os.path.join(cudarray_dir, 'wrap', 'blas.pyx')],
-        libraries=['cudarray'],
-        library_dirs=[cudarray_lib_dir],
-        include_dirs=include_dirs,
-        cython_include_dirs=cython_include_dirs,
-        language=language,
-        extra_compile_args=extra_compile_args,
-        extra_link_args=extra_link_args,
-    )
-
-    random_ext = Extension(
-        name='cudarray.wrap.random',
-        sources=[os.path.join(cudarray_dir, 'wrap', 'random.pyx')],
-        libraries=['cudarray'],
-        library_dirs=[cudarray_lib_dir],
-        include_dirs=include_dirs,
-        cython_include_dirs=cython_include_dirs,
-        language=language,
-        extra_compile_args=extra_compile_args,
-        extra_link_args=extra_link_args,
-    )
-
-    nnet_ext = Extension(
-        name='cudarray.wrap.nnet',
-        sources=[os.path.join(cudarray_dir, 'wrap', 'nnet.pyx')],
-        libraries=['cudarray'],
-        library_dirs=[cudarray_lib_dir],
-        include_dirs=include_dirs,
-        cython_include_dirs=cython_include_dirs,
-        language=language,
-        extra_compile_args=extra_compile_args,
-        extra_link_args=extra_link_args,
-    )
-
-    exts = [cudart_ext, array_data_ext, elementwise_ext,
-            reduction_ext, blas_ext, random_ext,
-            nnet_ext]
+    def make_extension(name):
+        return Extension(
+            name='cudarray.wrap.' + name,
+            sources=[os.path.join(cudarray_dir, 'wrap', name + '.pyx')],
+            language=language,
+            include_dirs=include_dirs,
+            cython_include_dirs=cython_include_dirs,
+            extra_compile_args=extra_compile_args,
+            library_dirs=library_dirs,
+            libraries=libraries,
+            extra_link_args=extra_link_args,
+        )
+    ext_names = ['cudart', 'array_data', 'elementwise', 'reduction', 'blas',
+                 'random', 'nnet']
+    exts = map(make_extension, ext_names)
 
     if os.getenv('CUDNN_ENABLED') == '1':
         cudnn_ext = Extension(
             name='cudarray.wrap.cudnn',
             sources=[os.path.join(cudarray_dir, 'wrap', 'cudnn.pyx')],
-            libraries=['cudarray'],
-            library_dirs=[cudarray_lib_dir],
+            language=language,
             include_dirs=include_dirs,
             cython_include_dirs=cython_include_dirs,
-            language=language,
             extra_compile_args=['-DCUDNN_ENABLED'] + extra_compile_args,
+            library_dirs=library_dirs,
+            libraries=libraries+['cudnn'],
             extra_link_args=extra_link_args,
         )
         exts.append(cudnn_ext)
@@ -145,8 +78,7 @@ def numpy_extensions():
         'cudarray/numpy_backend/nnet/pool_bc01.pyx',
         'cudarray/numpy_backend/nnet/lrnorm_bc01.pyx',
     ]
-    include_dirs = [numpy.get_include()]
-    return cythonize(cython_srcs, include_path=include_dirs)
+    return cythonize(cython_srcs, include_path=[numpy.get_include()])
 
 
 setup(
@@ -157,7 +89,6 @@ setup(
     description='CUDA-based Numpy array and operations',
     license='MIT',
     url='http://compute.dtu.dk/~abll',
-    include_dirs=[numpy.get_include()],
     packages=find_packages(),
     install_requires=['numpy', 'cython'],
     long_description=read('README.md'),
