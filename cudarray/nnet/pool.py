@@ -1,6 +1,6 @@
 import numpy as np
 import cudarray as ca
-from ..cudarray_wrap import nnet as wrap
+from ..wrap import nnet
 
 
 class PoolB01(object):
@@ -15,7 +15,7 @@ class PoolB01(object):
         if impl == 'masked':
             self.mask = None
         elif impl == 'cudnn':
-            from ..cudarray_wrap import cudnn
+            from ..wrap import cudnn
             self.last_poolout = None
             self.pool_cudnn = cudnn.PoolBC01CuDNN_f(win_shape, padding,
                                                     strides)
@@ -37,7 +37,7 @@ class PoolB01(object):
             n_imgs = np.prod(imgs.shape[:-2])
             if self.mask is None or self.mask.shape != poolout_shape:
                 self.mask = ca.empty(poolout_shape, dtype=np.dtype('int32'))
-            wrap._max_pool_b01(
+            nnet._max_pool_b01(
                 imgs._data, n_imgs, img_shape, self.win_shape, self.padding,
                 self.strides, poolout._data, self.mask._data
             )
@@ -64,7 +64,7 @@ class PoolB01(object):
 
         if self.impl == 'masked':
             n_imgs = np.prod(n_imgs_shape)
-            wrap._max_pool_b01_bprop(
+            nnet._max_pool_b01_bprop(
                 poolout_d._data, self.mask._data, n_imgs, img_shape,
                 self.win_shape, self.padding, self.strides, imgs_d._data
             )

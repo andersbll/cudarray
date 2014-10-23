@@ -1,6 +1,6 @@
 import numpy as np
 import cudarray as ca
-from ..cudarray_wrap import blas
+from ..wrap import blas
 from ..linalg import matmul_shape
 
 

@@ -2,7 +2,7 @@ from functools import reduce
 import operator
 import numpy as np
 
-from .cudarray_wrap.array_data import ArrayData
+from .wrap.array_data import ArrayData
 from . import elementwise
 from . import base
 
