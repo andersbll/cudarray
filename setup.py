@@ -29,14 +29,14 @@ def cuda_extensions():
     cudarray_lib_dir = './build'
     include_dirs = [cuda_include_dir, cudarray_include_dir,
                     numpy.get_include()]
-    cython_include_dirs = ['./cudarray/cudarray_wrap', './cudarray/cuda_wrap']
+    cython_include_dirs = ['./cudarray/wrap']
     extra_compile_args = ['-O3', '-fPIC', '-Wall', '-Wfatal-errors']
     extra_link_args = ['-L/usr/local/cuda/lib64', '-fPIC']
     language = 'c++'
 
     cudart_ext = Extension(
-        name='cudarray.cuda_wrap.cudart',
-        sources=[os.path.join(cudarray_dir, 'cuda_wrap', 'cudart.pyx')],
+        name='cudarray.wrap.cudart',
+        sources=[os.path.join(cudarray_dir, 'wrap', 'cudart.pyx')],
         libraries=['cudart'],
         include_dirs=include_dirs,
         cython_include_dirs=cython_include_dirs,
@@ -44,9 +44,9 @@ def cuda_extensions():
         extra_link_args=extra_link_args,
     )
 
-    cudarray_ext = Extension(
-        name='cudarray.cudarray_wrap.array_data',
-        sources=[os.path.join(cudarray_dir, 'cudarray_wrap',
+    array_data_ext = Extension(
+        name='cudarray.wrap.array_data',
+        sources=[os.path.join(cudarray_dir, 'wrap',
                  'array_data.pyx')],
         libraries=['cudart'],
         include_dirs=include_dirs,
@@ -56,9 +56,9 @@ def cuda_extensions():
         extra_link_args=extra_link_args,
     )
 
-    elementwise_wrap_ext = Extension(
-        name='cudarray.cudarray_wrap.elementwise',
-        sources=[os.path.join(cudarray_dir, 'cudarray_wrap',
+    elementwise_ext = Extension(
+        name='cudarray.wrap.elementwise',
+        sources=[os.path.join(cudarray_dir, 'wrap',
                  'elementwise.pyx')],
         libraries=['cudarray'],
         library_dirs=[cudarray_lib_dir],
@@ -69,9 +69,9 @@ def cuda_extensions():
         extra_link_args=extra_link_args,
     )
 
-    reduction_wrap_ext = Extension(
-        name='cudarray.cudarray_wrap.reduction',
-        sources=[os.path.join(cudarray_dir, 'cudarray_wrap', 'reduction.pyx')],
+    reduction_ext = Extension(
+        name='cudarray.wrap.reduction',
+        sources=[os.path.join(cudarray_dir, 'wrap', 'reduction.pyx')],
         libraries=['cudarray'],
         library_dirs=[cudarray_lib_dir],
         include_dirs=include_dirs,
@@ -81,9 +81,9 @@ def cuda_extensions():
         extra_link_args=extra_link_args,
     )
 
-    blas_wrap_ext = Extension(
-        name='cudarray.cudarray_wrap.blas',
-        sources=[os.path.join(cudarray_dir, 'cudarray_wrap', 'blas.pyx')],
+    blas_ext = Extension(
+        name='cudarray.wrap.blas',
+        sources=[os.path.join(cudarray_dir, 'wrap', 'blas.pyx')],
         libraries=['cudarray'],
         library_dirs=[cudarray_lib_dir],
         include_dirs=include_dirs,
@@ -93,9 +93,9 @@ def cuda_extensions():
         extra_link_args=extra_link_args,
     )
 
-    random_wrap_ext = Extension(
-        name='cudarray.cudarray_wrap.random',
-        sources=[os.path.join(cudarray_dir, 'cudarray_wrap', 'random.pyx')],
+    random_ext = Extension(
+        name='cudarray.wrap.random',
+        sources=[os.path.join(cudarray_dir, 'wrap', 'random.pyx')],
         libraries=['cudarray'],
         library_dirs=[cudarray_lib_dir],
         include_dirs=include_dirs,
@@ -105,9 +105,9 @@ def cuda_extensions():
         extra_link_args=extra_link_args,
     )
 
-    nnet_wrap_ext = Extension(
-        name='cudarray.cudarray_wrap.nnet',
-        sources=[os.path.join(cudarray_dir, 'cudarray_wrap', 'nnet.pyx')],
+    nnet_ext = Extension(
+        name='cudarray.wrap.nnet',
+        sources=[os.path.join(cudarray_dir, 'wrap', 'nnet.pyx')],
         libraries=['cudarray'],
         library_dirs=[cudarray_lib_dir],
         include_dirs=include_dirs,
@@ -117,14 +117,14 @@ def cuda_extensions():
         extra_link_args=extra_link_args,
     )
 
-    exts = [cudart_ext, cudarray_ext, elementwise_wrap_ext,
-            reduction_wrap_ext, blas_wrap_ext, random_wrap_ext,
-            nnet_wrap_ext]
+    exts = [cudart_ext, array_data_ext, elementwise_ext,
+            reduction_ext, blas_ext, random_ext,
+            nnet_ext]
 
     if os.getenv('CUDNN_ENABLED') == '1':
-        cudnn_wrap_ext = Extension(
-            name='cudarray.cudarray_wrap.cudnn',
-            sources=[os.path.join(cudarray_dir, 'cudarray_wrap', 'cudnn.pyx')],
+        cudnn_ext = Extension(
+            name='cudarray.wrap.cudnn',
+            sources=[os.path.join(cudarray_dir, 'wrap', 'cudnn.pyx')],
             libraries=['cudarray'],
             library_dirs=[cudarray_lib_dir],
             include_dirs=include_dirs,
@@ -133,7 +133,7 @@ def cuda_extensions():
             extra_compile_args=['-DCUDNN_ENABLED'] + extra_compile_args,
             extra_link_args=extra_link_args,
         )
-        exts.append(cudnn_wrap_ext)
+        exts.append(cudnn_ext)
     return exts
 
 
@@ -172,7 +172,7 @@ setup(
         'cuda': Feature(
             description='CUDA back-end',
             standard=True,
-            remove=['cudarray.cudarray_wrap', 'cudarray.cuda_wrap'],
+            remove=['cudarray.wrap'],
             ext_modules=cuda_extensions(),
         ),
         'numpy': Feature(

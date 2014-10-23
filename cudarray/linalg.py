@@ -1,6 +1,6 @@
 import numpy as np
 
-from .cudarray_wrap import blas
+from .wrap import blas
 from . import cudarray
 
 

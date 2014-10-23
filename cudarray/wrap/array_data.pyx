@@ -1,5 +1,5 @@
 cimport numpy as np
-from ..cuda_wrap.cudart cimport *
+from .cudart cimport *
 from .array_data cimport ArrayData
 
 
