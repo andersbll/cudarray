@@ -1,3 +1,5 @@
+#ifdef CUDNN_ENABLED
+
 #ifndef CUDNN_HPP_
 #define CUDNN_HPP_
 
@@ -107,6 +109,9 @@ private:
   void operator=(CUDNN const&);
 };
 
-}
+
+} // cudarray
 
 #endif // CUDNN_HPP_
+
+#endif // CUDNN_ENABLED

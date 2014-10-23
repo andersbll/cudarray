@@ -1,3 +1,5 @@
+#ifdef CUDNN_ENABLED
+
 #include <iostream>
 #include "cudarray/nnet/cudnn.hpp"
 
@@ -48,7 +50,6 @@ void PoolBC01CuDNN<T>::fprop(const T *imgs, int n_imgs, int n_channels,
   CUDNN_CHECK(cudnnPoolingForward(
       CUDNN::handle(), pool_desc, imgs_desc, imgs, poolout_desc, poolout
   ));
-  CUDA_CHECK(cudaDeviceSynchronize());
 }
 
 
@@ -59,7 +60,6 @@ void PoolBC01CuDNN<T>::bprop(const T *imgs, const T* poolout,
     CUDNN::handle(), pool_desc, poolout_desc, poolout, poolout_desc,
     poolout_d, imgs_desc, imgs, imgs_desc, imgs_d
   ));
-  CUDA_CHECK(cudaDeviceSynchronize());
 }
 
 
@@ -181,4 +181,6 @@ const char *cudnn_message(cudnnStatus_t status){
 }
 
 
-}
+} // cudarray
+
+#endif // CUDNN_ENABLED

@@ -5,7 +5,7 @@ from ..cudarray_wrap import nnet as wrap
 
 class PoolB01(object):
     def __init__(self, win_shape, padding, strides, method='max',
-                 impl='cudnn'):
+                 impl='masked'):
         self.win_shape = win_shape
         self.padding = padding
         self.strides = strides
@@ -33,7 +33,7 @@ class PoolB01(object):
                 raise ValueError('dtype mismatch')
 
         img_shape = imgs.shape[-2:]
-        if self.impl == 'matmul':
+        if self.impl == 'masked':
             n_imgs = np.prod(imgs.shape[:-2])
             if self.mask is None or self.mask.shape != poolout_shape:
                 self.mask = ca.empty(poolout_shape, dtype=np.dtype('int32'))
@@ -62,7 +62,7 @@ class PoolB01(object):
             if imgs_d.dtype != poolout_d.dtype:
                 raise ValueError('dtype mismatch')
 
-        if self.impl == 'matmul':
+        if self.impl == 'masked':
             n_imgs = np.prod(n_imgs_shape)
             wrap._max_pool_b01_bprop(
                 poolout_d._data, self.mask._data, n_imgs, img_shape,

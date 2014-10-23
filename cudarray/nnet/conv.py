@@ -3,7 +3,7 @@ from ..cudarray_wrap import nnet as wrap
 
 
 class ConvBC01(object):
-    def __init__(self, padding, strides, impl='cudnn'):
+    def __init__(self, padding, strides, impl='matmul'):
         self.padding = padding
         self.strides = strides
         self.impl = impl
