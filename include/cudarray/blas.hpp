@@ -1,6 +1,8 @@
 #ifndef BLAS_HPP_
 #define BLAS_HPP_
 
+#include <stdexcept>
+#include <sstream>
 #include <cublas_v2.h>
 
 

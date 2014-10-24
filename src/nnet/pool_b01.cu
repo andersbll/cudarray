@@ -42,10 +42,10 @@ void max_pool_b01(const T* imgs, int n_imgs, int img_h, int img_w, int win_h,
   int poolout_h = (img_h + 2*pad_y - win_h) / stride_y + 1;
   int poolout_w = (img_w + 2*pad_x - win_w) / stride_x + 1;
   int n_threads = n_imgs * poolout_h * poolout_w;
-  max_pool_b01<<<CUDA_BLOCKS(n_threads), CUDA_NUM_THREADS>>>(
+  max_pool_b01<<<cuda_blocks(n_threads), kNumBlockThreads>>>(
     n_threads, imgs, img_h, img_w, poolout_h, poolout_w, win_h, win_w, pad_y,
     pad_x, stride_y, stride_x, poolout, mask);
-  CUDA_CHECK_LAST_ERROR
+  CUDA_KERNEL_CHECK;
 }
 
 template void max_pool_b01<float>(const float* imgs, int n_imgs, int img_h,
@@ -91,10 +91,10 @@ void max_pool_b01_bprob(const T* poolout_d, const int* mask, int n_imgs,
   int poolout_h = (img_h + 2*pad_y - win_h) / stride_y + 1;
   int poolout_w = (img_w + 2*pad_x - win_w) / stride_x + 1;
   int n_threads = n_imgs * img_h * img_w;
-  max_pool_b01_bprob<<<CUDA_BLOCKS(n_threads), CUDA_NUM_THREADS>>>(
+  max_pool_b01_bprob<<<cuda_blocks(n_threads), kNumBlockThreads>>>(
     n_threads, poolout_d, mask, img_h, img_w, poolout_h, poolout_w, win_h,
     win_w, pad_y, pad_x, stride_y, stride_x, imgs_d);
-  CUDA_CHECK_LAST_ERROR
+  CUDA_KERNEL_CHECK;
 }
 
 template void max_pool_b01_bprob(const float* poolout_d, const int* mask,

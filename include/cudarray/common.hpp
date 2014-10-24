@@ -6,17 +6,6 @@
 #include <sstream>
 #include <string>
 #include <cuda_runtime_api.h>
-#include <cufft.h>
-
-
-
-const char *cufftErrorEnum(cufftResult error);
-#define CUFFT_CHECK(condition) { \
-    cufftResult status = condition; \
-    if (status != CUFFT_SUCCESS) { \
-        throw std::runtime_error(cufftErrorEnum(status)); \
-    } \
-  }
 
 
 #define CUDA_GRID_STRIDE_LOOP(i, n) \
@@ -24,18 +13,18 @@ const char *cufftErrorEnum(cufftResult error);
        i < n; \
        i += blockDim.x * gridDim.x)
 
-#define CUDA_NUM_THREADS 512
-
-#define CUDA_THREADS_PER_BLOCK 512
-
-#define CUDA_BLOCKS(n_threads) \
-  ((n_threads + CUDA_NUM_THREADS - 1) / CUDA_NUM_THREADS)
-
 
 namespace cudarray {
 
+
 typedef int bool_t;
 
+const int kNumBuffers = 32;
+const int kNumBlockThreads = 512;
+
+inline int cuda_blocks(int n_threads) {
+    return (n_threads + kNumBlockThreads - 1) / kNumBlockThreads;
+} 
 
 inline void cuda_check(cudaError_t status, const char *file, int line) {
   if (status != cudaSuccess) {
@@ -47,14 +36,22 @@ inline void cuda_check(cudaError_t status, const char *file, int line) {
 
 #define CUDA_CHECK(status) { cuda_check((status), __FILE__, __LINE__); }
 
-#ifdef CUDA_SYNC
-#define CUDA_CHECK_LAST_ERROR \
-  CUDA_CHECK(cudaPeekAtLastError()); \
-  CUDA_CHECK(cudaDeviceSynchronize());
-#else
-#define CUDA_CHECK_LAST_ERROR \
-  CUDA_CHECK(cudaPeekAtLastError());
-#endif
+inline void cuda_kernel_check(const char *file, int line) {
+  cudaError_t status = cudaPeekAtLastError();
+  if (status != cudaSuccess) {
+    std::ostringstream o;
+    o << file << ":" << line << ": " << cudaGetErrorString(status);
+    throw std::runtime_error(o.str());
+  }
+}
+
+#define CUDA_KERNEL_CHECK { cuda_kernel_check(__FILE__, __LINE__); }
+
+inline void cuda_check_sync(const char *file, const int line) {
+  cuda_check(cudaDeviceSynchronize(), file, line);
+}
+
+#define CUDA_CHECK_SYNC { cuda_check_sync(__FILE__, __LINE__); }
 
 
 /*
@@ -67,7 +64,10 @@ public:
     return instance_;
   }
 
-  inline static void *buffer(unsigned int size, unsigned int idx=0) {
+  /*
+    Request a memory pointer to device memory
+  */
+  inline static void *buffer(size_t size, unsigned int idx=0) {
     if (instance().buffer_sizes[idx] < size) {
       if (instance().buffers[idx]) {
         CUDA_CHECK(cudaFree(instance().buffers[idx]));
@@ -78,30 +78,30 @@ public:
     return instance().buffers[idx];
   }
 
-
 private:
-  void *buffers[32];
-  unsigned int buffer_sizes[32];
+  void *buffers[kNumBuffers];
+  size_t buffer_sizes[kNumBuffers];
 
   CUDA() {
-    for(int i = 0; i < 32; i++) {
+    for(int i = 0; i < kNumBuffers; i++) {
         buffers[i] = NULL;
         buffer_sizes[i] = 0;
     }
-    buffer_sizes[0] = 99999999;
-    CUDA_CHECK(cudaMalloc(&buffers[0], buffer_sizes[0]));
   }
 
   ~CUDA() {
-//    cudaDeviceReset();
+    for(int i = 0; i < kNumBuffers; i++) {
+      if (buffers[i]) {
+        CUDA_CHECK(cudaFree(instance().buffers[i]));
+      }
+    }
   }
 
   CUDA(CUDA const&);
-
   void operator=(CUDA const&);
 };
 
-}
 
+} // cudarray
 
 #endif  // COMMON_HPP_

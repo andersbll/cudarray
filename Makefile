@@ -10,8 +10,7 @@ endif
 
 SRC_DIR = ./src
 
-SRCS = $(SRC_DIR)/common.cpp \
-       $(SRC_DIR)/nnet/conv_bc01_matmul.cpp \
+SRCS = $(SRC_DIR)/nnet/conv_bc01_matmul.cpp \
        $(SRC_DIR)/nnet/pool_b01.cpp \
        $(SRC_DIR)/nnet/cudnn.cpp
 

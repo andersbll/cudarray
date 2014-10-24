@@ -63,7 +63,7 @@ void random_uniform<float>(float *a, float low, float high, unsigned int n) {
   if (high != 1.0 || low != 0.0) {
     float alpha = high - low;
     float beta = low;
-    kernel_stretch<<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>(a, alpha, beta, n);
+    kernel_stretch<<<cuda_blocks(n), kNumBlockThreads>>>(a, alpha, beta, n);
   }
 }
 
