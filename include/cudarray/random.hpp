@@ -7,15 +7,6 @@
 #include <unistd.h>
 #include <curand.h>
 
-const char* curandGetErrorString(curandStatus_t error);
-
-#define CURAND_CHECK(expr) \
-  { \
-    curandStatus_t status = expr; \
-    if (status != CURAND_STATUS_SUCCESS) { \
-        throw std::runtime_error(curandGetErrorString(status)); \
-    } \
-  }
 
 namespace cudarray {
 
@@ -26,6 +17,20 @@ void random_normal(T *a, T mu, T sigma, unsigned int n);
 
 template <typename T>
 void random_uniform(T *a, T low, T high, unsigned int n);
+
+
+const char* curand_message(curandStatus_t status);
+
+inline void curand_check(curandStatus_t status, const char *file, int line) {
+  if (status != CURAND_STATUS_SUCCESS) {
+    std::ostringstream o;
+    o << file << ":" << line << ": " << curand_message(status);
+    throw std::runtime_error(o.str());
+  }
+}
+
+#define CURAND_CHECK(status) { curand_check((status), __FILE__, __LINE__); }
+
 
 /*
   Singleton class to handle cuRAND resources.

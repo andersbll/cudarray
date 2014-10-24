@@ -3,40 +3,8 @@
 #include "cudarray/random.hpp"
 
 
-const char* curandGetErrorString(curandStatus_t error) {
-  switch (error) {
-  case CURAND_STATUS_SUCCESS:
-    return "CURAND_STATUS_SUCCESS";
-  case CURAND_STATUS_VERSION_MISMATCH:
-    return "CURAND_STATUS_VERSION_MISMATCH";
-  case CURAND_STATUS_NOT_INITIALIZED:
-    return "CURAND_STATUS_NOT_INITIALIZED";
-  case CURAND_STATUS_ALLOCATION_FAILED:
-    return "CURAND_STATUS_ALLOCATION_FAILED";
-  case CURAND_STATUS_TYPE_ERROR:
-    return "CURAND_STATUS_TYPE_ERROR";
-  case CURAND_STATUS_OUT_OF_RANGE:
-    return "CURAND_STATUS_OUT_OF_RANGE";
-  case CURAND_STATUS_LENGTH_NOT_MULTIPLE:
-    return "CURAND_STATUS_LENGTH_NOT_MULTIPLE";
-  case CURAND_STATUS_DOUBLE_PRECISION_REQUIRED:
-    return "CURAND_STATUS_DOUBLE_PRECISION_REQUIRED";
-  case CURAND_STATUS_LAUNCH_FAILURE:
-    return "CURAND_STATUS_LAUNCH_FAILURE";
-  case CURAND_STATUS_PREEXISTING_FAILURE:
-    return "CURAND_STATUS_PREEXISTING_FAILURE";
-  case CURAND_STATUS_INITIALIZATION_FAILED:
-    return "CURAND_STATUS_INITIALIZATION_FAILED";
-  case CURAND_STATUS_ARCH_MISMATCH:
-    return "CURAND_STATUS_ARCH_MISMATCH";
-  case CURAND_STATUS_INTERNAL_ERROR:
-    return "CURAND_STATUS_INTERNAL_ERROR";
-  }
-  return "Unknown curand status";
-}
-
-
 namespace cudarray {
+
 
 void seed(unsigned long long val) {
   CURAND_CHECK(curandSetPseudoRandomGeneratorSeed(CURAND::generator(),
@@ -66,5 +34,40 @@ void random_uniform<float>(float *a, float low, float high, unsigned int n) {
     kernel_stretch<<<cuda_blocks(n), kNumBlockThreads>>>(a, alpha, beta, n);
   }
 }
+
+
+const char* curand_message(curandStatus_t status) {
+  switch (status) {
+    case CURAND_STATUS_SUCCESS:
+      return "No errors.";
+    case CURAND_STATUS_VERSION_MISMATCH:
+      return "Header file and linked library version do not match.";
+    case CURAND_STATUS_NOT_INITIALIZED:
+      return "Generator not initialized.";
+    case CURAND_STATUS_ALLOCATION_FAILED:
+      return "Memory allocation failed.";
+    case CURAND_STATUS_TYPE_ERROR:
+      return "Generator is wrong type.";
+    case CURAND_STATUS_OUT_OF_RANGE:
+      return "Argument out of range.";
+    case CURAND_STATUS_LENGTH_NOT_MULTIPLE:
+      return "Length requested is not a multple of dimension.";
+    case CURAND_STATUS_DOUBLE_PRECISION_REQUIRED:
+      return "GPU does not have double precision required by MRG32k3a.";
+    case CURAND_STATUS_LAUNCH_FAILURE:
+      return "Kernel launch failure.";
+    case CURAND_STATUS_PREEXISTING_FAILURE:
+      return "Preexisting failure on library entry.";
+    case CURAND_STATUS_INITIALIZATION_FAILED:
+      return "Initialization of CUDA failed.";
+    case CURAND_STATUS_ARCH_MISMATCH:
+      return "Architecture mismatch, GPU does not support requested feature.";
+    case CURAND_STATUS_INTERNAL_ERROR:
+      return "Internal library error.";
+    default:
+      throw std::runtime_error("invalid curandStatus_t");
+  }
+}
+
 
 }
