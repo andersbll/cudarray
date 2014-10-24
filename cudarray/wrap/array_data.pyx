@@ -1,5 +1,5 @@
 cimport numpy as np
-from ..cuda_wrap.cudart cimport *
+from .cudart cimport *
 from .array_data cimport ArrayData
 
 
@@ -33,3 +33,23 @@ cdef class ArrayData:
     @property
     def itemsize(self):
         return self.dtype.itemsize
+
+
+cdef bool_t *bool_ptr(ArrayData a):
+    return <bool_t *> a.dev_ptr
+
+
+cdef float *float_ptr(ArrayData a):
+    return <float *> a.dev_ptr
+
+
+cdef int *int_ptr(ArrayData a):
+    return <int *> a.dev_ptr
+    
+
+cdef bool is_int(ArrayData a):
+    return a.dtype == np.dtype('int32')
+
+
+cdef bool is_float(ArrayData a):
+    return a.dtype == np.dtype('float32')

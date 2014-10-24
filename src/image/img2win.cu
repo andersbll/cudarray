@@ -49,11 +49,11 @@ void img2win(const T *imgs, int n_imgs, int img_h, int img_w, int win_h,
   const int group_size = 32;
   int n_threads = ceil_div(n_imgs, group_size)*win_h*win_w*wins_h*wins_w;
   kernel_img2win<T, group_size>
-      <<<CUDA_BLOCKS(n_threads), CUDA_THREADS_PER_BLOCK>>>(
+      <<<cuda_blocks(n_threads), kNumBlockThreads>>>(
       imgs, n_threads, n_imgs, img_h, img_w, wins_h, wins_w, win_h, win_w,
       pad_y, pad_x, stride_y, stride_x, wins
   );
-  CUDA_CHECK_LAST_ERROR;
+  CUDA_KERNEL_CHECK;
 }
 template void img2win(const float *imgs, int n_imgs, int img_h, int img_w,
     int win_h, int win_w, int pad_y, int pad_x, int stride_y, int stride_x,
@@ -95,10 +95,10 @@ void win2img(const T *wins, int n_imgs, int img_h, int img_w, int win_h,
   int wins_h = (img_h + 2*pad_y - win_h) / stride_y + 1;
   int wins_w = (img_w + 2*pad_x - win_w) / stride_x + 1;
   int n_threads = n_imgs * img_h * img_w;
-  kernel_win2img<<<CUDA_BLOCKS(n_threads), CUDA_THREADS_PER_BLOCK>>>(
+  kernel_win2img<<<cuda_blocks(n_threads), kNumBlockThreads>>>(
       wins, n_threads, n_imgs, img_h, img_w, wins_h, wins_w, win_h, win_w,
       pad_y, pad_x, stride_y, stride_x, imgs);
-  CUDA_CHECK_LAST_ERROR;
+  CUDA_KERNEL_CHECK;
 }
 
 template void win2img(const float *wins, int n_imgs, int img_h, int img_w,

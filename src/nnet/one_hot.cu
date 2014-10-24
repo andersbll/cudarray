@@ -15,9 +15,9 @@ __global__ void kernel_one_hot_encode(const int *labels, int n_classes, int n,
 
 template <typename T>
 void one_hot_encode(const int *labels, int n_classes, int n, T *out) {
-  kernel_one_hot_encode<<<CUDA_BLOCKS(n*n_classes), CUDA_NUM_THREADS>>>(
+  kernel_one_hot_encode<<<cuda_blocks(n*n_classes), kNumBlockThreads>>>(
       labels, n_classes, n, out);
-  CUDA_CHECK_LAST_ERROR
+  CUDA_KERNEL_CHECK;
 }
 
 template void one_hot_encode(const int *labels, int n_classes, int n,

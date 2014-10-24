@@ -1,4 +1,3 @@
-#include <cublas_v2.h>
 #include "cudarray/common.hpp"
 #include "cudarray/blas.hpp"
 
@@ -13,7 +12,7 @@ cublasStatus_t cublas_dot(cublasHandle_t handle, int n, const float *x,
 template<typename T>
 T dot(const T *a, const T *b, unsigned int n) {
   T result;
-  CUBLAS_CHECK(cublas_dot(CUDA::cublas_handle(), n, a, 1, b, 1, &result));
+  CUBLAS_CHECK(cublas_dot(CUBLAS::handle(), n, a, 1, b, 1, &result));
   return result;
 }
 
@@ -41,8 +40,8 @@ void gemv(const T *A, const T *b, TransposeOp trans, unsigned int m,
     cuTrans = CUBLAS_OP_T;
   }
   int lda = n;
-  CUBLAS_CHECK(cublas_gemv(CUDA::cublas_handle(), cuTrans, n, m, &alpha, A,
-     lda, b, 1, &beta, c, 1));
+  CUBLAS_CHECK(cublas_gemv(CUBLAS::handle(), cuTrans, n, m, &alpha, A, lda, b,
+                           1, &beta, c, 1));
 }
 
 template void gemv<float>(const float *A, const float *b, TransposeOp trans,
@@ -67,8 +66,8 @@ void gemm(const T *A, const T *B, TransposeOp transA, TransposeOp transB,
   int ldc = n;
   cublasOperation_t cuTransA = (cublasOperation_t) transA;
   cublasOperation_t cuTransB = (cublasOperation_t) transB;
-  CUBLAS_CHECK(cublas_gemm(CUDA::cublas_handle(), cuTransB, cuTransA,
-                           n, m, k, &alpha, B, ldb, A, lda, &beta, C, ldc));
+  CUBLAS_CHECK(cublas_gemm(CUBLAS::handle(), cuTransB, cuTransA, n, m, k,
+                           &alpha, B, ldb, A, lda, &beta, C, ldc));
 }
 
 template void gemm<float>(const float *A, const float *B, TransposeOp transA,
@@ -141,11 +140,38 @@ void BLASBatch<T>::gemm(TransposeOp transA, TransposeOp transB, unsigned int m,
   int ldc = n;
   cublasOperation_t cuTransA = (cublasOperation_t) transA;
   cublasOperation_t cuTransB = (cublasOperation_t) transB;
-  CUBLAS_CHECK(cublas_gemm_batched(CUDA::cublas_handle(), cuTransB, cuTransA,
-      n, m, k, &alpha, Bs_dev, ldb, As_dev, lda, &beta, Cs_dev, ldc,
-      batch_size));
+  CUBLAS_CHECK(cublas_gemm_batched(CUBLAS::handle(), cuTransB, cuTransA, n, m,
+      k, &alpha, Bs_dev, ldb, As_dev, lda, &beta, Cs_dev, ldc, batch_size));
 }
 
 template class BLASBatch<float>;
+
+
+const char *cublas_message(cublasStatus_t status){
+  switch(status) {
+    case CUBLAS_STATUS_SUCCESS:
+      return "The operation completed successfully.";
+    case CUBLAS_STATUS_NOT_INITIALIZED:
+      return "The cuBLAS library was not initialized.";
+    case CUBLAS_STATUS_ALLOC_FAILED:
+      return "Resource allocation failed inside the cuBLAS library.";
+    case CUBLAS_STATUS_INVALID_VALUE:
+      return "An unsupported value or parameter was passed to the function.";
+    case CUBLAS_STATUS_ARCH_MISMATCH:
+      return "The function requires a feature absent from the GPU.";
+    case CUBLAS_STATUS_MAPPING_ERROR:
+      return "An access to GPU memory space failed.";
+    case CUBLAS_STATUS_EXECUTION_FAILED:
+      return "The GPU program failed to execute.";
+    case CUBLAS_STATUS_INTERNAL_ERROR:
+      return "An internal cuBLAS operation failed.";
+    case CUBLAS_STATUS_NOT_SUPPORTED:
+      return "The functionnality requested is not supported.";
+    case CUBLAS_STATUS_LICENSE_ERROR:
+      return "The functionality requested requires some license.";
+    default:
+      throw std::runtime_error("invalid cublasStatus_t");
+  }
+}
 
 }

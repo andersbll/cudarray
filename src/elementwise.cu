@@ -46,16 +46,16 @@ template<typename Ta, typename Tb, typename Tc, typename Op>
 void binary(const Ta *a, const Tb *b, unsigned int n, Tc *c) {
   if (c == (Tc *) a) {
     kernel_binary_inplace<Tc, Tb, Tc, Op>
-        <<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>
+        <<<cuda_blocks(n), kNumBlockThreads>>>
         (c, b, n);
   } else if (c == (Tc *) b) {
     kernel_binary_inplace<Tc, Ta, Tc, Op>
-        <<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>
+        <<<cuda_blocks(n), kNumBlockThreads>>>
         (c, a, n);
 
   } else {
     kernel_binary<Ta, Tb, Tc, Op>
-        <<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>
+        <<<cuda_blocks(n), kNumBlockThreads>>>
         (a, b, n, c);
   }
 }
@@ -120,11 +120,11 @@ template<typename Ta, typename Talpha, typename Tb, typename Op>
 void binary_scalar(const Ta *a, Talpha alpha, unsigned int n, Tb *b) {
   if (b == (Tb *)a) {
     kernel_binary_scalar_inplace<Tb, Talpha, Op>
-        <<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>
+        <<<cuda_blocks(n), kNumBlockThreads>>>
         (b, alpha, n);
   } else {
     kernel_binary_scalar<Ta, Talpha, Tb, Op>
-        <<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>
+        <<<cuda_blocks(n), kNumBlockThreads>>>
         (a, alpha, n, b);
   }
 
@@ -201,16 +201,16 @@ void binary_broadcast(const Ta *a, const Tb *b, unsigned int m,
                         unsigned int n, Tc *c) {
   if (c == (Tc *) a) {
     kernel_binary_broadcast_inplace<Ta, Tb, Op, broadcast_leading>
-        <<<CUDA_BLOCKS(m*n), CUDA_NUM_THREADS>>>
+        <<<cuda_blocks(m*n), kNumBlockThreads>>>
         ((Ta *) c, b, m, n);
   } else if (c == (Tc *) b) {
     kernel_binary_broadcast_inplace<Tb, Ta, Op, broadcast_leading>
-        <<<CUDA_BLOCKS(m*n), CUDA_NUM_THREADS>>>
+        <<<cuda_blocks(m*n), kNumBlockThreads>>>
         ((Tb *) b, a, m, n);
 
   } else {
     kernel_binary_broadcast<Ta, Tb, Tc, Op, broadcast_leading>
-        <<<CUDA_BLOCKS(m*n), CUDA_NUM_THREADS>>>
+        <<<cuda_blocks(m*n), kNumBlockThreads>>>
         (a, b, m, n, c);
   }
 }
@@ -244,16 +244,16 @@ void binary_broadcast(const Ta *a, const Tb *b, unsigned int k, unsigned int m,
                       unsigned int n, Tc *c) {
   if (c == (Tc *) a) {
     kernel_binary_broadcast_inplace<Ta, Tb, Op, broadcast_inner>
-        <<<CUDA_BLOCKS(k*m*n), CUDA_NUM_THREADS>>>
+        <<<cuda_blocks(k*m*n), kNumBlockThreads>>>
         ((Ta *) c, b, k, m, n);
   } else if (c == (Tc *) b) {
     kernel_binary_broadcast_inplace<Tb, Ta, Op, broadcast_inner>
-        <<<CUDA_BLOCKS(k*m*n), CUDA_NUM_THREADS>>>
+        <<<cuda_blocks(k*m*n), kNumBlockThreads>>>
         ((Tb *) b, a, k, m, n);
 
   } else {
     kernel_binary_broadcast<Ta, Tb, Tc, Op, broadcast_inner>
-        <<<CUDA_BLOCKS(k*m*n), CUDA_NUM_THREADS>>>
+        <<<cuda_blocks(k*m*n), kNumBlockThreads>>>
         (a, b, k, m, n, c);
   }
 }
@@ -489,9 +489,9 @@ __global__ void kernel_unary_inplace(T *a, unsigned int n) {
 template<typename T, typename Op>
 void unary(const T *a, unsigned int n, T *b) {
   if (a == b) {
-    kernel_unary_inplace<T, Op><<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>(b, n);
+    kernel_unary_inplace<T, Op><<<cuda_blocks(n), kNumBlockThreads>>>(b, n);
   } else {
-    kernel_unary<T, Op><<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>(a, n, b);
+    kernel_unary<T, Op><<<cuda_blocks(n), kNumBlockThreads>>>(a, n, b);
   }
 }
 
@@ -564,10 +564,10 @@ __global__ void kernel_clip_inplace(T *a, T a_min, T a_max, unsigned int n) {
 template<typename T>
 void clip(const T *a, T a_min, T a_max, unsigned int n, T *b) {
   if (a == b) {
-    kernel_clip_inplace<T><<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>
+    kernel_clip_inplace<T><<<cuda_blocks(n), kNumBlockThreads>>>
         (b, a_min, a_max, n);
   } else {
-    kernel_clip<T><<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>
+    kernel_clip<T><<<cuda_blocks(n), kNumBlockThreads>>>
         (a, a_min, a_max, n, b);
   }
 }

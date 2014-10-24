@@ -1,4 +1,5 @@
-import numpy as np
+from functools import reduce
+import operator
 
 
 def normalize_axis(axis, ndim):
@@ -19,3 +20,14 @@ def normalize_shape(shape):
         return shape
     else:
         raise ValueError('invalid shape')
+
+
+def prod(iterable):
+    return reduce(operator.mul, iterable, 1)
+
+
+def require_iterable(x):
+    if hasattr(x, '__iter__'):
+        return x
+    else:
+        return [x]

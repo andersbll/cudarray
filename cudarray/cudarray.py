@@ -1,16 +1,14 @@
-from functools import reduce
-import operator
 import numpy as np
-
-from .cudarray_wrap.array_data import ArrayData
+from .wrap.array_data import ArrayData
 from . import elementwise
 from . import base
+from . import helpers
 
 
 class CUDArray(object):
     def __init__(self, shape, dtype=None, np_data=None, array_data=None,
                  array_owner=None):
-        shape = _require_iterable(shape)
+        shape = helpers.require_iterable(shape)
         self.shape = shape
         self.transposed = False
         self.isbool = False
@@ -71,7 +69,7 @@ class CUDArray(object):
 
     @property
     def size(self):
-        return _prod(self.shape)
+        return helpers.prod(self.shape)
 
     @property
     def T(self):
@@ -162,7 +160,7 @@ class CUDArray(object):
         if isinstance(indices, int):
             # Speedup case with a single index
             view_shape = self.shape[1:]
-            view_size = _prod(view_shape)
+            view_size = helpers.prod(view_shape)
             offset = indices * view_size
             data_view = ArrayData(view_size, self.dtype, owner=self._data,
                                   offset=offset)
@@ -213,7 +211,7 @@ class CUDArray(object):
                 rest_must_be_contiguous = True
 
         view_shape = tuple(view_shape)
-        view_size = _prod(view_shape)
+        view_size = helpers.prod(view_shape)
 
         # Construct view
         data_view = ArrayData(view_size, self.dtype, owner=self._data,
@@ -264,14 +262,3 @@ def zeros_like(a, dtype=None):
 
 def copyto(dst, src):
     elementwise.multiply(src, 1.0, dst)
-
-
-def _prod(x):
-    return reduce(operator.mul, x, 1)
-
-
-def _require_iterable(x):
-    if hasattr(x, '__iter__'):
-        return x
-    else:
-        return [x]

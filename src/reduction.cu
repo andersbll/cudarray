@@ -328,7 +328,7 @@ __global__ void kernel_reduce(const Ta *a, unsigned int n, Tb *b) {
 
 template <typename Ta, typename Tb, typename Op>
 void reduce(const Ta *a, unsigned int n, Tb *b) {
-  kernel_reduce<Ta, Tb, Op><<<CUDA_BLOCKS(1), CUDA_NUM_THREADS>>>(a, n, b);
+  kernel_reduce<Ta, Tb, Op><<<cuda_blocks(1), kNumBlockThreads>>>(a, n, b);
 }
 
 
@@ -401,10 +401,10 @@ template<typename Ta, typename Tb, typename Op>
 void reduce_mat(const Ta *a, unsigned int m, unsigned int n,
                 bool reduce_leading, Tb *b) {
   if (reduce_leading) {
-    kernel_reduce_mat<Ta, Tb, Op, true><<<CUDA_BLOCKS(n), CUDA_NUM_THREADS>>>
+    kernel_reduce_mat<Ta, Tb, Op, true><<<cuda_blocks(n), kNumBlockThreads>>>
         (a, m, n, b);
   } else {
-    kernel_reduce_mat<Ta, Tb, Op, false><<<CUDA_BLOCKS(m), CUDA_NUM_THREADS>>>
+    kernel_reduce_mat<Ta, Tb, Op, false><<<cuda_blocks(m), kNumBlockThreads>>>
         (a, m, n, b);
   }
 }

@@ -1,6 +1,6 @@
 import numpy as np
 import cudarray as ca
-from ..cudarray_wrap import nnet as wrap
+from ..wrap import nnet
 
 
 def softmax(x):
@@ -26,7 +26,7 @@ def one_hot_encode(labels, n_classes, out=None):
     else:
         if out.shape != out_shape:
             raise ValueError('shape mismatch')
-    wrap._one_hot_encode(labels._data, n_classes, out_shape[0], out._data)
+    nnet._one_hot_encode(labels._data, n_classes, out_shape[0], out._data)
     return out
 
 
