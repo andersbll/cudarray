@@ -1,6 +1,7 @@
 import numpy as np
-from .wrap import elementwise
 import cudarray
+from .wrap import elementwise
+from . import helpers
 
 
 def broadcast_type(shape1, shape2):
@@ -28,20 +29,20 @@ def broadcast_type(shape1, shape2):
     # Detect leading broadcast
     if b_axes == list(range(len(b_axes))):
         k = 1
-        m = np.prod([shape1[a] for a in b_axes])
-        n = np.prod(shape1) // m
+        m = helpers.prod([shape1[a] for a in b_axes])
+        n = helpers.prod(shape1) // m
         return elementwise.btype_leading, k, m, n
     # Detect trailing broadcast
     if b_axes == list(range(ndim-len(b_axes), ndim)):
         k = 1
-        m = np.prod([shape1[a] for a in b_axes])
-        n = np.prod(shape1) // m
+        m = helpers.prod([shape1[a] for a in b_axes])
+        n = helpers.prod(shape1) // m
         return elementwise.btype_trailing, k, m, n
     # Detect inner broadcast
     if b_axes == list(range(b_axes[0], b_axes[0] + len(b_axes))):
-        k = np.prod(shape1[:b_axes[0]])
-        m = np.prod(shape1[b_axes[0]:b_axes[-1]+1])
-        n = np.prod(shape1[b_axes[-1]+1:])
+        k = helpers.prod(shape1[:b_axes[0]])
+        m = helpers.prod(shape1[b_axes[0]:b_axes[-1]+1])
+        n = helpers.prod(shape1[b_axes[-1]+1:])
         return elementwise.btype_inner, k, m, n
     # Detect outer broadcast
     for i in range(1, len(b_axes)):
@@ -53,9 +54,9 @@ def broadcast_type(shape1, shape2):
     if (b_axes_leading == list(range(len(b_axes_leading)))
             and b_axes_trailing == list(range(ndim-len(b_axes_trailing),
                                               ndim))):
-        k = np.prod(shape1[:b_axes_leading[-1]+1])
-        m = np.prod(shape1[b_axes_leading[-1]+1:b_axes_trailing[0]])
-        n = np.prod(shape1[b_axes_trailing[0]:])
+        k = helpers.prod(shape1[:b_axes_leading[-1]+1])
+        m = helpers.prod(shape1[b_axes_leading[-1]+1:b_axes_trailing[0]])
+        n = helpers.prod(shape1[b_axes_trailing[0]:])
         return elementwise.btype_outer, k, m, n
 
     raise error

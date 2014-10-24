@@ -1,8 +1,8 @@
 import numpy as np
 
 from .wrap import reduction
-from .import cudarray
-from .helpers import normalize_axis
+from . import cudarray
+from . import helpers
 
 
 REDUCE_ALL = 0
@@ -36,7 +36,7 @@ def reduce_type(axis, ndim):
 
 def reduce(op, a, axis=None, dtype=None, out=None, keepdims=False,
            to_int_op=False):
-    axis = normalize_axis(axis, a.ndim)
+    axis = helpers.normalize_axis(axis, a.ndim)
     out_shape = reduce_shape(a.shape, axis, keepdims)
 
     if to_int_op:
@@ -59,14 +59,14 @@ def reduce(op, a, axis=None, dtype=None, out=None, keepdims=False,
         else:
             reduction._reduce(op, a._data, a.size, out._data)
     elif rtype == REDUCE_LEADING:
-        n = np.prod(out_shape)
+        n = helpers.prod(out_shape)
         m = a.size / n
         if to_int_op:
             reduction._reduce_mat_to_int(op, a._data, m, n, True, out._data)
         else:
             reduction._reduce_mat(op, a._data, m, n, True, out._data)
     else:
-        m = np.prod(out_shape)
+        m = helpers.prod(out_shape)
         n = a.size / m
         if to_int_op:
             reduction._reduce_mat_to_int(op, a._data, m, n, False, out._data)
