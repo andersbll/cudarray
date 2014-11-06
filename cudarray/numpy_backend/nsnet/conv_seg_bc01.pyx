@@ -123,22 +123,25 @@ def conv_seg_bc01_bprop(np.ndarray[DTYPE_t, ndim=4] imgs,
 
     imgs_grad[...] = 0
     filters_grad[...] = 0
+
     for fg in range(F_out):
-        for c_convout in range(f_convout):
+        for c_out in range(f_convout):
             for y in range(img_h):
-                y_off_min = int_max(-y, -fil_mid_h)
-                y_off_max = int_min(img_h-y, fil_mid_h+mid_off_h)
                 for x in range(img_w):
                     convout_d_value = convout_d[fg, c_convout, y, x]
-                    x_off_min = int_max(-x, -fil_mid_w)
-                    x_off_max = int_min(img_w-x, fil_mid_w+mid_off_w)
-                    for y_off in range(y_off_min, y_off_max):
-                        for x_off in range(x_off_min, x_off_max):
-                            img_y = <uint>(y + y_off)
-                            img_x = <uint>(x + x_off)
-                            fil_y = <uint>(fil_mid_h  + y_off)
-                            fil_x = <uint>(fil_mid_w  + x_off)
+                    fil_y = 0
+                    yMin = y-fil_mid_h
+                    yMax = y+fil_mid_h+mid_off_h
+                    for y_set in range(yMin, yMax): 
+                        img_y = getImgIndex(y_set, img_h)
+                        fil_x = 0
+                        xMin = x-fil_mid_w
+                        xMax = x+fil_mid_w+mid_off_w
+                        for x_set in range(xMin, xMax):   
+                            img_x = getImgIndex(x_set, img_w)
                             for c_imgs in range(img_channels):
-                                imgs_grad[fg, c_imgs, img_y, img_x] += filters[c_convout, c_imgs, fil_y, fil_x] * convout_d_value
-                                filters_grad[c_convout, c_imgs, fil_y, fil_x] += imgs[fg, c_imgs, img_y, img_x] * convout_d_value
+                                imgs_grad[fg, c_imgs, img_y, img_x] += filters[c_out, c_imgs, fil_y, fil_x] * convout_d_value
+                                filters_grad[c_out, c_imgs, fil_y, fil_x] += imgs[fg, c_imgs, img_y, img_x] * convout_d_value
 
+                            fil_x += 1
+                        fil_y += 1
