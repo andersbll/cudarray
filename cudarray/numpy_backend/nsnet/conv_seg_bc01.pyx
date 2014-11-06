@@ -1,7 +1,6 @@
 from __future__ import division
 import numpy as np
 import cython
-#from cython.parallel import parallel, prange, threadlocal
 cimport numpy as np
 
 
@@ -16,17 +15,16 @@ cdef inline int int_min(int a, int b) nogil: return a if a <= b else b
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def conv_bc01(np.ndarray[DTYPE_t, ndim=5] imgs,
+def conv_seg_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
               np.ndarray[DTYPE_t, ndim=4] filters,
-              np.ndarray[DTYPE_t, ndim=5] convout):
+              np.ndarray[DTYPE_t, ndim=4] convout):
     """ Multi-image, multi-channel convolution
     imgs has shape (n_imgs, n_fragments , n_channels_in, img_h, img_w)
     filters has shape (n_channels_out, n_channels_in, filter_h, filter_w)
     """
-    cdef uint n_imgs = imgs.shape[0]
-    cdef uint F = imgs.shape[1]
-    cdef uint img_h = imgs.shape[3]
-    cdef uint img_w = imgs.shape[4]
+    cdef uint F = imgs.shape[0]
+    cdef uint img_h = imgs.shape[2]
+    cdef uint img_w = imgs.shape[3]
     cdef uint n_channels_in = filters.shape[1]
     cdef uint n_channels_out = filters.shape[0]
     cdef uint fil_h = filters.shape[2]
@@ -35,11 +33,11 @@ def conv_bc01(np.ndarray[DTYPE_t, ndim=5] imgs,
     cdef int fil_mid_h = fil_h // 2
     cdef int fil_mid_w = fil_w // 2
 
-    cdef uint i, c_in, c_out
+    cdef uint c_in, c_out, fg
     cdef uint img_y, img_x, fil_y, fil_x
     cdef DTYPE_t value
 
-    cdef int y, x, y_off_min, y_off_max, y_off, x_off_min, x_off_max, x_off, mid_off_h, mid_off_w, img_x_center, img_y_center
+    cdef int y, x, yMin, yMax, xMin, xMax
     
     """mid_off only add one to max iff filter is of an uneaven sice 
     This is done because filters of uneaven size have center shifte one Back-propagate
@@ -47,31 +45,34 @@ def conv_bc01(np.ndarray[DTYPE_t, ndim=5] imgs,
     mid_off_h = fil_h % 2
     mid_off_w = fil_w % 2
 
-    for i in range(n_imgs):
-        for fg in range(F):
-            for c_out in range(n_channels_out):
-                for y in range(img_h):
-                    for x in range(img_w):
-                        value = 0.0
-                        fil_y = 0
+    for fg in range(F):
+        for c_out in range(n_channels_out):
+            for y in range(img_h):
+                for x in range(img_w):
+                    value = 0.0
+                    fil_y = 0
 
-                        for y_set in range(y-fil_mid_h, y+fil_mid_h+mid_off_h): 
-                            tempYindex = y_filter_range[<uint>(y_set)]
-                            img_y = getImgIndex(tempYindex, img_h)
-                            fil_x = 0
+                    yMin = y-fil_mid_h
+                    yMax = y+fil_mid_h+mid_off_h
+                    for y_set in range(yMin, yMax): 
+                        img_y = getImgIndex(y_set, img_h)
+                        fil_x = 0
 
-                            for x_set in range(x-fil_mid_w, x+fil_mid_w+mid_off_w):
-                                tempXindex = x_filter_range[<uint>(y_set)]      
-                                img_x = getImgIndex(tempXindex, img_w)
+                        xMin = x-fil_mid_w
+                        xMax = x+fil_mid_w+mid_off_w
+                        for x_set in range(xMin, xMax):   
+                            img_x = getImgIndex(x_set, img_w)
 
-                                for c_in in range(n_channels_in):
-                                    value += imgs[i, fg, c_in, img_y, img_x] * filters[c_out, c_in, fil_y, fil_x]
-                                fil_x += 1
-                            fil_y += 1
-                        convout[i, fg, c_out, y, x] = value
+                            for c_in in range(n_channels_in):
+                                value += imgs[fg, c_in, img_y, img_x] * filters[c_out, c_in, fil_y, fil_x]
+                            fil_x += 1
+                        fil_y += 1
+                    convout[fg, c_out, y, x] = value
     return convout
 
-cdef uint getImgIndex(int_ tempIndex, uint size):
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef inline getImgIndex(int tempIndex, uint size):
     cdef uint index
     if(tempIndex < 0):        
         index = <uint>(tempIndex * -1)
@@ -83,32 +84,32 @@ cdef uint getImgIndex(int_ tempIndex, uint size):
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def conv_bc01_bprop(np.ndarray[DTYPE_t, ndim=4] imgs,
+def conv_seg_bc01_bprop(np.ndarray[DTYPE_t, ndim=4] imgs,
                     np.ndarray[DTYPE_t, ndim=4] convout_d,
                     np.ndarray[DTYPE_t, ndim=4] filters,
-                    tuple padding,
-                    tuple strides,
                     np.ndarray[DTYPE_t, ndim=4] imgs_grad,
                     np.ndarray[DTYPE_t, ndim=4] filters_grad):
     """ Back-propagate gradients of multi-image, multi-channel convolution
-    imgs has shape (b, c, img_h, img_w)
+    imgs has shape (b, fg, c, img_h, img_w)
     filters has shape (f, c_filters, img_h, img_w)
     convout has shape (b_convout, f_convout, img_h, img_w)
     """
     cdef uint img_channels = imgs.shape[1]
     cdef uint img_h = imgs.shape[2]
     cdef uint img_w = imgs.shape[3]
-    cdef uint b_convout = convout_d.shape[0]
+
     cdef uint f_convout = convout_d.shape[1]
     cdef uint convout_d_h = convout_d.shape[2]
     cdef uint convout_d_w = convout_d.shape[3]
+
+    cdef uint F_out = convout_d.shape[0]
 
     cdef uint fil_h = filters.shape[2]
     cdef uint fil_w = filters.shape[3]
     cdef int fil_mid_h = fil_h // 2
     cdef int fil_mid_w = fil_w // 2
 
-    cdef uint i, c_convout, c_imgs
+    cdef uint c_convout, c_imgs
     cdef uint img_y, img_x, fil_y, fil_x
     cdef DTYPE_t convout_d_value
     cdef int y, x, y_off_min, y_off_max, y_off, x_off_min, x_off_max 
@@ -120,33 +121,24 @@ def conv_bc01_bprop(np.ndarray[DTYPE_t, ndim=4] imgs,
     mid_off_h = fil_h % 2
     mid_off_w = fil_w % 2
 
-    cdef uint stride_h = strides[0]
-    cdef uint stride_w = strides[1]
-
-    cdef uint padding_h = padding[0]
-    cdef uint padding_w = padding[1]
-
     imgs_grad[...] = 0
     filters_grad[...] = 0
-    for i in range(b_convout):
+    for fg in range(F_out):
         for c_convout in range(f_convout):
-            for y in range(convout_d_h):
-                img_y_center = y*stride_h+fil_mid_h
-                y_off_min = int_max(-img_y_center, -padding_h-fil_mid_h)
-                y_off_max = int_min(img_h-img_y_center, fil_mid_h+mid_off_h-padding_h)
-                for x in range(convout_d_w):
-                    convout_d_value = convout_d[i, c_convout, y, x]
-                    img_x_center = x*stride_w+fil_mid_w
-                    x_off_min = int_max(-img_x_center, -padding_w-fil_mid_w)
-                    x_off_max = int_min(img_w-img_x_center, fil_mid_w+mid_off_w-padding_w)
-                    value = 0.0
+            for y in range(img_h):
+                y_off_min = int_max(-y, -fil_mid_h)
+                y_off_max = int_min(img_h-y, fil_mid_h+mid_off_h)
+                for x in range(img_w):
+                    convout_d_value = convout_d[fg, c_convout, y, x]
+                    x_off_min = int_max(-x, -fil_mid_w)
+                    x_off_max = int_min(img_w-x, fil_mid_w+mid_off_w)
                     for y_off in range(y_off_min, y_off_max):
                         for x_off in range(x_off_min, x_off_max):
-                            img_y = <uint>(img_y_center + y_off)
-                            img_x = <uint>(img_x_center + x_off)
-                            fil_y = <uint>(fil_mid_h + padding_h + y_off)
-                            fil_x = <uint>(fil_mid_w + padding_w + x_off)
+                            img_y = <uint>(y + y_off)
+                            img_x = <uint>(x + x_off)
+                            fil_y = <uint>(fil_mid_h  + y_off)
+                            fil_x = <uint>(fil_mid_w  + x_off)
                             for c_imgs in range(img_channels):
-                                imgs_grad[i, c_imgs, img_y, img_x] += filters[c_convout, c_imgs, fil_y, fil_x] * convout_d_value
-                                filters_grad[c_convout, c_imgs, fil_y, fil_x] += imgs[i, c_imgs, img_y, img_x] * convout_d_value
-#    filters_grad[...] /= n_imgs
+                                imgs_grad[fg, c_imgs, img_y, img_x] += filters[c_convout, c_imgs, fil_y, fil_x] * convout_d_value
+                                filters_grad[c_convout, c_imgs, fil_y, fil_x] += imgs[fg, c_imgs, img_y, img_x] * convout_d_value
+
