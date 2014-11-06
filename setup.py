@@ -77,6 +77,8 @@ def numpy_extensions():
         'cudarray/numpy_backend/nnet/conv_bc01.pyx',
         'cudarray/numpy_backend/nnet/pool_bc01.pyx',
         'cudarray/numpy_backend/nnet/lrnorm_bc01.pyx',
+        'cudarray/numpy_backend/nsnet/conv_seg_bc01.pyx',
+        'cudarray/numpy_backend/nsnet/pool_seg_bc01.pyx',
     ]
     return cythonize(cython_srcs, include_path=[numpy.get_include()])
 
@@ -91,6 +93,7 @@ setup(
     url='http://compute.dtu.dk/~abll',
     packages=find_packages(),
     install_requires=['numpy', 'cython'],
+    include_dirs=[numpy.get_include()],
     long_description=read('README.md'),
     classifiers=[
         'Development Status :: 4 - Beta',
