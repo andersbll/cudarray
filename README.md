@@ -12,25 +12,22 @@ Nonetheless, it supports a neural network pipeline as demonstrated in the projec
 - Fast array operations based on cuBLAS, cuRAND and cuDNN.
 - (somewhat) Simple C++/CUDA wrapper based on Cython.
 - Extends NumPy with specialized functions for neural networks.
-- CPU fall-back when CUDA is not available 
+- CPU fall-back when CUDA is not available.
 
 
 ### Installation
 ##### With CUDA back-end
-First, build libcudarray:
+First, you should consider specifying the following environment variables.
+ - `INSTALL_PREFIX` (default: `/usr/local`). libcudarray is installed under `$INSTALL_PREFIX/lib`. For the Anaconda Python distrubtion this should be `/path/to/anaconda`.
+ - `CUDA_DIR` (default: `/usr/local/cuda`). Path to the CUDA SDK organized in `bin/`, `lib/`, `include/` folders.
+ - `CUDNN_ENABLED`. Set `CUDNN_ENABLED` to `1` to include cuDNN operations in `libcudarray`.
+
+Then build and install libcudarray with
 
     make
-
-Install libcudarray to system folders. Beforehand, you should set the system path where Python looks for libraries. For Anaconda Python distributions, something similar to the following should work.
-
-    export INSTALL_PREFIX=/path/to/anaconda
     make install
 
-Alternatively, you can skip the previous installation step by adding the build dir to your library search path.
-
-    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/cudarray/build
-
-Install the cudarray package:
+Finally, install the cudarray Python package:
 
     python setup.py install
 
@@ -54,21 +51,20 @@ For a more informal chat, visit #cudarray on the [freenode](http://freenode.net/
 
 ### Citation
 If you use CUDArray for research, please cite the technical report:
-```
-@techreport{larsen2014cudarray,
-  author = "Larsen, Anders Boesen Lindbo",
-  title = "{CUDArray}: {CUDA}-based {NumPy}",
-  institution = "Department of Applied Mathematics and Computer Science, Technical University of Denmark",
-  year = "2014",
-  number = "DTU Compute 2014-21",
-}
-```
+
+    @techreport{larsen2014cudarray,
+      author = "Larsen, Anders Boesen Lindbo",
+      title = "{CUDArray}: {CUDA}-based {NumPy}",
+      institution = "Department of Applied Mathematics and Computer Science, Technical University of Denmark",
+      year = "2014",
+      number = "DTU Compute 2014-21",
+    }
 
 
 ### TODO
 - Proper transpose support,
-- Copy from NumPy array to existing CUDArray array.
-- FFT module based on cuFFT,
+- Add functionality for copying from NumPy array to existing CUDArray array.
+- FFT module based on cuFFT.
 - Unit tests!
 - Add documentation to wiki.
 - Windows/OS X support.
