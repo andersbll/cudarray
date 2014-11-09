@@ -3,6 +3,9 @@
 #include "cudarray/nnet/conv_bc01_matmul.hpp"
 #include "cudarray/image/img2win.hpp"
 
+// The following convolution operations by matrix multiplication are heavily
+// inspired by those from Caffe, http://caffe.berkeleyvision.org/
+
 namespace cudarray {
 
 template <typename T>
