@@ -3,19 +3,24 @@ import cudarray as ca
 from ..wrap import nnet
 
 
+try:
+    from ..wrap import cudnn
+    _default_impl = 'cudnn'
+except:
+    _default_impl = 'masked'
+
+
 class PoolB01(object):
-    def __init__(self, win_shape, padding, strides, method='max',
-                 impl='masked'):
+    def __init__(self, win_shape, padding, strides, method='max', impl=None):
         self.win_shape = win_shape
         self.padding = padding
         self.strides = strides
         if method not in ['max']:
             raise ValueError('invalid pooling method')
-        self.impl = impl
-        if impl == 'masked':
+        self.impl = _default_impl if impl is None else impl
+        if self.impl == 'masked':
             self.mask = None
-        elif impl == 'cudnn':
-            from ..wrap import cudnn
+        elif self.impl == 'cudnn':
             self.last_poolout = None
             self.pool_cudnn = cudnn.PoolBC01CuDNN_f(win_shape, padding,
                                                     strides)

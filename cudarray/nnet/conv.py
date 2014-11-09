@@ -2,15 +2,21 @@ import cudarray as ca
 from ..wrap import nnet
 
 
+try:
+    from ..wrap import cudnn
+    _default_impl = 'cudnn'
+except:
+    _default_impl = 'matmul'
+
+
 class ConvBC01(object):
-    def __init__(self, padding, strides, impl='matmul'):
+    def __init__(self, padding, strides, impl=None):
         self.padding = padding
         self.strides = strides
-        self.impl = impl
-        if impl == 'matmul':
+        self.impl = _default_impl if impl is None else impl
+        if self.impl == 'matmul':
             self.conv_cudnn = None
-        elif impl == 'cudnn':
-            from ..wrap import cudnn
+        elif self.impl == 'cudnn':
             self.conv_cudnn = cudnn.conv_bc01_cudnn(padding, strides)
         else:
             raise ValueError('invalid implementation: %s' % impl)
