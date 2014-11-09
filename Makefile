@@ -1,8 +1,6 @@
-ifndef CUDA_DIR
-  CUDA_DIR = /usr/local/cuda
+ifndef CUDA_PREFIX
+  CUDA_PREFIX = /usr/local/cuda
 endif
-# libcudarray gets installed in INSTALL_PREFIX/lib. For the Anaconda Python
-# distrubtion this should be /path/to/anaconda
 ifndef INSTALL_PREFIX
   INSTALL_PREFIX=/usr/local
 endif
@@ -23,13 +21,13 @@ CUDA_SRCS = $(SRC_DIR)/elementwise.cu \
 
 
 INCLUDE_DIRS = ./include
-INCLUDE_DIRS += $(CUDA_DIR)/include
+INCLUDE_DIRS += $(CUDA_PREFIX)/include
 
-ifneq ($(wildcard $(CUDA_DIR)/lib64),)
+ifneq ($(wildcard $(CUDA_PREFIX)/lib64),)
   # Use lib64 if it exists
-  LIB_DIRS += $(CUDA_DIR)/lib64
+  LIB_DIRS += $(CUDA_PREFIX)/lib64
 endif
-LIB_DIRS += $(CUDA_DIR)/lib
+LIB_DIRS += $(CUDA_PREFIX)/lib
 LIBS += cudart cublas cufft curand
 
 ifeq ($(CUDNN_ENABLED), 1)
@@ -38,7 +36,7 @@ ifeq ($(CUDNN_ENABLED), 1)
 endif
 
 CXX = g++
-NVCC = nvcc
+NVCC = $(CUDA_PREFIX)/bin/nvcc
 BUILD_DIR = ./build
 OBJS = $(SRCS:.cpp=.o) $(CUDA_SRCS:.cu=.o)
 LIBCUDARRAY = libcudarray.so

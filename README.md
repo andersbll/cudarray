@@ -18,8 +18,8 @@ Nonetheless, it supports a neural network pipeline as demonstrated in the projec
 ### Installation
 ##### With CUDA back-end
 First, you should consider specifying the following environment variables.
- - `INSTALL_PREFIX` (default: `/usr/local`). libcudarray is installed under `$INSTALL_PREFIX/lib`. For the Anaconda Python distrubtion this should be `/path/to/anaconda`.
- - `CUDA_DIR` (default: `/usr/local/cuda`). Path to the CUDA SDK organized in `bin/`, `lib/`, `include/` folders.
+ - `INSTALL_PREFIX` (default: `/usr/local`). Path where to install libcudarray. For the Anaconda Python distrubtion this should be `/path/to/anaconda`.
+ - `CUDA_PREFIX` (default: `/usr/local/cuda`). Path to the CUDA SDK organized in `bin/`, `lib/`, `include/` folders.
  - `CUDNN_ENABLED`. Set `CUDNN_ENABLED` to `1` to include cuDNN operations in `libcudarray`.
 
 Then build and install libcudarray with
@@ -33,7 +33,7 @@ Finally, install the cudarray Python package:
 
 
 ##### Without CUDA back-end
-Install the cudarray package:
+Install the cudarray Python package:
 
     python setup.py --without-cuda install
 
