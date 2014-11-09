@@ -8,9 +8,7 @@ cpdef initialize(int device_id):
 
 
 cdef cudaCheck(cudaError_t status):
-    if status == cudaSuccess:
-        return 0
-    else:
+    if status != cudaSuccess:
         raise ValueError(cudaGetErrorString(status))
 
 
