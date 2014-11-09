@@ -18,7 +18,7 @@ Nonetheless, it supports a neural network pipeline as demonstrated in the projec
 ### Installation
 ##### With CUDA back-end
 First, you should consider specifying the following environment variables.
- - `INSTALL_PREFIX` (default: `/usr/local`). Path where to install libcudarray. For the Anaconda Python distrubtion this should be `/path/to/anaconda`.
+ - `INSTALL_PREFIX` (default: `/usr/local`). Path where to install libcudarray. For the Anaconda Python distribution this should be `/path/to/anaconda`.
  - `CUDA_PREFIX` (default: `/usr/local/cuda`). Path to the CUDA SDK organized in `bin/`, `lib/`, `include/` folders.
  - `CUDNN_ENABLED`. Set `CUDNN_ENABLED` to `1` to include cuDNN operations in `libcudarray`.
 
@@ -39,7 +39,7 @@ Install the cudarray Python package:
 
 
 ### Documentation
-Please consult the [technical report](http://www2.compute.dtu.dk/~abll/pubs/larsen2014cudarray.pdf) for now.
+Please consult the [technical report][techreport] for now.
 Proper documentation is on the TODO list.
 
 
@@ -50,7 +50,7 @@ For a more informal chat, visit #cudarray on the [freenode](http://freenode.net/
 
 
 ### Citation
-If you use CUDArray for research, please cite the technical report:
+If you use CUDArray for research, please cite the [technical report][techreport]:
 
     @techreport{larsen2014cudarray,
       author = "Larsen, Anders Boesen Lindbo",
@@ -77,3 +77,6 @@ Thanks to the following projects for inspiration.
  - [mshadow](http://github.com/tqchen/mshadow/)
  - [Caffe](http://caffe.berkeleyvision.org/)
  - [CUDPP](http://cudpp.github.io/)
+
+
+[techreport]: http://www2.compute.dtu.dk/~abll/pubs/larsen2014cudarray.pdf
