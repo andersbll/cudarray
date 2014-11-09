@@ -28,6 +28,9 @@ cdef extern from "cuda_runtime_api.h":
 
     cudaError_t cudaMemcpyAsync(void *dst, const void *src, size_t count,
                                 cudaMemcpyKind kind, cudaStream_t stream=*)
+    cudaError_t cudaSetDevice(int device) 	
 
+
+cpdef initialize(int device_id)
 cdef cudaCheck(cudaError_t status)
 cpdef cudaSyncCheck()

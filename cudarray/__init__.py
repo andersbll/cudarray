@@ -1,5 +1,6 @@
 import os
 
+_gpu_id = int(os.getenv('CUDARRAY_DEVICE', '0'))
 
 if 'CUDARRAY_BACKEND' not in os.environ:
     # If no backend specified, try CUDA with Numpy fall-back.
@@ -12,6 +13,7 @@ if 'CUDARRAY_BACKEND' not in os.environ:
         from . import random
         from . import nnet
         from . import batch
+        wrap.cudart.initialize(_gpu_id)
         print('cudarray: Using CUDA back-end.')
     except:
         from .numpy_backend import *
@@ -30,6 +32,7 @@ else:
             from . import random
             from . import nnet
             from . import batch
+            wrap.cudart.initialize(_gpu_id)
         except:
             print('cudarray: Failed to load CUDA back-end.')
             raise
