@@ -45,7 +45,8 @@ LIBCUDARRAY_INSTALL = $(INSTALL_PREFIX)/lib/$(LIBCUDARRAY)
 
 INCLUDES += $(foreach include_dir,$(INCLUDE_DIRS),-I$(include_dir))
 C_FLAGS += -O3 -fPIC -Wall -Wfatal-errors
-NVCC_FLAGS = -arch=sm_35 --use_fast_math -O3 --compiler-options '$(C_FLAGS)'
+NVCC_FLAGS = -arch=sm_35 -O3 --compiler-options '$(C_FLAGS)' \
+             --ftz=true --prec-div=false -prec-sqrt=false --fmad=true
 LDFLAGS += $(foreach lib_dir,$(LIB_DIRS),-L$(lib_dir)) \
 	       $(foreach lib,$(LIBS),-l$(lib))
 
