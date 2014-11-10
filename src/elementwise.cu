@@ -150,7 +150,13 @@ void binary_scalar(BinaryOp op, const Ta *a, Talpha alpha, unsigned int n,
       binary_scalar<Ta, Talpha, Tb, mul_op>(a, alpha, n, b);
       break;
     case POW_OP:
-      binary_scalar<Ta, Talpha, Tb, pow_op>(a, alpha, n, b);
+      if (alpha == static_cast<Talpha>(2)) {
+        binary<Ta, Ta, Tb, mul_op>(a, a, n, b);
+      } else if (alpha == static_cast<Talpha>(1)) {
+        binary_scalar<Ta, Ta, Tb, mul_op>(a, 1, n, b);
+      } else {
+        binary_scalar<Ta, Talpha, Tb, pow_op>(a, alpha, n, b);
+      }
       break;
     case SUB_OP:
       binary_scalar<Ta, Talpha, Tb, sub_op>(a, alpha, n, b);
@@ -160,8 +166,6 @@ void binary_scalar(BinaryOp op, const Ta *a, Talpha alpha, unsigned int n,
 
 template void binary_scalar<float, float, float>(
     BinaryOp op, const float *a, float alpha, unsigned int n, float *c);
-template void binary_scalar<float, int, float>(
-    BinaryOp op, const float *a, int alpha, unsigned int n, float *c);
 template void binary_scalar<int, float, float>(
     BinaryOp op, const int *a, float alpha, unsigned int n, float *c);
 template void binary_scalar<int, int, int>(
@@ -390,8 +394,6 @@ void binary_cmp_scalar(BinaryCmpOp op, const Ta *a, Talpha alpha,
 
 template void binary_cmp_scalar<float, float>(
     BinaryCmpOp op, const float *a, float alpha, unsigned int n, bool_t *b);
-template void binary_cmp_scalar<float, int>(
-    BinaryCmpOp op, const float *a, int alpha, unsigned int n, bool_t *b);
 template void binary_cmp_scalar<int, float>(
     BinaryCmpOp op, const int *a, float alpha, unsigned int n, bool_t *b);
 template void binary_cmp_scalar<int, int>(

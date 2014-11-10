@@ -55,11 +55,8 @@ def _binary(BinaryOp op, ArrayData a, ArrayData b, unsigned int n,
 
 def _binary_scalar(BinaryOp op, ArrayData a, alpha, unsigned int n,
                    ArrayData b):
-    if is_float(a) and isinstance(alpha,  float):
+    if is_float(a):
         elementwise.binary_scalar(op, float_ptr(a), <float>alpha, n,
-                                  float_ptr(b))
-    elif is_float(a) and isinstance(alpha,  int):
-        elementwise.binary_scalar(op, float_ptr(a), <int>alpha, n,
                                   float_ptr(b))
     elif is_int(a) and isinstance(alpha,  float):
         elementwise.binary_scalar(op, int_ptr(a), <float>alpha, n,
@@ -112,12 +109,9 @@ def _binary_cmp(BinaryCmpOp op, ArrayData a, ArrayData b, unsigned int n,
 
 def _binary_cmp_scalar(BinaryCmpOp op, ArrayData a, alpha, unsigned int n,
                        ArrayData b):
-    if is_float(a) and isinstance(alpha,  float):
+    if is_float(a):
         elementwise.binary_cmp_scalar[float, float](op, float_ptr(a), alpha, n,
                                                     bool_ptr(b))
-    elif is_float(a) and isinstance(alpha,  int):
-        elementwise.binary_cmp_scalar[float, int](op, float_ptr(a), alpha, n,
-                                                  bool_ptr(b))
     elif is_int(a) and isinstance(alpha,  float):
         elementwise.binary_cmp_scalar[int, float](op, int_ptr(a), alpha, n,
                                                   bool_ptr(b))
