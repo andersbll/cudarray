@@ -4,8 +4,12 @@ from .pool_seg_bc01 import *
 
 
 class PoolB01(object):
-    def __init__(self, win_shape):
+    def __init__(self, win_shape, strides):
         self.win_shape = win_shape
+        self.strides = strides
+        if strides is None:
+            self.strides = win_shape
+            
         self.mpIDXS = None
         self.img_shape = None
 
@@ -27,6 +31,7 @@ class PoolB01(object):
 
         pool_seg_max_bc01(imgs=imgs,
                           win_shape=self.win_shape,
+                          strides=self.strides,
                           poolout=poolout,
                           switches=self.mpIDXS)
 
@@ -42,22 +47,22 @@ class PoolB01(object):
                 raise ValueError('dtype mismatch')
 
         bprop_pool_seg_bc01(poolout_grad=poolout_d,
-                            win_shape=self.win_shape,
                             switches=self.mpIDXS,
                             imgs_grad=imgs_d)
         return imgs_d
 
     def output_index(self, input_index, output_index=None):
+
         if output_index == None:
             f_out = input_index.shape[0] * self.win_shape[0] * self.win_shape[1] 
             index_h, index_w = input_index.shape[-2:]
-            out_shape = ((index_h // self.win_shape[0]) + (index_h % self.win_shape[0] > 0),
-                     (index_w // self.win_shape[1]) + (index_w % self.win_shape[1] > 0))
-            
+            out_shape = ((index_h - self.win_shape[0])/self.strides[0] + 1,
+                         (index_w - self.win_shape[1])/self.strides[1] + 1)
             output_index = ca.empty(((f_out,)+out_shape), dtype=input_index.dtype)
 
         pool_seg_indexing_bc01(imgs=input_index,
                                win_shape=self.win_shape,
+                               strides=self.strides,
                                poolout=output_index)
 
         return output_index
@@ -67,6 +72,8 @@ class PoolB01(object):
         c_in = imgs_shape[1]
         f_out = f_in * self.win_shape[0] * self.win_shape[1] 
         img_h, img_w = imgs_shape[-2:]
-        out_shape = ((img_h // self.win_shape[0]) + (img_h % self.win_shape[0] > 0),
-                     (img_w // self.win_shape[1]) + (img_w % self.win_shape[1] > 0))
+        out_shape = ((img_h - self.win_shape[0])
+                     / self.strides[0] + 1,
+                     (img_w -self.win_shape[1])
+                     / self.strides[1] + 1)
         return (f_out, c_in) + out_shape

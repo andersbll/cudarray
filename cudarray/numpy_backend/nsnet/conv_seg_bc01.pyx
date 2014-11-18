@@ -13,8 +13,7 @@ cdef inline int int_max(int a, int b) nogil: return a if a >= b else b
 cdef inline int int_min(int a, int b) nogil: return a if a <= b else b
 
 
-@cython.boundscheck(False)
-@cython.wraparound(False)
+
 def conv_seg_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
               np.ndarray[DTYPE_t, ndim=4] filters,
               np.ndarray[DTYPE_t, ndim=4] convout):
@@ -70,20 +69,18 @@ def conv_seg_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
                     convout[fg, c_out, y, x] = value
     return convout
 
-@cython.boundscheck(False)
-@cython.wraparound(False)
+
 cdef inline getImgIndex(int tempIndex, uint size):
     cdef uint index
     if(tempIndex < 0):        
-        index = <uint>(tempIndex * -1)
+        index = <uint>((tempIndex * -1) % size)
     elif(tempIndex >= size):
         index = <uint>(size - (tempIndex % size) - 1)
     else:
         index = <uint>(tempIndex)
     return index
 
-@cython.boundscheck(False)
-@cython.wraparound(False)
+
 def conv_seg_bc01_bprop(np.ndarray[DTYPE_t, ndim=4] imgs,
                     np.ndarray[DTYPE_t, ndim=4] convout_d,
                     np.ndarray[DTYPE_t, ndim=4] filters,
@@ -128,7 +125,7 @@ def conv_seg_bc01_bprop(np.ndarray[DTYPE_t, ndim=4] imgs,
         for c_out in range(f_convout):
             for y in range(img_h):
                 for x in range(img_w):
-                    convout_d_value = convout_d[fg, c_convout, y, x]
+                    convout_d_value = convout_d[fg, c_out, y, x]
                     fil_y = 0
                     yMin = y-fil_mid_h
                     yMax = y+fil_mid_h+mid_off_h
