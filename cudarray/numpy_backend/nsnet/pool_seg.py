@@ -29,15 +29,11 @@ class PoolB01(object):
         if self.mpIDXS is None or self.mpIDXS.shape[:-1] != poolout_shape:
             self.mpIDXS = ca.empty(poolout_shape + (3,), dtype=np.dtype('int_'))
 
-        print "POOL OUT"
-        print "IMG"
-        print imgs
         pool_seg_max_bc01(imgs=imgs,
                           win_shape=self.win_shape,
                           strides=self.strides,
                           poolout=poolout,
                           switches=self.mpIDXS)
-
         return poolout
 
     def bprop(self, poolout_d, imgs_d=None):
@@ -57,10 +53,10 @@ class PoolB01(object):
     def output_index(self, input_index, output_index=None):
 
         if output_index == None:
-            f_out = input_index.shape[0] * self.win_shape[0] * self.win_shape[1] 
+            f_out = input_index.shape[0] * self.strides[0] * self.strides[1] 
             index_h, index_w = input_index.shape[-2:]
-            out_shape = ((index_h - self.win_shape[0])/self.strides[0] + 1,
-                         (index_w - self.win_shape[1])/self.strides[1] + 1)
+            out_shape = ((index_h - self.strides[0])/self.strides[0] + 1,
+                         (index_w - self.strides[1])/self.strides[1] + 1)
             output_index = ca.empty(((f_out,)+out_shape), dtype=input_index.dtype)
 
         pool_seg_indexing_bc01(imgs=input_index,
@@ -73,10 +69,10 @@ class PoolB01(object):
     def output_shape(self, imgs_shape):
         f_in = imgs_shape[0]
         c_in = imgs_shape[1]
-        f_out = f_in * self.win_shape[0] * self.win_shape[1] 
+        f_out = f_in * self.strides[0] * self.strides[1] 
         img_h, img_w = imgs_shape[-2:]
-        out_shape = ((img_h - self.win_shape[0])
+        out_shape = ((img_h - self.strides[0])
                      / self.strides[0] + 1,
-                     (img_w -self.win_shape[1])
+                     (img_w -self.strides[1])
                      / self.strides[1] + 1)
         return (f_out, c_in) + out_shape

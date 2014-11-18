@@ -44,9 +44,6 @@ def pool_seg_max_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
     cdef uint i, c, y, x, y_out, x_out, fg_out, img_y_max, img_x_max, y_frag, x_frag
     cdef DTYPE_t value
 
-    print "---------POOL ----------"
-    print imgs
-    print "--------- ----------"
     for fg_in in range(F_in):
         for c in range(n_channels):
             for y_out in range(out_h):
@@ -55,22 +52,20 @@ def pool_seg_max_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
                     x = x_out*stride_w
 
                     f_count = 0
-                    for off_y in range(pool_h):
-                        for off_x in range(pool_w):
+                    for off_y in range(stride_h):
+                        for off_x in range(stride_w):
                             y_frag = y + off_y
                             x_frag = x + off_x
                             fg_out = fg_in * F_out_local + f_count
                             #Get the value, and position of the max in pool win
                             value, img_y_max, img_x_max = max_value(fg_in, c, y_frag, x_frag, pool_h, pool_w, imgs)
-                            #poolout[fg_out, c, y_out, x_out] = value
-                            poolout[fg_out, c, y_out, x_out] =  imgs[fg_in, c, y_frag, x_frag]
+                            poolout[fg_out, c, y_out, x_out] = value
                             switches[fg_out, c, y_out, x_out, 0] = img_y_max
                             switches[fg_out, c, y_out, x_out, 1] = img_x_max
                             switches[fg_out, c, y_out, x_out, 2] = fg_in
 
                             f_count += 1
-    print poolout                    
-    print "--------- POOL END ----------"
+    return poolout, switches
 
 cdef inline max_value(uint fg, uint c, uint y_start,
                       uint x_start, uint pool_h, uint pool_w,
@@ -87,9 +82,6 @@ cdef inline max_value(uint fg, uint c, uint y_start,
     y_max = int_min(y_start+pool_h, img_h)
     x_min = x_start
     x_max = int_min(x_start+pool_w, img_w)
-
-    #print (str(x_start) + " :: " + str(x_min) + " , " + str(x_max))
-    #print (str(y_start) + " :: " + str(y_min) + " , " + str(y_max))
 
     for img_y in range(y_min, y_max):
         for img_x in range(x_min, x_max):
@@ -157,8 +149,8 @@ def pool_seg_indexing_bc01(np.ndarray[DTYPE_t, ndim=3] imgs,
                 x = x_out*stride_w
 
                 f_count = 0
-                for off_y in range(pool_h):
-                    for off_x in range(pool_w):
+                for off_y in range(stride_h):
+                    for off_x in range(stride_w):
                         y_frag = y + off_y
                         x_frag = x + off_x
                         fg_out = fg_in * F_out_local + f_count
