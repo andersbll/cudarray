@@ -1,6 +1,6 @@
 from .conv_seg_bc01 import *
 import cudarray as ca
-import numpy as np
+
 
 
 class ConvBC01(object):

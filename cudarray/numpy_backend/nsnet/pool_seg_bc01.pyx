@@ -67,6 +67,7 @@ def pool_seg_max_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
                             f_count += 1
     return poolout, switches
 
+
 cdef inline max_value(uint fg, uint c, uint y_start,
                       uint x_start, uint pool_h, uint pool_w,
                       np.ndarray[DTYPE_t, ndim=4] imgs):
