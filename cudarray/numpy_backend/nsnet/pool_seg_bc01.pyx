@@ -16,10 +16,9 @@ cdef inline int int_max(int a, int b): return a if a >= b else b
 cdef inline int int_min(int a, int b): return a if a <= b else b
 
 
-@cython.boundscheck(False)
-@cython.wraparound(False)
 def pool_seg_max_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
               tuple win_shape,
+              tuple strides,
               np.ndarray[DTYPE_t, ndim=4] poolout,
               np.ndarray[np.int_t, ndim=5] switches):
     """ Multi-image, multi-channel pooling
@@ -31,6 +30,8 @@ def pool_seg_max_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
     """
     cdef uint pool_h = win_shape[0] 
     cdef uint pool_w = win_shape[1]
+    cdef uint stride_h = strides[0]
+    cdef uint stride_w = strides[1]
 
     cdef uint F_in = imgs.shape[0]
     cdef uint n_channels = imgs.shape[1]
@@ -46,9 +47,9 @@ def pool_seg_max_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
     for fg_in in range(F_in):
         for c in range(n_channels):
             for y_out in range(out_h):
-                y = y_out*pool_h
+                y = y_out*stride_h
                 for x_out in range(out_w):
-                    x = x_out*pool_w
+                    x = x_out*stride_w
 
                     f_count = 0
                     for off_y in range(pool_h):
@@ -93,10 +94,8 @@ cdef inline max_value(uint fg, uint c, uint y_start,
                 img_x_max = img_x
     return value, img_y_max, img_x_max
 
-@cython.boundscheck(False)
-@cython.wraparound(False)
+
 def bprop_pool_seg_bc01(np.ndarray[DTYPE_t, ndim=4] poolout_grad,
-                    tuple win_shape,
                     np.ndarray[np.int_t, ndim=5] switches,
                     np.ndarray[DTYPE_t, ndim=4] imgs_grad):
 
@@ -121,8 +120,9 @@ def bprop_pool_seg_bc01(np.ndarray[DTYPE_t, ndim=4] poolout_grad,
     return imgs_grad
 
 def pool_seg_indexing_bc01(np.ndarray[DTYPE_t, ndim=3] imgs,
-              tuple win_shape,
-              np.ndarray[DTYPE_t, ndim=3] poolout):
+                           tuple win_shape,
+                           tuple strides,
+                           np.ndarray[DTYPE_t, ndim=3] poolout):
     """ Multi-image, multi-channel pooling
     imgs has shape (n_imgs, n_channels, img_h, img_w)
     win_shape has shape (win_h, win_w) 
@@ -132,6 +132,8 @@ def pool_seg_indexing_bc01(np.ndarray[DTYPE_t, ndim=3] imgs,
     """
     cdef uint pool_h = win_shape[0] 
     cdef uint pool_w = win_shape[1]
+    cdef uint stride_h = strides[0] 
+    cdef uint stride_w = strides[1]
 
     cdef uint F_in = imgs.shape[0]
 
@@ -144,9 +146,9 @@ def pool_seg_indexing_bc01(np.ndarray[DTYPE_t, ndim=3] imgs,
 
     for fg_in in range(F_in):
         for y_out in range(out_h):
-            y = y_out*pool_h
+            y = y_out*stride_h
             for x_out in range(out_w):
-                x = x_out*pool_w
+                x = x_out*stride_w
 
                 f_count = 0
                 for off_y in range(pool_h):
@@ -155,5 +157,4 @@ def pool_seg_indexing_bc01(np.ndarray[DTYPE_t, ndim=3] imgs,
                         x_frag = x + off_x
                         fg_out = fg_in * F_out_local + f_count
                         poolout[fg_out, y_out, x_out] = imgs[fg_in, y_frag, x_frag]
-
                         f_count += 1
