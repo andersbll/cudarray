@@ -44,6 +44,9 @@ def pool_seg_max_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
     cdef uint i, c, y, x, y_out, x_out, fg_out, img_y_max, img_x_max, y_frag, x_frag
     cdef DTYPE_t value
 
+    print "---------POOL ----------"
+    print imgs
+    print "--------- ----------"
     for fg_in in range(F_in):
         for c in range(n_channels):
             for y_out in range(out_h):
@@ -59,12 +62,15 @@ def pool_seg_max_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
                             fg_out = fg_in * F_out_local + f_count
                             #Get the value, and position of the max in pool win
                             value, img_y_max, img_x_max = max_value(fg_in, c, y_frag, x_frag, pool_h, pool_w, imgs)
-                            poolout[fg_out, c, y_out, x_out] = value
+                            #poolout[fg_out, c, y_out, x_out] = value
+                            poolout[fg_out, c, y_out, x_out] =  imgs[fg_in, c, y_frag, x_frag]
                             switches[fg_out, c, y_out, x_out, 0] = img_y_max
                             switches[fg_out, c, y_out, x_out, 1] = img_x_max
                             switches[fg_out, c, y_out, x_out, 2] = fg_in
 
                             f_count += 1
+    print poolout                    
+    print "--------- POOL END ----------"
 
 cdef inline max_value(uint fg, uint c, uint y_start,
                       uint x_start, uint pool_h, uint pool_w,

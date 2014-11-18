@@ -24,10 +24,16 @@ class ConvBC01(object):
             if convout.dtype != imgs.dtype:
                 raise ValueError('dtype mismatch')
 
-        conv_seg_bc01(imgs=imgs,
+        convout = np.copy(imgs)
+        print "convoutt"
+        print convout
+        return convout
+
+        convout = conv_seg_bc01(imgs=imgs,
                       filters=filters,
                       convout=convout)
-
+        print "convoutt"
+        print convout
         return convout
 
     def bprop(self, imgs, filters, convout_d, to_filters=True, to_imgs=True,

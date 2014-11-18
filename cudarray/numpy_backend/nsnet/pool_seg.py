@@ -29,6 +29,9 @@ class PoolB01(object):
         if self.mpIDXS is None or self.mpIDXS.shape[:-1] != poolout_shape:
             self.mpIDXS = ca.empty(poolout_shape + (3,), dtype=np.dtype('int_'))
 
+        print "POOL OUT"
+        print "IMG"
+        print imgs
         pool_seg_max_bc01(imgs=imgs,
                           win_shape=self.win_shape,
                           strides=self.strides,
