@@ -21,6 +21,10 @@ template<typename Ta, typename Talpha, typename Tb>
 void binary_scalar(BinaryOp op, const Ta *a, Talpha alpha, unsigned int n,
                    Tb *b);
 
+template<typename Talpha, typename Ta, typename Tb>
+void binary_scalar_(BinaryOp op, Talpha alpha, const Ta *a, unsigned int n,
+                    Tb *b);
+
 template<typename Ta, typename Tb, typename Tc>
 void binary_broadcast(BinaryOp op, BroadcastType btype, const Ta *a,
     const Tb *b, unsigned int k, unsigned int m, unsigned int n, Tc *c);
@@ -34,9 +38,13 @@ template<typename Ta, typename Tb>
 void binary_cmp(BinaryCmpOp op, const Ta *a, const Tb *b, unsigned int n,
                 bool_t *c);
 
-template<typename Ta, typename Talpha>
-void binary_cmp_scalar(BinaryCmpOp op, const Ta *a, Talpha alpha,
+template<typename T>
+void binary_cmp_scalar(BinaryCmpOp op, const T *a, T alpha,
                        unsigned int n, bool_t *b);
+
+template<typename T>
+void binary_cmp_scalar_(BinaryCmpOp op, T alpha, const T *a,
+                        unsigned int n, bool_t *b);
 
 template<typename Ta, typename Tb>
 void binary_cmp_broadcast(BinaryCmpOp op, BroadcastType btype, const Ta *a,

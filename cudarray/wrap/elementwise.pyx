@@ -1,3 +1,4 @@
+from cpython cimport bool
 cimport numpy as np
 cimport elementwise
 from .array_data cimport (ArrayData, bool_ptr, float_ptr, int_ptr, is_int,
@@ -54,15 +55,28 @@ def _binary(BinaryOp op, ArrayData a, ArrayData b, unsigned int n,
 
 
 def _binary_scalar(BinaryOp op, ArrayData a, alpha, unsigned int n,
-                   ArrayData b):
+                   ArrayData b, bool flip_operands):
     if is_float(a):
-        elementwise.binary_scalar(op, float_ptr(a), <float>alpha, n,
-                                  float_ptr(b))
+        if flip_operands:
+            elementwise.binary_scalar(op, float_ptr(a), <float>alpha, n,
+                                      float_ptr(b))
+        else:
+            elementwise.binary_scalar_(op, <float>alpha, float_ptr(a), n,
+                                      float_ptr(b))
     elif is_int(a) and isinstance(alpha,  float):
-        elementwise.binary_scalar(op, int_ptr(a), <float>alpha, n,
-                                  float_ptr(b))
+        if flip_operands:
+            elementwise.binary_scalar(op, int_ptr(a), <float>alpha, n,
+                                      float_ptr(b))
+        else:
+            elementwise.binary_scalar_(op, <float>alpha, int_ptr(a), n,
+                                      float_ptr(b))
     elif is_int(a) and isinstance(alpha,  int):
-        elementwise.binary_scalar(op, int_ptr(a), <int>alpha, n, int_ptr(b))
+        if flip_operands:
+            elementwise.binary_scalar(op, int_ptr(a), <int>alpha, n,
+                                      int_ptr(b))
+        else:
+            elementwise.binary_scalar_(op, <int>alpha, int_ptr(a), n,
+                                       int_ptr(b))
     else:
         raise ValueError('types (%s, %s) not implemented'
                          % (str(a.dtype), type(alpha)))
@@ -108,16 +122,25 @@ def _binary_cmp(BinaryCmpOp op, ArrayData a, ArrayData b, unsigned int n,
 
 
 def _binary_cmp_scalar(BinaryCmpOp op, ArrayData a, alpha, unsigned int n,
-                       ArrayData b):
+                       ArrayData b, bool flip_operands):
     if is_float(a):
-        elementwise.binary_cmp_scalar[float, float](op, float_ptr(a), alpha, n,
-                                                    bool_ptr(b))
-    elif is_int(a) and isinstance(alpha,  float):
-        elementwise.binary_cmp_scalar[int, float](op, int_ptr(a), alpha, n,
-                                                  bool_ptr(b))
-    elif is_int(a) and isinstance(alpha,  int):
-        elementwise.binary_cmp_scalar[int, int](op, int_ptr(a), alpha, n,
-                                                bool_ptr(b))
+        if flip_operands:
+            elementwise.binary_cmp_scalar_[float](
+                op, <float> alpha, float_ptr(a), n, bool_ptr(b)
+            )
+        else:
+            elementwise.binary_cmp_scalar[float](
+                op, float_ptr(a), <float> alpha, n, bool_ptr(b)
+            )
+    elif is_int(a):
+        if flip_operands:
+            elementwise.binary_cmp_scalar_[int](
+                op, <int> alpha, int_ptr(a), n, bool_ptr(b)
+            )
+        else:
+            elementwise.binary_cmp_scalar[int](
+                op, int_ptr(a), <int> alpha, n, bool_ptr(b)
+            )
     else:
         raise ValueError('types (%s, %s) not implemented'
                          % (str(a.dtype), type(alpha)))
