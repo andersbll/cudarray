@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
 import os
-import sys
-import fnmatch
 import numpy
 
 from setuptools import setup, find_packages, Feature
@@ -101,6 +99,7 @@ setup(
         'Programming Language :: Python',
         'Topic :: Scientific/Engineering',
     ],
+    include_dirs=[numpy.get_include()],
     features={
         'cuda': Feature(
             description='CUDA back-end',
