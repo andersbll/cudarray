@@ -543,6 +543,8 @@ void unary(UnaryOp op, const T *a, unsigned int n, T *b) {
 }
 template void unary<float>(UnaryOp op, const float *a, unsigned int n,
                            float *b);
+// TODO: unary should convert to float for certain operations
+template void unary<int>(UnaryOp op, const int *a, unsigned int n, int *b);
 
 
 

@@ -145,6 +145,8 @@ def _binary_cmp_broadcast(BinaryCmpOp op, BroadcastType btype, ArrayData a,
 def _unary(UnaryOp op, ArrayData a, unsigned int n, ArrayData b):
     if is_float(a):
         elementwise.unary(op, float_ptr(a), n, float_ptr(b))
+    elif is_int(a):
+        elementwise.unary(op, int_ptr(a), n, int_ptr(b))
     else:
         raise ValueError('type %s not implemented' % str(a.dtype))
 
