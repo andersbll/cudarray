@@ -1,5 +1,9 @@
 import numpy as np
+import cudarray as ca
 
+#def softmax(x):
+#    e = ca.exp(x - ca.amax(x, axis=1, keepdims=True))
+#    return e/(1+ca.sum(e, axis=1, keepdims=True))
 
 def softmax(X):
     e = np.exp(X - np.amax(X, axis=1, keepdims=True))
