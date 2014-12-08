@@ -13,7 +13,8 @@ cdef inline int int_max(int a, int b) nogil: return a if a >= b else b
 cdef inline int int_min(int a, int b) nogil: return a if a <= b else b
 
 
-
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def conv_seg_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
               np.ndarray[DTYPE_t, ndim=4] filters,
               np.ndarray[DTYPE_t, ndim=4] convout):
@@ -36,13 +37,13 @@ def conv_seg_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
     cdef uint img_y, img_x, fil_y, fil_x
     cdef DTYPE_t value
 
-    cdef int y, x, yMin, yMax, xMin, xMax
+    cdef int y, x, yMin, yMax, xMin, xMax, x_set, y_set
     
     """mid_off only add one to max iff filter is of an uneaven sice 
     This is done because filters of uneaven size have center shifte one Back-propagate
     [ 1, 1 , x , 1] wher x is center for a 1X4 filter"""
-    mid_off_h = fil_h % 2
-    mid_off_w = fil_w % 2
+    cdef uint mid_off_h = fil_h % 2
+    cdef uint mid_off_w = fil_w % 2
 
     for fg in range(F):
         for c_out in range(n_channels_out):
@@ -69,7 +70,8 @@ def conv_seg_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
                     convout[fg, c_out, y, x] = value
     return convout
 
-
+@cython.boundscheck(False)
+@cython.wraparound(False)
 cdef inline getImgIndex(int tempIndex, uint size):
     cdef uint index
     if(tempIndex < 0):        
@@ -80,7 +82,8 @@ cdef inline getImgIndex(int tempIndex, uint size):
         index = <uint>(tempIndex)
     return index
 
-
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def conv_seg_bc01_bprop(np.ndarray[DTYPE_t, ndim=4] imgs,
                     np.ndarray[DTYPE_t, ndim=4] convout_d,
                     np.ndarray[DTYPE_t, ndim=4] filters,

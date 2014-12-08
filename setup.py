@@ -79,6 +79,7 @@ def numpy_extensions():
         'cudarray/numpy_backend/nnet/lrnorm_bc01.pyx',
         'cudarray/numpy_backend/nsnet/conv_seg_bc01.pyx',
         'cudarray/numpy_backend/nsnet/pool_seg_bc01.pyx',
+        'cudarray/numpy_backend/nsnet/flatten_seg_bc01.pyx',
     ]
     return cythonize(cython_srcs, include_path=[numpy.get_include()])
 

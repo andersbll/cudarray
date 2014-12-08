@@ -15,14 +15,15 @@ cdef inline DTYPE_t dtype_t_max(DTYPE_t a, DTYPE_t b): return a if a >= b else b
 cdef inline int int_max(int a, int b): return a if a >= b else b
 cdef inline int int_min(int a, int b): return a if a <= b else b
 
-
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def pool_seg_max_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
               tuple win_shape,
               tuple strides,
               np.ndarray[DTYPE_t, ndim=4] poolout,
               np.ndarray[np.int_t, ndim=5] switches):
     """ Multi-image, multi-channel pooling
-    imgs has shape (n_imgs, n_channels, img_h, img_w)
+    imgs has shape (n_filters, n_channels, img_h, img_w)
     win_shape has shape (win_h, win_w) 
     strides has shape (stride_y, stride_x)
     poolout has shape (n_imgs, n_channels, img_h//stride_y, img_w//stride_x)
@@ -41,7 +42,8 @@ def pool_seg_max_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
 
     cdef uint F_out_local = pool_h * pool_w
 
-    cdef uint i, c, y, x, y_out, x_out, fg_out, img_y_max, img_x_max, y_frag, x_frag
+    cdef uint i, c, y, x, y_out, x_out, fg_out, img_y_max, img_x_max, y_frag, x_frag, f_count, fg_in
+    cdef uint off_x, off_y
     cdef DTYPE_t value
 
     for fg_in in range(F_in):
@@ -67,7 +69,8 @@ def pool_seg_max_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
                             f_count += 1
     return poolout, switches
 
-
+@cython.boundscheck(False)
+@cython.wraparound(False)
 cdef inline max_value(uint fg, uint c, uint y_start,
                       uint x_start, uint pool_h, uint pool_w,
                       np.ndarray[DTYPE_t, ndim=4] imgs):
@@ -77,7 +80,7 @@ cdef inline max_value(uint fg, uint c, uint y_start,
 
     cdef uint img_h = imgs.shape[2]
     cdef uint img_w = imgs.shape[3]
-    cdef uint img_y_max, img_x_max, img_x, img_y
+    cdef uint img_y_max, img_x_max, img_x, img_y, y_min, y_max, x_min, x_max
 
     y_min = y_start
     y_max = int_min(y_start+pool_h, img_h)
@@ -93,7 +96,8 @@ cdef inline max_value(uint fg, uint c, uint y_start,
                 img_x_max = img_x
     return value, img_y_max, img_x_max
 
-
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def bprop_pool_seg_bc01(np.ndarray[DTYPE_t, ndim=4] poolout_grad,
                     np.ndarray[np.int_t, ndim=5] switches,
                     np.ndarray[DTYPE_t, ndim=4] imgs_grad):
@@ -118,10 +122,12 @@ def bprop_pool_seg_bc01(np.ndarray[DTYPE_t, ndim=4] poolout_grad,
                     imgs_grad[fg_in, c, img_y, img_x] += poolout_grad[fg, c, y, x]
     return imgs_grad
 
-def pool_seg_indexing_bc01(np.ndarray[DTYPE_t, ndim=3] imgs,
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def pool_seg_indexing_bc01(np.ndarray[long, ndim=3] imgs,
                            tuple win_shape,
                            tuple strides,
-                           np.ndarray[DTYPE_t, ndim=3] poolout):
+                           np.ndarray[long, ndim=3] poolout):
     """ Multi-image, multi-channel pooling
     imgs has shape (n_imgs, n_channels, img_h, img_w)
     win_shape has shape (win_h, win_w) 
