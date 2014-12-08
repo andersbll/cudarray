@@ -19,6 +19,9 @@ def sigmoid_d(x, out=None):
     result = s*(1-s)
     return _output(result, out)
 
+def tanh(x, out=None):
+    result = np.tanh(x)
+    return _output(result, out)
 
 def tanh_d(x, out=None):
     result = 1-np.tanh(x)**2
