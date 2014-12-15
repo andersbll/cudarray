@@ -14,9 +14,7 @@ def read(fname):
 
 
 def cuda_extensions():
-    cuda_dir = os.getenv('CUDA_DIR', '/usr/local/cuda')
-    if not os.path.exists(cuda_dir):
-        raise IOError('CUDA directory does not exist: %s' % cuda_dir)
+    cuda_dir = os.getenv('CUDA_PREFIX', '/usr/local/cuda')
     cuda_include_dir = os.path.join(cuda_dir, 'include')
     cuda_library_dir = os.path.join(cuda_dir, 'lib64')
     if not os.path.exists(cuda_library_dir):
