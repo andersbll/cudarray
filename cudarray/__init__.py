@@ -19,7 +19,7 @@ if 'CUDARRAY_BACKEND' not in os.environ:
         logger.info('CUDArray: Using CUDA back-end.')
     except:
         from .numpy_backend import *
-        logger.info('CUDArray: Using NumpyCUDA back-end.')
+        logger.info('CUDArray: Using Numpy back-end.')
 else:
     backend = os.getenv('CUDARRAY_BACKEND', 'numpy').lower()
     if backend == 'numpy':
