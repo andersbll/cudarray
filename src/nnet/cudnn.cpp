@@ -51,6 +51,10 @@ void PoolBC01CuDNN<T>::fprop(const T *imgs, int n_imgs, int n_channels,
         poolout_desc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, n_imgs, n_channels,
         poolout_h, poolout_w
     ));
+    this->n_imgs = n_imgs;
+    this->n_channels = n_channels;
+    this->img_h = img_h;
+    this->img_w = img_w;
   }
 
   CUDNN_CHECK(cudnnPoolingForward(
@@ -106,6 +110,10 @@ void ConvBC01CuDNN<T>::fprop(const T *imgs, const T *filters, int n_imgs,
         imgs_desc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, n_imgs, n_channels,
         img_h, img_w
     ));
+    this->n_imgs = n_imgs;
+    this->n_channels = n_channels;
+    this->img_h = img_h;
+    this->img_w = img_w;
     set_conv_desc = true;
   }
   if (n_filters != this->n_filters || n_channels != this->n_channels ||
@@ -114,6 +122,10 @@ void ConvBC01CuDNN<T>::fprop(const T *imgs, const T *filters, int n_imgs,
         filters_desc, CUDNN_DATA_FLOAT, n_filters, n_channels, filter_h,
         filter_w
     ));
+    this->n_filters = n_filters;
+    this->n_channels = n_channels;
+    this->filter_h = filter_h;
+    this->filter_w = filter_w;
     set_conv_desc = true;
   }
   if (set_conv_desc) {
@@ -135,7 +147,7 @@ void ConvBC01CuDNN<T>::fprop(const T *imgs, const T *filters, int n_imgs,
         CUDNN::handle(), imgs_desc, filters_desc, conv_desc, convout_desc,
         fwd_algo, &workspace_size
     ));
-//    fwd_algo = CUDNN_CONVOLUTION_FWD_ALGO_DIRECT;
+
     if (workspace_size > 0) {
       workspace = CUDA::buffer(workspace_size);
     } else {
