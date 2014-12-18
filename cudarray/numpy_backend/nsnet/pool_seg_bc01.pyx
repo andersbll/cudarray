@@ -2,6 +2,7 @@ from __future__ import division
 import numpy as np
 import cython
 cimport numpy as np
+from cython.parallel import parallel, prange
 
 cdef int POOL_MAX = 0
 cdef int POOL_MEAN = 1
@@ -43,32 +44,64 @@ def pool_seg_max_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
     cdef uint F_out_local = pool_h * pool_w
 
     cdef uint i, c, y, x, y_out, x_out, fg_out, img_y_max, img_x_max, y_frag, x_frag, f_count, fg_in
-    cdef uint off_x, off_y
+    cdef uint off_x, off_y, p
     cdef DTYPE_t value
+    cdef DTYPE_t new_value
+    cdef uint img_h = imgs.shape[2]
+    cdef uint img_w = imgs.shape[3]
+    cdef uint img_x, img_y, y_min, y_max, x_min, x_max
 
-    for fg_in in range(F_in):
-        for c in range(n_channels):
-            for y_out in range(out_h):
-                y = y_out*stride_h
-                for x_out in range(out_w):
-                    x = x_out*stride_w
+    #for fg_in in range(F_in):
+      #  for c in range(n_channels):
 
-                    f_count = 0
-                    for off_y in range(stride_h):
-                        for off_x in range(stride_w):
-                            y_frag = y + off_y
-                            x_frag = x + off_x
-                            fg_out = fg_in * F_out_local + f_count
-                            #Get the value, and position of the max in pool win
-                            value, img_y_max, img_x_max = max_value(fg_in, c, y_frag, x_frag, pool_h, pool_w, imgs)
-                            poolout[fg_out, c, y_out, x_out] = value
-                            switches[fg_out, c, y_out, x_out, 0] = img_y_max
-                            switches[fg_out, c, y_out, x_out, 1] = img_x_max
-                            switches[fg_out, c, y_out, x_out, 2] = fg_in
+    cdef uint ddd = F_in * n_channels
+    for p in prange(ddd, nogil=True):
+        fg_in = p // n_channels
+        c  = p % n_channels
 
-                            f_count += 1
+        for y_out in range(out_h):
+            y = y_out*stride_h
+            for x_out in range(out_w):
+                x = x_out*stride_w
+
+                f_count = 0
+                for off_y in range(stride_h):
+                    for off_x in range(stride_w):
+                        y_frag = y + off_y
+                        x_frag = x + off_x
+                        fg_out = fg_in * F_out_local + f_count
+                        #Get the value, and position of the max in pool win
+                        value = -9e99
+    
+                        y_min = y_frag
+                        y_max = y_frag+pool_h
+
+                        if img_h < y_max:
+                            y_max = img_h
+                        x_min = x_frag
+
+                        x_max = x_frag+pool_w 
+
+                        if img_w < x_max:
+                            x_max = img_w
+
+                        for img_y in range(y_min, y_max):
+                            for img_x in range(x_min, x_max):
+                                new_value = imgs[fg_in, c, img_y, img_x]
+                                if new_value > value:
+                                    value = new_value
+                                    img_y_max = img_y
+                                    img_x_max = img_x
+
+                        poolout[fg_out, c, y_out, x_out] = value
+                        switches[fg_out, c, y_out, x_out, 0] = img_y_max
+                        switches[fg_out, c, y_out, x_out, 1] = img_x_max
+                        switches[fg_out, c, y_out, x_out, 2] = fg_in
+
+                        f_count = f_count + 1
     return poolout, switches
 
+"""
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cdef inline max_value(uint fg, uint c, uint y_start,
@@ -96,6 +129,7 @@ cdef inline max_value(uint fg, uint c, uint y_start,
                 img_x_max = img_x
     return value, img_y_max, img_x_max
 
+"""
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def bprop_pool_seg_bc01(np.ndarray[DTYPE_t, ndim=4] poolout_grad,

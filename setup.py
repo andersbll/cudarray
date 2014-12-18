@@ -73,15 +73,25 @@ def cuda_extensions():
 
 
 def numpy_extensions():
-    cython_srcs = [
-        'cudarray/numpy_backend/nnet/conv_bc01.pyx',
-        'cudarray/numpy_backend/nnet/pool_bc01.pyx',
-        'cudarray/numpy_backend/nnet/lrnorm_bc01.pyx',
-        'cudarray/numpy_backend/nsnet/conv_seg_bc01.pyx',
-        'cudarray/numpy_backend/nsnet/pool_seg_bc01.pyx',
-        'cudarray/numpy_backend/nsnet/flatten_seg_bc01.pyx',
+    ext_names = [
+        ['nnet', 'conv_bc01'],
+        ['nnet', 'pool_bc01'],
+        ['nnet', 'lrnorm_bc01'],
+        ['nsnet','conv_seg_bc01'],
+        ['nsnet','pool_seg_bc01'],
+        ['nsnet','flatten_seg_bc01']
     ]
-    return cythonize(cython_srcs, include_path=[numpy.get_include()])
+    def make_extension(name):
+        return Extension(
+            name='cudarray.numpy_backend.' + name[0] +'.'+name[1],
+            sources=[os.path.join('./cudarray/numpy_backend', name[0], name[1] + '.pyx')],
+            include_path=[numpy.get_include()],
+            extra_compile_args=['-fopenmp'],
+            extra_link_args=['-fopenmp'],
+        )
+
+    exts = map(make_extension, ext_names)
+    return exts
 
 
 setup(

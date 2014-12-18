@@ -6,7 +6,7 @@ import cudarray as ca
 
 img = np.arange(8*8, dtype=np.float)
 
-img = img.reshape((1,1,1,8,8))
+img = img.reshape((1,1,8,8))
 
 img = img + 1.0
 
@@ -25,7 +25,7 @@ print(img)
 #print (convout.shape)
 #print (convout)
 
-pool_layer_1 = ca.nsnet.PoolB01((2,2))
+pool_layer_1 = ca.nsnet.PoolB01((2,2),(2,2))
 
 convout1 = pool_layer_1.fprop(img)
 
@@ -35,7 +35,7 @@ print (convout1)
 
 
 final_out = convout1
-pool_layer_2 = ca.nsnet.PoolB01((2,2))
+pool_layer_2 = ca.nsnet.PoolB01((2,2),(2,2))
 
 convout2 = pool_layer_2.fprop(convout1)
 
