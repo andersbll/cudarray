@@ -1,3 +1,4 @@
+import numpy as np
 cimport numpy as np
 from .cudart cimport *
 from .array_data cimport ArrayData
@@ -6,9 +7,11 @@ from .array_data cimport ArrayData
 cdef class ArrayData:
     def __init__(self, size_t size, np.dtype dtype, np.ndarray np_data=None,
                  ArrayData owner=None, unsigned int offset=0):
+        self.size = size
         self.dtype = dtype
         self.nbytes = size*dtype.itemsize
         self.owner = owner
+        self.offset = offset
         if owner is None:
             cudaCheck(cudaMalloc(&self.dev_ptr, self.nbytes))
         else:
@@ -25,6 +28,15 @@ cdef class ArrayData:
     def __dealloc__(self):
         if self.owner is None:
             cudaFree(self.dev_ptr)
+
+    def __reduce__(self):
+        if self.owner is not None:
+            np_array = None
+        else:
+            np_array = np.empty(self.size, dtype=self.dtype)
+            self.to_numpy(np_array)
+        args = (self.size, self.dtype, np_array, self.owner, self.offset)
+        return (ArrayData, args)
 
     @property
     def data(self):
