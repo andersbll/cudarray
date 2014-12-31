@@ -58,25 +58,25 @@ def _binary_scalar(BinaryOp op, ArrayData a, alpha, unsigned int n,
                    ArrayData b, bool flip_operands):
     if is_float(a):
         if flip_operands:
-            elementwise.binary_scalar(op, float_ptr(a), <float>alpha, n,
+            elementwise.binary_scalar_(op, <float>alpha, float_ptr(a), n,
                                       float_ptr(b))
         else:
-            elementwise.binary_scalar_(op, <float>alpha, float_ptr(a), n,
+            elementwise.binary_scalar(op, float_ptr(a), <float>alpha, n,
                                       float_ptr(b))
     elif is_int(a) and isinstance(alpha,  float):
         if flip_operands:
-            elementwise.binary_scalar(op, int_ptr(a), <float>alpha, n,
+            elementwise.binary_scalar_(op, <float>alpha, int_ptr(a), n,
                                       float_ptr(b))
         else:
-            elementwise.binary_scalar_(op, <float>alpha, int_ptr(a), n,
+            elementwise.binary_scalar(op, int_ptr(a), <float>alpha, n,
                                       float_ptr(b))
     elif is_int(a) and isinstance(alpha,  int):
         if flip_operands:
-            elementwise.binary_scalar(op, int_ptr(a), <int>alpha, n,
-                                      int_ptr(b))
-        else:
             elementwise.binary_scalar_(op, <int>alpha, int_ptr(a), n,
                                        int_ptr(b))
+        else:
+            elementwise.binary_scalar(op, int_ptr(a), <int>alpha, n,
+                                      int_ptr(b))
     else:
         raise ValueError('types (%s, %s) not implemented'
                          % (str(a.dtype), type(alpha)))
