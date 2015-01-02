@@ -303,7 +303,7 @@ __global__ void kernel_binary_broadcast(const Ta *a, const Tb *b,
   Op op;
   CUDA_GRID_STRIDE_LOOP(idx, k*m*n) {
     if (broadcast_inner) {
-      c[idx] = op(a[idx], b[idx / k / n]);
+      c[idx] = op(a[idx], b[(idx / m / n) * n  + (idx % n)]);
     } else {
       c[idx] = op(a[idx], b[(idx / n) % m]);
     }
@@ -316,7 +316,7 @@ __global__ void kernel_binary_broadcast_inplace(Ta *a, const Tb *b,
   Op op;
   CUDA_GRID_STRIDE_LOOP(idx, k*m*n) {
     if (broadcast_inner) {
-      a[idx] = op(a[idx], b[idx / k / n]);
+      a[idx] = op(a[idx], b[(idx / m / n) * n  + (idx % n)]);
     } else {
       a[idx] = op(a[idx], b[(idx / n) % m]);
     }
