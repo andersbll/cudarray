@@ -23,6 +23,8 @@ cdef extern from 'cudarray/elementwise.hpp' namespace 'cudarray':
                             unsigned int n, Tc *c)
     void binary_scalar[Ta, Talpha, Tb](BinaryOp op, const Ta *a, Talpha alpha,
                                        unsigned int n, Tb *b)
+    void binary_scalar_[Talpha, Ta, Tb](BinaryOp op, Talpha alpha, const Ta *a,
+                                        unsigned int n, Tb *b)
     void binary_broadcast[Ta, Tb, Tc](BinaryOp op, BroadcastType btype,
         const Ta *a, const Tb *b, unsigned int k, unsigned int m,
         unsigned int n, Tc *c)
@@ -38,10 +40,10 @@ cdef extern from 'cudarray/elementwise.hpp' namespace 'cudarray':
 
     void binary_cmp[Ta, Tb](BinaryCmpOp op, const Ta *a, const Tb *b,
                             unsigned int n, bool_t *c)
-
-    void binary_cmp_scalar[Ta, Talpha](BinaryCmpOp op, const Ta *a,
-        Talpha alpha, unsigned int n, bool_t *b)
-
+    void binary_cmp_scalar[T](BinaryCmpOp op, const T *a, T alpha,
+        unsigned int n, bool_t *b)
+    void binary_cmp_scalar_[T](BinaryCmpOp op, T alpha, const T *a,
+        unsigned int n, bool_t *b)
     void binary_cmp_broadcast[Ta, Tb](BinaryCmpOp op, BroadcastType btype,
         const Ta *a, const Tb *b, unsigned int k, unsigned int m,
         unsigned int n, bool_t *c)

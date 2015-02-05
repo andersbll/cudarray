@@ -33,8 +33,8 @@ private:
   int n_channels;
   int img_h;
   int img_w;
-  cudnnTensor4dDescriptor_t imgs_desc;
-  cudnnTensor4dDescriptor_t poolout_desc;
+  cudnnTensorDescriptor_t imgs_desc;
+  cudnnTensorDescriptor_t poolout_desc;
   cudnnPoolingDescriptor_t pool_desc;
 };
 
@@ -64,10 +64,13 @@ private:
   int img_w;
   int filter_h;
   int filter_w;
-  cudnnTensor4dDescriptor_t imgs_desc;
-  cudnnTensor4dDescriptor_t convout_desc;
+  cudnnTensorDescriptor_t imgs_desc;
+  cudnnTensorDescriptor_t convout_desc;
   cudnnFilterDescriptor_t filters_desc;
   cudnnConvolutionDescriptor_t conv_desc;
+  cudnnConvolutionFwdAlgo_t fwd_algo;
+  void *workspace;
+  size_t workspace_size;
 };
 
 
@@ -88,6 +91,9 @@ inline void cudnn_check(cudnnStatus_t status, const char *file, int line) {
 */
 class CUDNN {
 public:
+  static const float one;
+  static const float zero;
+
   inline static CUDNN &instance() {
     static CUDNN instance_;
     return instance_;

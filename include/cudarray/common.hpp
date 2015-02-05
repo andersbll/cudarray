@@ -84,8 +84,8 @@ private:
 
   CUDA() {
     for(int i = 0; i < kNumBuffers; i++) {
-        buffers[i] = NULL;
-        buffer_sizes[i] = 0;
+      buffers[i] = NULL;
+      buffer_sizes[i] = 0;
     }
   }
 

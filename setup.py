@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
 import os
-import sys
-import fnmatch
 import numpy
 
 from setuptools import setup, find_packages, Feature
@@ -16,9 +14,7 @@ def read(fname):
 
 
 def cuda_extensions():
-    cuda_dir = os.getenv('CUDA_DIR', '/usr/local/cuda')
-    if not os.path.exists(cuda_dir):
-        raise IOError('CUDA directory does not exist: %s' % cuda_dir)
+    cuda_dir = os.getenv('CUDA_PREFIX', '/usr/local/cuda')
     cuda_include_dir = os.path.join(cuda_dir, 'include')
     cuda_library_dir = os.path.join(cuda_dir, 'lib64')
     if not os.path.exists(cuda_library_dir):
@@ -103,7 +99,7 @@ setup(
     license='MIT',
     url='http://compute.dtu.dk/~abll',
     packages=find_packages(),
-    install_requires=['numpy', 'cython'],
+
     include_dirs=[numpy.get_include()],
     long_description=read('README.md'),
     classifiers=[
@@ -115,6 +111,7 @@ setup(
         'Programming Language :: Python',
         'Topic :: Scientific/Engineering',
     ],
+    include_dirs=[numpy.get_include()],
     features={
         'cuda': Feature(
             description='CUDA back-end',

@@ -65,9 +65,11 @@ def broadcast_type(shape1, shape2):
 def binary(op, x1, x2, out=None, cmp_op=False):
     if np.isscalar(x1) or np.isscalar(x2):
         if np.isscalar(x1):
+            flip = True
             scalar = x1
             array = x2
         else:
+            flip = False
             array = x1
             scalar = x2
 
@@ -88,9 +90,10 @@ def binary(op, x1, x2, out=None, cmp_op=False):
         n = array.size
         if cmp_op:
             elementwise._binary_cmp_scalar(op, array._data, scalar, n,
-                                           out._data)
+                                           out._data, flip)
         else:
-            elementwise._binary_scalar(op, array._data, scalar, n, out._data)
+            elementwise._binary_scalar(op, array._data, scalar, n, out._data,
+                                       flip)
         return out
 
     if x1.dtype == x2.dtype == np.dtype('int32') or cmp_op:

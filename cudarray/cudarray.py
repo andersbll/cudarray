@@ -85,7 +85,7 @@ class CUDArray(object):
         return elementwise.add(self, other)
 
     def __radd__(self, other):
-        return elementwise.add(self, other)
+        return elementwise.add(other, self)
 
     def __iadd__(self, other):
         return elementwise.add(self, other, self)
@@ -94,7 +94,7 @@ class CUDArray(object):
         return elementwise.subtract(self, other)
 
     def __rsub__(self, other):
-        return elementwise.subtract(self, other)
+        return elementwise.subtract(other, self)
 
     def __isub__(self, other):
         return elementwise.subtract(self, other, self)
@@ -103,7 +103,7 @@ class CUDArray(object):
         return elementwise.multiply(self, other)
 
     def __rmul__(self, other):
-        return elementwise.multiply(self, other)
+        return elementwise.multiply(other, self)
 
     def __imul__(self, other):
         return elementwise.multiply(self, other, self)
@@ -112,7 +112,7 @@ class CUDArray(object):
         return elementwise.divide(self, other)
 
     def __rdiv__(self, other):
-        return elementwise.divide(self, other)
+        return elementwise.divide(other, self)
 
     def __idiv__(self, other):
         return elementwise.divide(self, other, self)
@@ -127,7 +127,7 @@ class CUDArray(object):
         return elementwise.power(self, other)
 
     def __rpow__(self, other):
-        return elementwise.power(self, other)
+        return elementwise.power(other, self)
 
     def __ipow__(self, other):
         return elementwise.power(self, other, self)

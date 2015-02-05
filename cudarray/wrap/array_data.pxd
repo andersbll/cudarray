@@ -9,6 +9,8 @@ cdef class ArrayData:
     cdef public unsigned int nbytes
     cdef void *dev_ptr
     cdef ArrayData owner
+    cdef size_t size
+    cdef unsigned int offset
 
 
 cdef bool_t *bool_ptr(ArrayData a)

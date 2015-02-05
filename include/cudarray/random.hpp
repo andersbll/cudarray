@@ -4,6 +4,7 @@
 #include <ctime>
 #include <cstdlib>
 #include <stdexcept>
+#include <sstream>
 #include <unistd.h>
 #include <curand.h>
 

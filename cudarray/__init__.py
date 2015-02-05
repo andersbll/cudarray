@@ -1,4 +1,6 @@
 import os
+import logging
+logger = logging.getLogger(__name__)
 
 _gpu_id = int(os.getenv('CUDARRAY_DEVICE', '0'))
 
@@ -14,10 +16,10 @@ if 'CUDARRAY_BACKEND' not in os.environ:
         from . import nnet
         from . import batch
         wrap.cudart.initialize(_gpu_id)
-        print('cudarray: Using CUDA back-end.')
+        logger.info('CUDArray: Using CUDA back-end.')
     except:
         from .numpy_backend import *
-        print('cudarray: Using Numpy back-end.')
+        logger.info('CUDArray: Using Numpy back-end.')
 else:
     backend = os.getenv('CUDARRAY_BACKEND', 'numpy').lower()
     if backend == 'numpy':
@@ -34,7 +36,7 @@ else:
             from . import batch
             wrap.cudart.initialize(_gpu_id)
         except:
-            print('cudarray: Failed to load CUDA back-end.')
+            logger.error('CUDArray: Failed to load CUDA back-end.')
             raise
     else:
         valid_backends = ['numpy', 'cuda']
