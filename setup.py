@@ -99,8 +99,8 @@ setup(
     license='MIT',
     url='http://compute.dtu.dk/~abll',
     packages=find_packages(),
-
     include_dirs=[numpy.get_include()],
+    install_requires=['numpy', 'cython>=0.21.1'],
     long_description=read('README.md'),
     classifiers=[
         'Development Status :: 4 - Beta',
@@ -111,7 +111,6 @@ setup(
         'Programming Language :: Python',
         'Topic :: Scientific/Engineering',
     ],
-    include_dirs=[numpy.get_include()],
     features={
         'cuda': Feature(
             description='CUDA back-end',
