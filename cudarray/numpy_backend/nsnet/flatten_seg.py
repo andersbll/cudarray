@@ -49,5 +49,6 @@ class FlattenBC01(object):
 
     def output_shape(self, imgs_shape):
         n_filters, n_channels, img_h, img_w = imgs_shape
+        outIndex = self.input_index + 1
         win_h, win_w = self.win_shape
-        return ((img_h * img_w * n_filters), (n_channels * win_h * win_w))
+        return (ca.count_nonzero(outIndex), (n_channels * win_h * win_w))
