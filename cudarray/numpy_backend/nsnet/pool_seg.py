@@ -19,7 +19,7 @@ class PoolB01(object):
 
         poolout_shape = self.output_shape(imgs.shape)
         if poolout is None:
-            poolout = ca.empty(poolout_shape, dtype=imgs.dtype)
+            poolout = ca.zeros(poolout_shape, dtype=imgs.dtype)
         else:
             if poolout_shape != poolout.shape:
                 raise ValueError('poolout.shape does not match result')
@@ -37,6 +37,7 @@ class PoolB01(object):
         return poolout
 
     def bprop(self, poolout_d, imgs_d=None):
+
         if imgs_d is None:
             imgs_d = ca.empty(self.img_shape, dtype=poolout_d.dtype)
         else:
@@ -44,6 +45,9 @@ class PoolB01(object):
                 raise ValueError('poolout.shape does not match result')
             if imgs_d.dtype != poolout_d.dtype:
                 raise ValueError('dtype mismatch')
+
+        print "image Shape"
+        print imgs_d.shape
 
         bprop_pool_seg_bc01(poolout_grad=poolout_d,
                             switches=self.mpIDXS,
@@ -55,8 +59,8 @@ class PoolB01(object):
         if output_index == None:
             f_out = input_index.shape[0] * self.strides[0] * self.strides[1] 
             index_h, index_w = input_index.shape[-2:]
-            out_shape = ((index_h /self.strides[0]) ,
-                         (index_w /self.strides[1]))
+            out_shape = ((index_h  // self.strides[0]) ,
+                         (index_w  // self.strides[1]))
             output_index = ca.empty(((f_out,)+out_shape), dtype=input_index.dtype)
             output_index -= 1
 
@@ -72,6 +76,6 @@ class PoolB01(object):
         c_in = imgs_shape[1]
         f_out = f_in * self.strides[0] * self.strides[1] 
         img_h, img_w = imgs_shape[-2:]
-        out_shape = ((img_h / self.strides[0]) ,
-                     (img_w / self.strides[1]))
+        out_shape = ((img_h // self.strides[0]) ,
+                     (img_w // self.strides[1]))
         return (f_out, c_in) + out_shape
