@@ -14,7 +14,7 @@ def read(fname):
 
 
 def cuda_extensions():
-    cuda_dir = os.getenv('CUDA_PREFIX', '/usr/local/cuda')
+    cuda_dir = os.getenv('CUDA_PREFIX', '/opt/cuda/5.5')
     cuda_include_dir = os.path.join(cuda_dir, 'include')
     cuda_library_dir = os.path.join(cuda_dir, 'lib64')
     if not os.path.exists(cuda_library_dir):
@@ -49,7 +49,7 @@ def cuda_extensions():
             extra_link_args=extra_link_args,
         )
     ext_names = ['cudart', 'array_data', 'elementwise', 'reduction', 'blas',
-                 'random', 'nnet']
+                 'random', 'nnet', 'nsnet']
     exts = map(make_extension, ext_names)
 
     if os.getenv('CUDNN_ENABLED') == '1':
