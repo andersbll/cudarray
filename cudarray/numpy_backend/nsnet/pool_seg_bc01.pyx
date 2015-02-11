@@ -69,6 +69,7 @@ def pool_seg_max_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
                     for off_x in range(stride_w):
                         y_frag = y + off_y
                         x_frag = x + off_x
+                        # F_Out is in the form F_in_0_0 F_in_0_1 F_in_0_2 F_in_0_3 F_in_1_0 F_in_1_1 ...
                         fg_out = fg_in * F_out_local + f_count
                         #Get the value, and position of the max in pool win
                         value = -9e99
@@ -143,6 +144,9 @@ def bprop_pool_seg_bc01(np.ndarray[DTYPE_t, ndim=4] poolout_grad,
 
     cdef uint i, c, y, x, img_y, img_x, fg_in, fg
 
+    print "y h = %s"%imgs_grad.shape[2]
+    print "x w = %s"%imgs_grad.shape[3]
+    
     imgs_grad[...] = 0
 
     for fg in range(F_out):
@@ -175,6 +179,8 @@ def pool_seg_indexing_bc01(np.ndarray[long, ndim=3] imgs,
     cdef uint stride_w = strides[1]
 
     cdef uint F_in = imgs.shape[0]
+    cdef uint img_h = imgs.shape[1]
+    cdef uint img_w = imgs.shape[2]
 
     cdef uint out_h = poolout.shape[1]
     cdef uint out_w = poolout.shape[2]
@@ -195,5 +201,9 @@ def pool_seg_indexing_bc01(np.ndarray[long, ndim=3] imgs,
                         y_frag = y + off_y
                         x_frag = x + off_x
                         fg_out = fg_in * F_out_local + f_count
-                        poolout[fg_out, y_out, x_out] = imgs[fg_in, y_frag, x_frag]
+                        if y_frag < img_h and x_frag < img_w:
+                            poolout[fg_out, y_out, x_out] = imgs[fg_in, y_frag, x_frag]
+                        else:
+                            poolout[fg_out, y_out, x_out] = -1
                         f_count += 1
+                        
