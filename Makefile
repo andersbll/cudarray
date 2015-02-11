@@ -11,7 +11,7 @@ SRC_DIR = ./src
 SRCS = $(SRC_DIR)/nnet/conv_bc01_matmul.cpp \
        $(SRC_DIR)/nnet/pool_b01.cpp \
        $(SRC_DIR)/nnet/cudnn.cpp \
-       $(SRC_DIR)/nsnet/pool_seg_b01.cpp \
+       $(SRC_DIR)/nsnet/pool_seg_b01.cpp 
 
 
 CUDA_SRCS = $(SRC_DIR)/elementwise.cu \
