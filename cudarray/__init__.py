@@ -14,6 +14,7 @@ if 'CUDARRAY_BACKEND' not in os.environ:
         from .reduction import *
         from . import random
         from . import nnet
+        from . import nsnet
         from . import batch
         wrap.cudart.initialize(_gpu_id)
         logger.info('CUDArray: Using CUDA back-end.')
@@ -33,6 +34,7 @@ else:
             from .reduction import *
             from . import random
             from . import nnet
+            from . import nsnet
             from . import batch
             wrap.cudart.initialize(_gpu_id)
         except:
