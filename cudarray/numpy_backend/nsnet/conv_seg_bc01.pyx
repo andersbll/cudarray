@@ -127,9 +127,9 @@ def conv_seg_bc01_bprop(np.ndarray[DTYPE_t, ndim=4] imgs,
     cdef int fil_mid_w = fil_w // 2
 
     cdef uint c_convout, c_imgs, fg, c_out, p
-    cdef uint img_y, img_x, fil_y, fil_x
+    cdef uint img_y, img_x, fil_y, fil_x, y, x,
     cdef DTYPE_t convout_d_value
-    cdef int y, x, y_off_min, y_off_max, y_off, x_off_min, x_off_max, xMin, xMax, yMin, yMax
+    cdef int y_off_min, y_off_max, y_off, x_off_min, x_off_max, xMin, xMax, yMin, yMax
     cdef int y_set, x_set, tempIndex
     cdef int x_off, mid_off_h, mid_off_w, img_x_center, img_y_center
     
