@@ -1,5 +1,5 @@
 ifndef CUDA_PREFIX
-  CUDA_PREFIX = /appl/cuda/6.5
+  CUDA_PREFIX = /appl/cuda/6.5/
 endif
 ifndef INSTALL_PREFIX
   INSTALL_PREFIX=/zhome/b9/d/42756/anaconda/envs/segment-GPU
@@ -11,16 +11,16 @@ SRC_DIR = ./src
 SRCS = $(SRC_DIR)/nnet/conv_bc01_matmul.cpp \
        $(SRC_DIR)/nnet/pool_b01.cpp \
        $(SRC_DIR)/nnet/cudnn.cpp \
-       $(SRC_DIR)/nsnet/pool_seg_b01.cpp 
-
+       $(SRC_DIR)/nsnet/conv_bc01_matmul.cpp \
+       $(SRC_DIR)/nsnet/cudnn.cpp \
+       $(SRC_DIR)/nsnet/pool_seg_b01.cpp
 
 CUDA_SRCS = $(SRC_DIR)/elementwise.cu \
             $(SRC_DIR)/reduction.cu \
             $(SRC_DIR)/blas.cu \
             $(SRC_DIR)/random.cu \
             $(SRC_DIR)/image/img2win.cu \
-            $(SRC_DIR)/nnet/one_hot.cu \
-            $(SRC_DIR)/nsnet/one_hot.cu
+            $(SRC_DIR)/nnet/one_hot.cu
 
 
 INCLUDE_DIRS = ./include
@@ -48,7 +48,7 @@ LIBCUDARRAY_INSTALL = $(INSTALL_PREFIX)/lib/$(LIBCUDARRAY)
 
 INCLUDES += $(foreach include_dir,$(INCLUDE_DIRS),-I$(include_dir))
 C_FLAGS += -O3 -fPIC -Wall -Wfatal-errors
-NVCC_FLAGS = -arch=sm_35 -O3 --compiler-options '$(C_FLAGS)' \
+NVCC_FLAGS = -arch=sm_20 -O3 --compiler-options '$(C_FLAGS)' \
              --ftz=true --prec-div=false -prec-sqrt=false --fmad=true
 LDFLAGS += $(foreach lib_dir,$(LIB_DIRS),-L$(lib_dir)) \
 	       $(foreach lib,$(LIBS),-l$(lib))

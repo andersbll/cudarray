@@ -4,7 +4,7 @@ import cudarray as ca
 
 
 class ConvBC01(object):
-    def __init__(self):
+    def __init__(self, padding, strides=(1,1), impl=None):
         self.type = 'max'
 
     def fprop(self, imgs, filters, convout=None):

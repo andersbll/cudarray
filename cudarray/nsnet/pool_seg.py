@@ -1,8 +1,9 @@
 import numpy as np
 import cudarray as ca
 from ..wrap import nsnet
-from ../numpy_backend/nsnet/pool_seg_bc01 import pool_seg_indexing_bc01
-
+from ..numpy_backend import pool_seg_indexing_bc01
+import logging
+logger = logging.getLogger(__name__)
 
 try:
     from ..wrap import cudnn
@@ -17,19 +18,24 @@ class PoolB01(object):
         self.win_shape = win_shape
         self.padding = padding
         self.strides = strides
+        if strides is None:
+            self.strides = win_shape
+        self.imgs_shape = None
         self.impl = _default_impl if impl is None else impl
         if self.impl == 'masked':
             self.mask = None
         elif self.impl == 'cudnn':
-            raise NotImplementedError()
-            self.last_poolout = None
-            self.pool_cudnn = cudnn.PoolBC01CuDNN_f(win_shape, padding,
-                                                    strides)
+            logger.info("CUDA pool_seg only supports masked")
+            logger.info("masked will be used for cuda pool_seg")
+            self.impl = 'masked'
+            #raise NotImplementedError()
+            #self.last_poolout = None
+            #self.pool_cudnn = cudnn.PoolBC01CuDNN_f(win_shape, padding,
+            #                                       strides)
         else:
             raise ValueError('invalid implementation: %s' % impl)
 
     def fprop(self, imgs, poolout=None):
-        print "CUDA pool"
         if self.imgs_shape is None:
             self.imgs_shape = imgs.shape
 
@@ -61,15 +67,16 @@ class PoolB01(object):
                 imgs._data, n_imgs, n_channels, img_shape, poolout._data
             )
             """
+
         return poolout
 
-    def bprop(self, img_shape, poolout_d, imgs_d=None):
+    def bprop(self, poolout_d, imgs_d=None):
         n_imgs_shape = poolout_d.shape[:-2]
 
         img_shape = self.imgs_shape[-2:]
 
         if imgs_d is None:
-            imgs_d = ca.empty(self.imgs_shape, dtype=poolout_d.dtype)
+            imgs_d = ca.zeros(self.imgs_shape, dtype=poolout_d.dtype)
         else:
             if imgs_d.shape != imgs_d_shape:
                 raise ValueError('poolout.shape does not match result')
@@ -113,7 +120,7 @@ class PoolB01(object):
                      (img_w + 2*self.padding[1] - self.win_shape[1])
                      / self.strides[1] + 1)
 
-            output_index = ca.empty(((f_out,)+out_shape), dtype=input_index.dtype)
+            output_index = np.empty(((f_out,)+out_shape), dtype=input_index.dtype)
             output_index -= 1
 
         pool_seg_indexing_bc01(imgs=input_index,

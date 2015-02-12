@@ -1,5 +1,5 @@
-"""
-cdef extern from 'cudarray/nnet/conv_bc01_matmul.hpp' namespace 'cudarray':
+
+cdef extern from 'cudarray/nsnet/conv_bc01_matmul.hpp' namespace 'cudarray':
 
     void conv_bc01_matmul[T](const T *imgs, const T *filters, int n_imgs,
         int n_channels, int n_filters, int img_h, int img_w, int filter_h,
@@ -16,7 +16,6 @@ cdef extern from 'cudarray/nnet/conv_bc01_matmul.hpp' namespace 'cudarray':
         int filter_h, int filter_w, int pad_y, int pad_x, int stride_y,
         int stride_x, T *imgs_d)
 
-"""
 
 cdef extern from 'cudarray/nsnet/pool_seg_b01.hpp' namespace 'cudarray':
 

@@ -20,7 +20,7 @@ namespace cudarray {
 typedef int bool_t;
 
 const int kNumBuffers = 32;
-const int kNumBlockThreads = 512;
+const int kNumBlockThreads = 1024;
 
 inline int cuda_blocks(int n_threads) {
     return (n_threads + kNumBlockThreads - 1) / kNumBlockThreads;

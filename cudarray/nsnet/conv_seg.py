@@ -10,7 +10,7 @@ except:
 
 
 class ConvBC01(object):
-    def __init__(self, padding, strides, impl=None):
+    def __init__(self, padding, strides=(1,1), impl=None):
         self.padding = padding
         self.strides = strides
         self.impl = _default_impl if impl is None else impl
@@ -39,7 +39,7 @@ class ConvBC01(object):
             if convout.dtype != imgs.dtype:
                 raise ValueError('dtype mismatch')
         if self.impl == 'matmul':
-            nnet._conv_bc01_matmul(
+            nsnet._conv_bc01_matmul(
                 imgs._data, filters._data, b, c, f, img_shape, filter_shape,
                 self.padding, self.strides, convout._data
             )
@@ -77,7 +77,7 @@ class ConvBC01(object):
                 if filters_d.dtype != filters.dtype:
                     raise ValueError('dtype mismatch')
             if self.impl == 'matmul':
-                nnet._conv_bc01_matmul_bprop_filters(
+                nsnet._conv_bc01_matmul_bprop_filters(
                     imgs._data, convout_d._data, b, c, f, img_shape,
                     filter_shape, self.padding, self.strides, filters_d._data
                 )
@@ -91,7 +91,7 @@ class ConvBC01(object):
                 if imgs_d.dtype != imgs.dtype:
                     raise ValueError('dtype mismatch')
             if self.impl == 'matmul':
-                nnet._conv_bc01_matmul_bprop_imgs(
+                nsnet._conv_bc01_matmul_bprop_imgs(
                     filters._data, convout_d._data, b, c, f, img_shape,
                     filter_shape, self.padding, self.strides, imgs_d._data
                 )
@@ -111,3 +111,9 @@ class ConvBC01(object):
                      (img_w + 2*self.padding[1] - filter_shape[1])
                      / self.strides[1] + 1)
         return (b, n_filters) + out_shape
+    """
+
+    def output_shape(self, imgs_shape, n_filters, filter_shape=None):
+        fg, _, img_h, img_w = imgs_shape
+        return (fg, n_filters, img_h, img_w)
+    """

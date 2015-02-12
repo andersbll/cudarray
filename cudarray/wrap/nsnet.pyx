@@ -3,7 +3,6 @@ cimport nsnet
 cimport nnet
 from .array_data cimport ArrayData, float_ptr, int_ptr, is_float
 
-"""
 def _conv_bc01_matmul(ArrayData imgs, ArrayData filters, int n_imgs,
     int n_channels, int n_filters, img_shape, filter_shape, padding, strides,
     ArrayData convout):
@@ -16,7 +15,7 @@ def _conv_bc01_matmul(ArrayData imgs, ArrayData filters, int n_imgs,
     cdef int stride_y = strides[0]
     cdef int stride_x = strides[1]
     if is_float(imgs):
-        nnet.conv_bc01_matmul(float_ptr(imgs), float_ptr(filters),
+        nsnet.conv_bc01_matmul(float_ptr(imgs), float_ptr(filters),
             n_imgs, n_channels, n_filters, img_h, img_w, filter_h, filter_w,
             pad_y, pad_x, stride_y, stride_x, float_ptr(convout))
     else:
@@ -35,7 +34,7 @@ def _conv_bc01_matmul_bprop_filters(ArrayData imgs, ArrayData convout_d,
     cdef int stride_y = strides[0]
     cdef int stride_x = strides[1]
     if is_float(imgs):
-        nnet.conv_bc01_matmul_bprop_filters(float_ptr(imgs),
+        nsnet.conv_bc01_matmul_bprop_filters(float_ptr(imgs),
             float_ptr(convout_d), n_imgs, n_channels, n_filters, img_h, img_w,
             filter_h, filter_w, pad_y, pad_x, stride_y, stride_x,
             float_ptr(filters_d))
@@ -55,14 +54,13 @@ def _conv_bc01_matmul_bprop_imgs(ArrayData filters, ArrayData convout_d,
     cdef int stride_y = strides[0]
     cdef int stride_x = strides[1]
     if is_float(filters):
-        nnet.conv_bc01_matmul_bprop_imgs(float_ptr(filters),
+        nsnet.conv_bc01_matmul_bprop_imgs(float_ptr(filters),
             float_ptr(convout_d), n_imgs, n_channels, n_filters, img_h, img_w,
             filter_h, filter_w, pad_y, pad_x, stride_y, stride_x,
             float_ptr(imgs_d))
     else:
         raise ValueError('type %s not implemented' % str(filters.dtype))
 
-"""
 
 def _max_pool_seg_b01(ArrayData imgs, int n_frag, img_shape, int n_chan, win_shape, padding,
     strides, ArrayData out, ArrayData mask):

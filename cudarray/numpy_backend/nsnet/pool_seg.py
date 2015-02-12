@@ -5,6 +5,7 @@ from .pool_seg_bc01 import *
 
 class PoolB01(object):
     def __init__(self, win_shape, strides):
+        print "CCC PPP UUU "
         self.win_shape = win_shape
         self.strides = strides
         if strides is None:
@@ -15,6 +16,7 @@ class PoolB01(object):
         self.padding = (0,0)
 
     def fprop(self, imgs, poolout=None):
+        print "CCC PPP UUU "
         if self.img_shape is None:
             self.img_shape = imgs.shape
 

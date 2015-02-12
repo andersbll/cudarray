@@ -105,11 +105,10 @@ __global__ void max_pool_seg_b01_bprob(int n_threads, const T* poolout_d,
 
     int n = (idx / poolout_h / poolout_w / stride_y / stride_x / n_chan);
     int ch = (idx /stride_x/stride_y) % n_chan;
-
     imgs_d += (n * n_chan + ch) * img_h * img_w;
     int index = mask[idx];
     if (index > -1){
-      atomicAdd(& imgs_d[index], poolout_d[idx]);
+      atomicAdd(&imgs_d[index], poolout_d[idx]);
     }
   }
 }
