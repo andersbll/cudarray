@@ -23,6 +23,28 @@ __global__ void kernel_img2win(const T *imgs, int n_threads, int n_imgs,
 
     int img_x = wins_x * stride_x - pad_x + (k % win_w);
     int img_y = wins_y * stride_y - pad_y + k / win_w;
+
+    if (img_y < 0){        
+      img_y = ((img_y * -1) % img_h);
+    }
+    else if (img_y >= img_h){
+      img_y = img_h - (img_y % img_h) - 1;
+    } 
+    else{
+      img_y = img_y;
+    }
+
+    if (img_x < 0){        
+        img_x = ((img_x * -1) % img_w);
+    }
+    else if (img_x >= img_w){
+        img_x = (img_w - (img_x % img_w) - 1);
+    }
+    else {
+        img_x = (img_x);
+    }
+
+
     imgs += (n*img_h + img_y)*img_w + img_x;
     wins += ((n*win_size + k)*wins_h + wins_y)*wins_w + wins_x;
     bool valid = img_x >= 0 && img_x < img_w && img_y >= 0 && img_y < img_h;

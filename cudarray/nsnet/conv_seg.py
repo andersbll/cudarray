@@ -104,10 +104,10 @@ class ConvBC01(object):
 
         return filters_d, imgs_d
 
+    
     def output_shape(self, imgs_shape, n_filters, filter_shape):
         b, _, img_h, img_w = imgs_shape
-        out_shape = ((img_h + 2*self.padding[0] - filter_shape[0])
-                     / self.strides[0] + 1,
+        out_shape = ((img_h + 2*self.padding[0] - filter_shape[0])/ self.strides[0] + 1,
                      (img_w + 2*self.padding[1] - filter_shape[1])
                      / self.strides[1] + 1)
         return (b, n_filters) + out_shape
@@ -116,4 +116,5 @@ class ConvBC01(object):
     def output_shape(self, imgs_shape, n_filters, filter_shape=None):
         fg, _, img_h, img_w = imgs_shape
         return (fg, n_filters, img_h, img_w)
+
     """
