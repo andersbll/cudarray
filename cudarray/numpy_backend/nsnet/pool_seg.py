@@ -16,7 +16,6 @@ class PoolB01(object):
         self.padding = (0,0)
 
     def fprop(self, imgs, poolout=None):
-        print "CCC PPP UUU "
         if self.img_shape is None:
             self.img_shape = imgs.shape
 
@@ -49,22 +48,18 @@ class PoolB01(object):
             if imgs_d.dtype != poolout_d.dtype:
                 raise ValueError('dtype mismatch')
 
-        print "image Shape"
-        print imgs_d.shape
-
         bprop_pool_seg_bc01(poolout_grad=poolout_d,
                             switches=self.mpIDXS,
                             imgs_grad=imgs_d)
         return imgs_d
 
     def output_index(self, input_index, output_index=None):
-
         if output_index == None:
             f_out = input_index.shape[0] * self.strides[0] * self.strides[1] 
             img_h, img_w = input_index.shape[-2:]
-            out_shape = ((img_h + 2*self.padding[0] - self.win_shape[0])
+            out_shape = ((img_h + 2*self.padding[0] - self.strides[0])
                      // self.strides[0] + 1,
-                     (img_w + 2*self.padding[1] - self.win_shape[1])
+                     (img_w + 2*self.padding[1] - self.strides[1])
                      // self.strides[1] + 1)
             output_index = ca.empty(((f_out,)+out_shape), dtype=input_index.dtype)
             output_index -= 1
@@ -74,6 +69,7 @@ class PoolB01(object):
                                strides=self.strides,
                                poolout=output_index)
 
+
         return output_index
 
     def output_shape(self, imgs_shape):
@@ -81,8 +77,8 @@ class PoolB01(object):
         c_in = imgs_shape[1]
         f_out = f_in * self.strides[0] * self.strides[1] 
         img_h, img_w = imgs_shape[-2:]
-        out_shape = ((img_h + 2*self.padding[0] - self.win_shape[0])
+        out_shape = ((img_h + 2*self.padding[0] - self.strides[0])
                      // self.strides[0] + 1,
-                     (img_w + 2*self.padding[1] - self.win_shape[1])
+                     (img_w + 2*self.padding[1] - self.strides[1])
                      // self.strides[1] + 1)
         return (f_out, c_in) + out_shape
