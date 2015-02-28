@@ -143,9 +143,6 @@ def bprop_pool_seg_bc01(np.ndarray[DTYPE_t, ndim=4] poolout_grad,
     cdef uint poolout_w = poolout_grad.shape[3]
 
     cdef uint i, c, y, x, img_y, img_x, fg_in, fg
-
-    print "y h = %s"%imgs_grad.shape[2]
-    print "x w = %s"%imgs_grad.shape[3]
     
     imgs_grad[...] = 0
 
