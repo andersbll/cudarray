@@ -31,7 +31,7 @@ class FlattenBC01(object):
     def bprop(self, flatout_d, imgs_d=None):
 
         if imgs_d is None:
-            imgs_d = ca.empty(self.img_shape, dtype=flatout_d.dtype)
+            imgs_d = ca.zeros(self.img_shape, dtype=flatout_d.dtype)
         else:
             if self.img_shape != imgs_d.shape:
                 raise ValueError('imag_d.shape does not match imgs_d')
