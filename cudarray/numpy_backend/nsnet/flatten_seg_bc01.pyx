@@ -40,6 +40,9 @@ def flatten_seg_bc01(np.ndarray[DTYPE_t, ndim=4] imgs,
     for fg in range(frag):
         for y in range(img_h):
             for x in range(img_w):
+                if img_index[fg, y, x] < 0: 
+                    continue
+                    
                 org_index = <uint>img_index[fg, y, x]
                 counter = 0
 
@@ -100,7 +103,7 @@ def flatten_seg_bc01_bprop(np.ndarray[DTYPE_t, ndim=2] flat_grade,
     for fg in range(frag):
         for y in range(img_h):
             for x in range(img_w):
-                if img_index[fg, y, x] < 0: 
+                if img_index[fg, y, x] < 0:
                     continue
                 org_index = <uint>img_index[fg, y, x]
                 counter = 0
@@ -112,7 +115,6 @@ def flatten_seg_bc01_bprop(np.ndarray[DTYPE_t, ndim=2] flat_grade,
                     xMax = x+seg_mid_w+mid_off_w
                     for win_x in range(xMin, xMax):
                         img_x = getImgIndex(win_x, img_w)
-
                         for ch in range(img_channels):
                             imgs_grad[fg, ch, img_y, img_x] += flat_grade[org_index, counter]
                             counter+=1
