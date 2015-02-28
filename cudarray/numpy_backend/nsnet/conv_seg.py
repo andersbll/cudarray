@@ -61,6 +61,6 @@ class ConvBC01(object):
 
         return filters_d, imgs_d
 
-    def output_shape(self, imgs_shape, n_filters):
+    def output_shape(self, imgs_shape, n_filters, filter_shape=(0,0,)):
         fg, _, img_h, img_w = imgs_shape
         return (fg, n_filters, img_h, img_w)
