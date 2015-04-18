@@ -35,6 +35,18 @@ ifeq ($(CUDNN_ENABLED), 1)
   LIBS += cudnn
 endif
 
+ifndef CUDA_ARCH
+  # By default, libcudarray is built for a range of different CUDA
+  # architectures. You can speed up compilation time by selecting only the
+  # architecture for your GPU.
+  CUDA_ARCH = -gencode arch=compute_20,code=sm_20 \
+              -gencode arch=compute_20,code=compute_20 \
+              -gencode arch=compute_30,code=sm_30 \
+              -gencode arch=compute_30,code=compute_30 \
+              -gencode arch=compute_35,code=sm_35 \
+              -gencode arch=compute_35,code=compute_35
+endif
+
 CXX = g++
 NVCC = $(CUDA_PREFIX)/bin/nvcc
 BUILD_DIR = ./build
@@ -45,7 +57,7 @@ LIBCUDARRAY_INSTALL = $(INSTALL_PREFIX)/lib/$(LIBCUDARRAY)
 
 INCLUDES += $(foreach include_dir,$(INCLUDE_DIRS),-I$(include_dir))
 C_FLAGS += -O3 -fPIC -Wall -Wfatal-errors
-NVCC_FLAGS = -arch=sm_35 -O3 --compiler-options '$(C_FLAGS)' \
+NVCC_FLAGS = $(CUDA_ARCH) -O3 --compiler-options '$(C_FLAGS)' \
              --ftz=true --prec-div=false -prec-sqrt=false --fmad=true
 LDFLAGS += $(foreach lib_dir,$(LIB_DIRS),-L$(lib_dir)) \
 	       $(foreach lib,$(LIBS),-l$(lib))
