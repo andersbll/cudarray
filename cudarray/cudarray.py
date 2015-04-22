@@ -5,7 +5,7 @@ from . import base
 from . import helpers
 
 
-class CUDArray(object):
+class ndarray(object):
     def __init__(self, shape, dtype=None, np_data=None, array_data=None,
                  array_owner=None):
         shape = helpers.require_iterable(shape)
@@ -76,7 +76,7 @@ class CUDArray(object):
         return base.transpose(self)
 
     def view(self):
-        return CUDArray(self.shape, self.dtype, None, self._data)
+        return ndarray(self.shape, self.dtype, None, self._data)
 
     def __len__(self):
         return self.shape[0]
@@ -164,8 +164,8 @@ class CUDArray(object):
             offset = indices * view_size
             data_view = ArrayData(view_size, self.dtype, owner=self._data,
                                   offset=offset)
-            return CUDArray(view_shape, self.dtype, np_data=None,
-                            array_data=data_view)
+            return ndarray(view_shape, self.dtype, np_data=None,
+                           array_data=data_view)
 
         # Standardize indices to a list of slices
         if len(indices) > len(self.shape):
@@ -216,8 +216,8 @@ class CUDArray(object):
         # Construct view
         data_view = ArrayData(view_size, self.dtype, owner=self._data,
                               offset=offset)
-        return CUDArray(view_shape, self.dtype, np_data=None,
-                        array_data=data_view)
+        return ndarray(view_shape, self.dtype, np_data=None,
+                       array_data=data_view)
 
     def __setitem__(self, indices, c):
         view = self.__getitem__(indices)
@@ -226,17 +226,17 @@ class CUDArray(object):
 
 def array(object, dtype=None, copy=True):
     np_array = np.array(object)
-    return CUDArray(np_array.shape, np_data=np_array)
+    return ndarray(np_array.shape, np_data=np_array)
 
 
 def empty(shape, dtype=None):
-    return CUDArray(shape, dtype=dtype)
+    return ndarray(shape, dtype=dtype)
 
 
 def empty_like(a, dtype=None):
-    if not isinstance(a, (np.ndarray, CUDArray)):
+    if not isinstance(a, (np.ndarray, ndarray)):
         a = np.array(a)
-    return CUDArray(a.shape, dtype=a.dtype)
+    return ndarray(a.shape, dtype=a.dtype)
 
 
 def ones(shape, dtype=None):
@@ -244,7 +244,7 @@ def ones(shape, dtype=None):
 
 
 def ones_like(a, dtype=None):
-    if not isinstance(a, (np.ndarray, CUDArray)):
+    if not isinstance(a, (np.ndarray, ndarray)):
         a = np.array(a)
     return array(np.ones_like(a, dtype=dtype))
 
@@ -255,7 +255,7 @@ def zeros(shape, dtype=np.float32):
 
 
 def zeros_like(a, dtype=None):
-    if not isinstance(a, (np.ndarray, CUDArray)):
+    if not isinstance(a, (np.ndarray, ndarray)):
         a = np.array(a)
     return array(np.zeros_like(a, dtype=dtype))
 
