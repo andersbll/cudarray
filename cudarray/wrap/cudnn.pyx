@@ -5,19 +5,32 @@ cimport cudnn
 
 cdef class PoolBC01CuDNN_f:
     cdef PoolBC01CuDNN[float] *ptr
+    cdef int win_w
+    cdef int win_h
+    cdef int pad_y
+    cdef int pad_x
+    cdef int stride_y
+    cdef int stride_x
+
     def __init__(self, win_shape, padding, strides):
-        cdef int win_w = win_shape[0]
-        cdef int win_h = win_shape[1]
-        cdef int pad_y = padding[0]
-        cdef int pad_x = padding[1]
-        cdef int stride_y = strides[0]
-        cdef int stride_x = strides[1]
+        self.win_w = win_shape[0]
+        self.win_h = win_shape[1]
+        self.pad_y = padding[0]
+        self.pad_x = padding[1]
+        self.stride_y = strides[0]
+        self.stride_x = strides[1]
         self.ptr = new PoolBC01CuDNN[float](
-            win_w, win_h, pad_y, pad_x, stride_y, stride_x
+            self.win_w, self.win_h, self.pad_y, self.pad_x, self.stride_y,
+            self.stride_x
         )
 
     def __dealloc__(self):
         del self.ptr
+
+    def __reduce__(self):
+        args = ((self.win_w, self.win_h), (self.pad_y, self.pad_x),
+                (self.stride_y, self.stride_x))
+        return (PoolBC01CuDNN_f, args)
 
     def fprop(self, ArrayData imgs, int n_imgs, int n_channels, img_shape,
               ArrayData poolout):
@@ -37,17 +50,25 @@ cdef class PoolBC01CuDNN_f:
 
 cdef class ConvBC01CuDNN_f:
     cdef ConvBC01CuDNN[float] *ptr
+    cdef int pad_y
+    cdef int pad_x
+    cdef int stride_y
+    cdef int stride_x
     def __init__(self, padding, strides):
-        cdef int pad_y = padding[0]
-        cdef int pad_x = padding[1]
-        cdef int stride_y = strides[0]
-        cdef int stride_x = strides[1]
+        self.pad_y = padding[0]
+        self.pad_x = padding[1]
+        self.stride_y = strides[0]
+        self.stride_x = strides[1]
         self.ptr = new ConvBC01CuDNN[float](
-            pad_y, pad_x, stride_y, stride_x
+            self.pad_y, self.pad_x, self.stride_y, self.stride_x
         )
 
     def __dealloc__(self):
         del self.ptr
+
+    def __reduce__(self):
+        args = ((self.pad_y, self.pad_x), (self.stride_y, self.stride_x))
+        return (ConvBC01CuDNN_f, args)
 
     def fprop(self, ArrayData imgs, ArrayData filters, int n_imgs,
               int n_channels, int n_filters, img_shape, filter_shape,
