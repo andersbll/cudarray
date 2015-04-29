@@ -77,6 +77,11 @@ def numpy_extensions():
     return cythonize(cython_srcs, include_path=[numpy.get_include()])
 
 
+with open('requirements.txt') as f:
+    install_requires = [l.strip() for l in f]
+setup_requires = [r for r in install_requires if r.startswith('cython')]
+
+
 setup(
     name='cudarray',
     version='0.1',
@@ -86,7 +91,8 @@ setup(
     license='MIT',
     url='http://compute.dtu.dk/~abll',
     packages=find_packages(),
-    install_requires=['numpy', 'cython>=0.21.1'],
+    setup_requires=setup_requires,
+    install_requires=install_requires,
     long_description=read('README.md'),
     classifiers=[
         'Development Status :: 4 - Beta',
