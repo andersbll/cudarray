@@ -51,7 +51,7 @@ def cuda_extensions():
         )
     ext_names = ['cudart', 'array_data', 'elementwise', 'reduction', 'blas',
                  'random', 'nnet']
-    exts = map(make_extension, ext_names)
+    exts = list(map(make_extension, ext_names))
 
     if os.getenv('CUDNN_ENABLED') == '1':
         cudnn_ext = Extension(
