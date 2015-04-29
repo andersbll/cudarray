@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import re
 import numpy
 
 from setuptools import setup, find_packages, Feature
@@ -82,9 +83,21 @@ with open('requirements.txt') as f:
 setup_requires = [r for r in install_requires if r.startswith('cython')]
 
 
+version = None
+regex = re.compile(r'''^__version__ = ['"]([^'"]*)['"]''')
+with open(os.path.join('cudarray', '__init__.py')) as f:
+    for line in f:
+        mo = regex.search(line)
+        if mo is not None:
+            version = mo.group(1)
+            break
+if version is None:
+    raise RuntimeError('Could not find version number')
+
+
 setup(
     name='cudarray',
-    version='0.1',
+    version=version,
     author='Anders Boesen Lindbo Larsen',
     author_email='abll@dtu.dk',
     description='CUDA-based Numpy array and operations',

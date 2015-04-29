@@ -42,3 +42,5 @@ else:
         valid_backends = ['numpy', 'cuda']
         raise ValueError('Invalid back-end "%s" specified.' % backend
                          + ' Valid options are: ' + str(valid_backends))
+
+__version__ = '0.1.dev'
