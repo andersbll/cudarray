@@ -11,14 +11,14 @@ REDUCE_TRAILING = 2
 
 
 def reduce_shape(shape, axis, keepdims):
-    all_axis = tuple(range(len(shape)))
-    if axis == all_axis:
-        return (1,)
     if keepdims:
         out_shape = list(shape)
         for a in axis:
             out_shape[a] = 1
         return tuple(out_shape)
+    all_axis = tuple(range(len(shape)))
+    if axis == all_axis:
+        return (1,)
     else:
         return tuple(shape[a] for a in all_axis if a not in axis)
 
