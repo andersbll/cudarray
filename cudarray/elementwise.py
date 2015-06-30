@@ -18,12 +18,18 @@ def broadcast_type(shape1, shape2):
 
     # Find out which axes to broadcast
     b_axes = []
+    has_broadcasted = False
     for a_idx, (a1, a2) in enumerate(zip(shape1, shape2)):
         if a1 != a2:
             if a1 == 1 or a2 == 1:
                 b_axes.append(a_idx)
+                has_broadcasted = True
             else:
                 raise error
+        else:
+            if has_broadcasted:
+                b_axes.extend(range(a_idx+1, len(shape2)))
+                break
 
     ndim = len(shape1)
     # Detect leading broadcast
