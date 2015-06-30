@@ -165,10 +165,10 @@ const char *cublas_message(cublasStatus_t status){
       return "The GPU program failed to execute.";
     case CUBLAS_STATUS_INTERNAL_ERROR:
       return "An internal cuBLAS operation failed.";
-    case CUBLAS_STATUS_NOT_SUPPORTED:
-      return "The functionnality requested is not supported.";
-    case CUBLAS_STATUS_LICENSE_ERROR:
-      return "The functionality requested requires some license.";
+//    case CUBLAS_STATUS_NOT_SUPPORTED:
+//      return "The functionnality requested is not supported.";
+//    case CUBLAS_STATUS_LICENSE_ERROR:
+//      return "The functionality requested requires some license.";
     default:
       throw std::runtime_error("invalid cublasStatus_t");
   }
