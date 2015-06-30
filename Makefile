@@ -47,8 +47,10 @@ ifndef CUDA_ARCH
               -gencode arch=compute_35,code=compute_35
 endif
 
+export PATH := $(CUDA_PREFIX)/bin:$(PATH)
+
 CXX = g++
-NVCC = $(CUDA_PREFIX)/bin/nvcc
+NVCC = nvcc
 BUILD_DIR = ./build
 OBJS = $(SRCS:.cpp=.o) $(CUDA_SRCS:.cu=.o)
 LIBCUDARRAY = libcudarray.so
