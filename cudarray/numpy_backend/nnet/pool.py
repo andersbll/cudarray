@@ -1,6 +1,6 @@
 import numpy as np
 import cudarray as ca
-from .pool_bc01 import *
+from .pool_bc01 import pool_bc01, bprop_pool_bc01
 
 
 class PoolB01(object):
@@ -8,11 +8,11 @@ class PoolB01(object):
         self.win_shape = win_shape
         self.padding = padding
         self.strides = strides
-        if method not in ['max', 'men']:
+        if method not in ['max', 'avg']:
             raise ValueError('invalid pooling method')
         if method == 'max':
             self.method = 0
-        elif method == 'men':
+        elif method == 'avg':
             self.method = 1
 
         self.mask = None
@@ -47,7 +47,7 @@ class PoolB01(object):
         if imgs_d is None:
             imgs_d = ca.empty(imgs_shape, dtype=poolout_d.dtype)
         else:
-            if imgs_d.shape != imgs_d_shape:
+            if imgs_d.shape != imgs_d.shape:
                 raise ValueError('poolout.shape does not match result')
             if imgs_d.dtype != poolout_d.dtype:
                 raise ValueError('dtype mismatch')
@@ -64,8 +64,8 @@ class PoolB01(object):
     def output_shape(self, imgs_shape):
         n_imgs_shape = imgs_shape[:-2]
         img_h, img_w = imgs_shape[-2:]
-        out_shape = ((img_h + 2*self.padding[0] - self.win_shape[0])
-                     / self.strides[0] + 1,
-                     (img_w + 2*self.padding[1] - self.win_shape[1])
-                     / self.strides[1] + 1)
+        out_shape = ((img_h + 2*self.padding[0] - self.win_shape[0]) //
+                     self.strides[0] + 1,
+                     (img_w + 2*self.padding[1] - self.win_shape[1]) //
+                     self.strides[1] + 1)
         return n_imgs_shape + out_shape

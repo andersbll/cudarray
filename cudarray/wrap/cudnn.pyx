@@ -1,42 +1,47 @@
+from cpython cimport array as c_array
+from array import array
 cimport numpy as np
 from .array_data cimport ArrayData, float_ptr
 cimport cudnn
 
 
+
 cdef class PoolBC01CuDNN_f:
     cdef PoolBC01CuDNN[float] *ptr
-    cdef int win_w
-    cdef int win_h
-    cdef int pad_y
-    cdef int pad_x
-    cdef int stride_y
-    cdef int stride_x
+    cdef tuple win_shape
+    cdef tuple padding
+    cdef tuple strides
+    cdef str mode
 
-    def __init__(self, win_shape, padding, strides):
-        self.win_w = win_shape[0]
-        self.win_h = win_shape[1]
-        self.pad_y = padding[0]
-        self.pad_x = padding[1]
-        self.stride_y = strides[0]
-        self.stride_x = strides[1]
+    def __init__(self, win_shape, padding, strides, mode):
+        cdef c_array.array win_shape_ = array('i', win_shape)
+        cdef c_array.array padding_ = array('i', padding)
+        cdef c_array.array strides_ = array('i', strides)
+        self.win_shape = win_shape
+        self.padding = padding
+        self.strides = strides
+        self.mode = mode
+        if mode == 'avg':
+            mode = POOL_AVG
+        elif mode == 'max':
+            mode = POOL_MAX
+        else:
+            raise ValueError('Invalid mode: %s' % mode)
         self.ptr = new PoolBC01CuDNN[float](
-            self.win_w, self.win_h, self.pad_y, self.pad_x, self.stride_y,
-            self.stride_x
+            len(win_shape), win_shape_.data.as_ints, padding_.data.as_ints,
+            strides_.data.as_ints, mode
         )
 
     def __dealloc__(self):
         del self.ptr
 
     def __reduce__(self):
-        args = ((self.win_w, self.win_h), (self.pad_y, self.pad_x),
-                (self.stride_y, self.stride_x))
+        args = (self.win_shape, self.padding, self.strides, self.mode)
         return (PoolBC01CuDNN_f, args)
 
-    def fprop(self, ArrayData imgs, int n_imgs, int n_channels, img_shape,
-              ArrayData poolout):
-        cdef int img_h = img_shape[0]
-        cdef int img_w = img_shape[1]
-        self.ptr.fprop(float_ptr(imgs), n_imgs, n_channels, img_h, img_w,
+    def fprop(self, ArrayData imgs, imgs_shape, ArrayData poolout):
+        cdef c_array.array imgs_shape_ = array('i', imgs_shape)
+        self.ptr.fprop(float_ptr(imgs), imgs_shape_.data.as_ints,
                        float_ptr(poolout))
 
     def bprop(self, ArrayData imgs, ArrayData poolout, ArrayData poolout_d,
@@ -50,24 +55,20 @@ cdef class PoolBC01CuDNN_f:
 
 cdef class ConvBC01CuDNN_f:
     cdef ConvBC01CuDNN[float] *ptr
-    cdef int pad_y
-    cdef int pad_x
-    cdef int stride_y
-    cdef int stride_x
+    cdef tuple padding
+    cdef tuple strides
     def __init__(self, padding, strides):
-        self.pad_y = padding[0]
-        self.pad_x = padding[1]
-        self.stride_y = strides[0]
-        self.stride_x = strides[1]
+        self.padding = padding
+        self.strides = strides
         self.ptr = new ConvBC01CuDNN[float](
-            self.pad_y, self.pad_x, self.stride_y, self.stride_x
+            padding[0], padding[1], strides[0], strides[1]
         )
 
     def __dealloc__(self):
         del self.ptr
 
     def __reduce__(self):
-        args = ((self.pad_y, self.pad_x), (self.stride_y, self.stride_x))
+        args = (self.padding, self.strides)
         return (ConvBC01CuDNN_f, args)
 
     def fprop(self, ArrayData imgs, ArrayData filters, int n_imgs,

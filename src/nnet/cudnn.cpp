@@ -12,10 +12,22 @@ const float CUDNN::zero = 0.0f;
 
 
 template <typename T>
-PoolBC01CuDNN<T>::PoolBC01CuDNN(int win_h, int win_w, int pad_y, int pad_x,
-    int stride_y, int stride_x) : win_h(win_h), win_w(win_w), pad_y(pad_y),
-    pad_x(pad_x), stride_y(stride_y), stride_x(stride_x), n_imgs(0),
-    n_channels(0), img_h(0), img_w(0) {
+PoolBC01CuDNN<T>::PoolBC01CuDNN(int n_img_dims, int *win_shape, int *padding,
+    int *strides, PoolMode pool_mode) : n_img_dims(n_img_dims) {
+  if (n_img_dims > MAX_IMG_DIMS + 2) {
+    throw std::runtime_error("More than 3 image dimensions.");
+  }
+
+  for (int i = 0; i < n_img_dims; ++i) {
+    this->win_shape[i] = win_shape[i];
+    this->padding[i] = padding[i];
+    this->strides[i] = strides[i];
+  }
+  for (int i = 0; i < n_img_dims + 2; ++i) {
+    imgs_shape[i] = -1;
+  }
+  this->pool_mode = pool_mode == POOL_MAX ? CUDNN_POOLING_MAX :
+      CUDNN_POOLING_AVERAGE_COUNT_EXCLUDE_PADDING;
   CUDNN_CHECK(cudnnCreateTensorDescriptor(&imgs_desc));
   CUDNN_CHECK(cudnnCreateTensorDescriptor(&poolout_desc));
   CUDNN_CHECK(cudnnCreatePoolingDescriptor(&pool_desc));
@@ -30,31 +42,53 @@ PoolBC01CuDNN<T>::~PoolBC01CuDNN() {
 }
 
 
+void array_strides(int n_dims, const int *shape, int *strides) {
+  int stride = 1;
+  for (int i = n_dims-1; i >= 0; --i) {
+    strides[i] = stride;
+    stride *= shape[i];
+  }
+}
+
 template <typename T>
-void PoolBC01CuDNN<T>::fprop(const T *imgs, int n_imgs, int n_channels,
-    int img_h, int img_w, T *poolout) {
-  if (n_imgs != this->n_imgs || n_channels != this->n_channels ||
-      img_h != this->img_h || img_w != this->img_w) {
-    CUDNN_CHECK(cudnnSetTensor4dDescriptor(
-        imgs_desc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, n_imgs, n_channels,
-        img_h, img_w
+void PoolBC01CuDNN<T>::fprop(const T *imgs, int *imgs_shape, T *poolout) {
+  bool new_shape = false;
+  int n_imgs_dims = n_img_dims + 2;
+  for (int i = 0; i < n_imgs_dims; ++i) {
+    if (this->imgs_shape[i] != imgs_shape[i]) {
+      new_shape = true;
+      break;
+    }
+  }
+
+  if (new_shape) {
+    for (int i = 0; i < n_imgs_dims; ++i) {
+      this->imgs_shape[i] = imgs_shape[i];
+    }
+    int imgs_strides[n_imgs_dims];
+    array_strides(n_imgs_dims, imgs_shape, imgs_strides);
+    CUDNN_CHECK(cudnnSetTensorNdDescriptor(
+        imgs_desc, CUDNN_DATA_FLOAT, n_imgs_dims, imgs_shape, imgs_strides
     ));
 
-    CUDNN_CHECK(cudnnSetPooling2dDescriptor(
-        pool_desc, CUDNN_POOLING_MAX, win_h, win_w, pad_y, pad_x, stride_y,
-        stride_x
+    CUDNN_CHECK(cudnnSetPoolingNdDescriptor(
+        pool_desc, pool_mode, n_img_dims, win_shape, padding, strides
     ));
-    int poolout_h = (img_h + 2*pad_y - win_h) / stride_y + 1;
-    int poolout_w = (img_w + 2*pad_x - win_w) / stride_x + 1;
 
-    CUDNN_CHECK(cudnnSetTensor4dDescriptor(
-        poolout_desc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, n_imgs, n_channels,
-        poolout_h, poolout_w
+    int poolout_shape[n_imgs_dims];
+    poolout_shape[0] = imgs_shape[0];
+    poolout_shape[1] = imgs_shape[1];
+    for (int i = 0; i < n_img_dims; ++i) {
+      poolout_shape[i+2] = (imgs_shape[i+2] + 2*padding[i] - win_shape[i])
+                           / strides[i] + 1;
+    }
+
+    int poolout_strides[n_imgs_dims];
+    array_strides(n_imgs_dims, poolout_shape, poolout_strides);
+    CUDNN_CHECK(cudnnSetTensorNdDescriptor(
+        poolout_desc, CUDNN_DATA_FLOAT, n_imgs_dims, poolout_shape,
+        poolout_strides
     ));
-    this->n_imgs = n_imgs;
-    this->n_channels = n_channels;
-    this->img_h = img_h;
-    this->img_w = img_w;
   }
 
   CUDNN_CHECK(cudnnPoolingForward(
@@ -68,8 +102,8 @@ template <typename T>
 void PoolBC01CuDNN<T>::bprop(const T *imgs, const T* poolout,
                              const T *poolout_d, T *imgs_d) {
   CUDNN_CHECK(cudnnPoolingBackward(
-    CUDNN::handle(), pool_desc, &CUDNN::one, poolout_desc, poolout, poolout_desc,
-    poolout_d, imgs_desc, imgs, &CUDNN::zero, imgs_desc, imgs_d
+    CUDNN::handle(), pool_desc, &CUDNN::one, poolout_desc, poolout,
+    poolout_desc, poolout_d, imgs_desc, imgs, &CUDNN::zero, imgs_desc, imgs_d
   ));
 }
 

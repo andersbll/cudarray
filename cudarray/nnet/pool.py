@@ -15,15 +15,17 @@ class PoolB01(object):
         self.win_shape = win_shape
         self.padding = padding
         self.strides = strides
-        if method not in ['max']:
-            raise ValueError('invalid pooling method')
         self.impl = _default_impl if impl is None else impl
         if self.impl == 'masked':
+            if method not in ['max']:
+                raise ValueError('invalid pooling method for "masked" pooling')
             self.mask = None
         elif self.impl == 'cudnn':
+            if method not in ['max', 'avg']:
+                raise ValueError('invalid pooling method: %s' % method)
             self.last_poolout = None
             self.pool_cudnn = cudnn.PoolBC01CuDNN_f(win_shape, padding,
-                                                    strides)
+                                                    strides, method)
         else:
             raise ValueError('invalid implementation: %s' % impl)
 
@@ -51,7 +53,7 @@ class PoolB01(object):
             self.last_imgs = imgs
             self.last_poolout = poolout
             self.pool_cudnn.fprop(
-                imgs._data, n_imgs, n_channels, img_shape, poolout._data
+                imgs._data, imgs.shape, poolout._data
             )
         return poolout
 
@@ -62,7 +64,7 @@ class PoolB01(object):
         if imgs_d is None:
             imgs_d = ca.empty(imgs_shape, dtype=poolout_d.dtype)
         else:
-            if imgs_d.shape != imgs_d_shape:
+            if imgs_d.shape != imgs_d.shape:
                 raise ValueError('poolout.shape does not match result')
             if imgs_d.dtype != poolout_d.dtype:
                 raise ValueError('dtype mismatch')
@@ -83,8 +85,8 @@ class PoolB01(object):
     def output_shape(self, imgs_shape):
         n_imgs_shape = imgs_shape[:-2]
         img_h, img_w = imgs_shape[-2:]
-        out_shape = ((img_h + 2*self.padding[0] - self.win_shape[0])
-                     / self.strides[0] + 1,
-                     (img_w + 2*self.padding[1] - self.win_shape[1])
-                     / self.strides[1] + 1)
+        out_shape = ((img_h + 2*self.padding[0] - self.win_shape[0]) //
+                     self.strides[0] + 1,
+                     (img_w + 2*self.padding[1] - self.win_shape[1]) //
+                     self.strides[1] + 1)
         return n_imgs_shape + out_shape

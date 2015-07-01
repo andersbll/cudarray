@@ -9,30 +9,28 @@
 
 namespace cudarray {
 
+enum PoolMode {POOL_AVG, POOL_MAX};
+
+const int MAX_IMG_DIMS = 3;
 
 template <typename T>
 class PoolBC01CuDNN {
 public:
-  PoolBC01CuDNN(int win_h, int win_w, int pad_y, int pad_x, int stride_y,
-                int stride_x);
+  PoolBC01CuDNN(int n_img_dims, int *win_shape, int *padding, int *strides,
+                PoolMode pool_mode);
   ~PoolBC01CuDNN();
 
-  void fprop(const T *imgs, int n_imgs, int n_channels, int img_h, int img_w,
-             T *poolout);
+  void fprop(const T *imgs, int *imgs_shape, T *poolout);
 
   void bprop(const T *imgs, const T* poolout, const T *poolout_d, T *imgs_d);
 
 private:
-  int win_h;
-  int win_w;
-  int pad_y;
-  int pad_x;
-  int stride_y;
-  int stride_x;
-  int n_imgs;
-  int n_channels;
-  int img_h;
-  int img_w;
+  int n_img_dims;
+  int win_shape[MAX_IMG_DIMS];
+  int padding[MAX_IMG_DIMS];
+  int strides[MAX_IMG_DIMS];
+  int imgs_shape[MAX_IMG_DIMS + 2];
+  cudnnPoolingMode_t pool_mode;
   cudnnTensorDescriptor_t imgs_desc;
   cudnnTensorDescriptor_t poolout_desc;
   cudnnPoolingDescriptor_t pool_desc;

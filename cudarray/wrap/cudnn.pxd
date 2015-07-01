@@ -1,10 +1,13 @@
 cdef extern from "cudarray/nnet/cudnn.hpp" namespace 'cudarray':
-    cdef cppclass PoolBC01CuDNN[T]:
-        PoolBC01CuDNN(int win_h, int win_w, int pad_y, int pad_x, int stride_y,
-                      int stride_x)
+    enum PoolMode:
+        POOL_AVG
+        POOL_MAX
 
-        void fprop(const T *imgs, int n_imgs, int n_channels, int img_h,
-                  int img_w, T *poolout)
+    cdef cppclass PoolBC01CuDNN[T]:
+        PoolBC01CuDNN(int n_img_dims, int *win_shape, int *padding,
+                      int *strides, PoolMode pool_mode)
+
+        void fprop(const T *imgs, int *imgs_shape, T *poolout)
 
         void bprop(const T *imgs, const T* poolout, const T *poolout_d,
                    T *imgs_d)
