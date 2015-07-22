@@ -77,7 +77,7 @@ template void gemm<float>(const float *A, const float *B, TransposeOp transA,
 
 template <typename T>
 T **dev_ptrs(const T *base, int num, int stride) {
-  T *ptrs_host[num];
+  T **ptrs_host = new T*[num];
   int idx = 0;
   for(int n = 0; n < num; ++n){
     ptrs_host[idx] = (T *) base + n * stride;
@@ -87,6 +87,7 @@ T **dev_ptrs(const T *base, int num, int stride) {
   CUDA_CHECK(cudaMalloc((void **) &ptrs_dev, num*sizeof(T *)));
   CUDA_CHECK(cudaMemcpy(ptrs_dev, ptrs_host, num*sizeof(T *),
                         cudaMemcpyHostToDevice));
+  delete ptrs_host;
   return ptrs_dev;
 }
 
