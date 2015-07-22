@@ -267,7 +267,9 @@ template <typename Tb> \
 struct name; \
 template <> \
 struct name<float> { \
-  const static float identity = ident_f; \
+  __device__ inline static float identity() { \
+    return ident_f; \
+  } \
   template <typename Ta, typename Tb> \
   __device__ inline static void reduce(volatile Ta a, volatile int idx, \
                                        volatile Tb &b, volatile int &b_idx) { \
@@ -285,7 +287,9 @@ struct name<float> { \
 }; \
 template <> \
 struct name<int> { \
-  const static int identity = ident_i; \
+  __device__ inline static int identity() { \
+    return ident_i; \
+  } \
   template <typename Ta, typename Tb> \
   __device__ inline static void reduce(volatile Ta a, volatile int idx, \
                                        volatile Tb &b, volatile int &b_idx) { \
@@ -314,7 +318,7 @@ REDUCE_OP(argmin_op, FLT_MAX, INT_MAX, if (a < b) {b = a; b_idx=idx;}, , b = idx
 template <typename Ta, typename Tb, typename Op>
 __global__ void kernel_reduce(const Ta *a, unsigned int n, Tb *b) {
   CUDA_GRID_STRIDE_LOOP(idx, 1) {
-    Ta a_ = Op::identity;
+    Ta a_ = Op::identity();
     int idx_ = 0;
     for (unsigned int i = 0; i < n; ++i) {
       Op::reduce(*a, i, a_, idx_);
@@ -374,7 +378,7 @@ __global__ void kernel_reduce_mat(const Ta *a, unsigned int m, unsigned int n,
       b += idx;
     }
 
-    Ta a_ = Op::identity;
+    Ta a_ = Op::identity();
     int idx_ = 0;
     if (reduce_leading) {
       for (unsigned int i = 0; i < m; ++i) {
