@@ -15,7 +15,7 @@ cdef class ArrayData:
         if owner is None:
             cudaCheck(cudaMalloc(&self.dev_ptr, self.nbytes))
         else:
-            self.dev_ptr = owner.dev_ptr + offset*dtype.itemsize
+            self.dev_ptr = (<char *> owner.dev_ptr) + offset*dtype.itemsize
         if np_data is not None:
             cudaCheck(cudaMemcpyAsync(self.dev_ptr, np.PyArray_DATA(np_data),
                                       self.nbytes, cudaMemcpyHostToDevice))
