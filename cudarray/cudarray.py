@@ -1,5 +1,6 @@
 import numpy as np
 from .wrap.array_data import ArrayData
+from .wrap import array_ops
 from . import elementwise
 from . import base
 from . import helpers
@@ -77,6 +78,9 @@ class ndarray(object):
 
     def view(self):
         return ndarray(self.shape, self.dtype, None, self._data)
+
+    def fill(self, value):
+        array_ops._fill(self._data, self.size, value)
 
     def __len__(self):
         return self.shape[0]
@@ -221,7 +225,7 @@ class ndarray(object):
 
     def __setitem__(self, indices, c):
         view = self.__getitem__(indices)
-        copyto(view, c)
+        base.copyto(view, c)
 
 
 def array(object, dtype=None, copy=True):
@@ -250,15 +254,12 @@ def ones_like(a, dtype=None):
 
 
 def zeros(shape, dtype=np.float32):
-    # TODO: use fill()
-    return array(np.zeros(shape, dtype=dtype))
+    a = empty(shape, dtype)
+    a.fill(0)
+    return a
 
 
 def zeros_like(a, dtype=None):
     if not isinstance(a, (np.ndarray, ndarray)):
         a = np.array(a)
     return array(np.zeros_like(a, dtype=dtype))
-
-
-def copyto(dst, src):
-    elementwise.multiply(src, 1.0, dst)

@@ -3,6 +3,7 @@ import numpy as np
 from .wrap import reduction
 from . import cudarray
 from . import helpers
+from . import base
 
 
 REDUCE_ALL = 0
@@ -58,7 +59,11 @@ def reduce(op, a, axis=None, dtype=None, out=None, keepdims=False,
             reduction._reduce_to_int(op, a._data, a.size, out._data)
         else:
             reduction._reduce(op, a._data, a.size, out._data)
-    elif rtype == REDUCE_LEADING:
+        return out
+
+    a = base.ascontiguousarray(a)
+
+    if rtype == REDUCE_LEADING:
         n = helpers.prod(out_shape)
         m = a.size / n
         if to_int_op:

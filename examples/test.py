@@ -397,6 +397,31 @@ def test_indexing():
     print(np.allclose(a_np, np.array(a_ca)))
 
 
+def test_transpose():
+    shapes = [(4, 4), (5, 4), (8, 8), (32, 32), (55, 44), (64, 55), (55, 64),
+              (32, 64), (64, 128), (128, 64), (128, 1)]
+    for shape in shapes:
+        a_np = np.reshape(np.arange(np.prod(shape)), shape)+1
+        a_ca = ca.array(a_np)
+        a_np = np.ascontiguousarray(a_np.T)
+        a_ca = ca.ascontiguousarray(a_ca.T)
+        print(np.allclose(a_np, np.array(a_ca)))
+
+
+def test_copyto():
+    a_np = np.random.random(size=(7, 11))
+    a_ca = ca.array(a_np)
+
+    b_np = np.zeros_like(a_np)
+    b_ca = np.zeros_like(a_np)
+    ca.copyto(b_np, a_ca)
+    print(np.allclose(a_np, b_np))
+    ca.copyto(b_ca, a_np)
+    print(np.allclose(np.array(a_ca), np.array(b_ca)))
+    ca.copyto(b_ca, a_ca)
+    print(np.allclose(np.array(a_ca), np.array(b_ca)))
+
+
 def run():
     test_indexing()
     test_dot()
@@ -406,6 +431,7 @@ def run():
     test_sum()
     test_random()
     test_reduce()
+    test_transpose()
 
 
 if __name__ == '__main__':

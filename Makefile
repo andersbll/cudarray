@@ -12,7 +12,8 @@ SRCS = $(SRC_DIR)/nnet/conv_bc01_matmul.cpp \
        $(SRC_DIR)/nnet/pool_b01.cpp \
        $(SRC_DIR)/nnet/cudnn.cpp
 
-CUDA_SRCS = $(SRC_DIR)/elementwise.cu \
+CUDA_SRCS = $(SRC_DIR)/array_ops.cu \
+            $(SRC_DIR)/elementwise.cu \
             $(SRC_DIR)/reduction.cu \
             $(SRC_DIR)/blas.cu \
             $(SRC_DIR)/random.cu \
@@ -87,4 +88,4 @@ uninstall:
 
 .PHONY: clean
 clean:
-	rm -f $(OBJS) $(LIBCUDARRAY)
+	rm -f $(OBJS) $(LIBCUDARRAY_BUILD)

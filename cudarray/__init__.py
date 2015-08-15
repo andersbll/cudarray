@@ -23,8 +23,8 @@ else:
 
 if _backend == 'cuda':
     try:
-        from .base import *
         from .cudarray import *
+        from .base import *
         from .linalg import *
         from .elementwise import *
         from .reduction import *

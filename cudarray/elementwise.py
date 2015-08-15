@@ -2,6 +2,7 @@ import numpy as np
 import cudarray
 from .wrap import elementwise
 from . import helpers
+from . import base
 
 
 def broadcast_type(shape1, shape2):
@@ -79,6 +80,8 @@ def binary(op, x1, x2, out=None, cmp_op=False):
             array = x1
             scalar = x2
 
+        array = base.ascontiguousarray(array)
+
         if (array.dtype == np.dtype('int32') and isinstance(scalar, (int))
                 or cmp_op):
             out_dtype = np.dtype('int32')
@@ -101,6 +104,9 @@ def binary(op, x1, x2, out=None, cmp_op=False):
             elementwise._binary_scalar(op, array._data, scalar, n, out._data,
                                        flip)
         return out
+
+    x1 = base.ascontiguousarray(x1)
+    x2 = base.ascontiguousarray(x2)
 
     if x1.dtype == x2.dtype == np.dtype('int32') or cmp_op:
         out_dtype = np.dtype('int32')
@@ -190,6 +196,7 @@ def not_equal(x1, x2, out=None):
 
 
 def unary(op, x, out=None):
+    x = base.ascontiguousarray(x)
     out_shape = x.shape
     if out is None:
         out = cudarray.empty(out_shape, dtype=x.dtype)
@@ -242,6 +249,7 @@ def tanh(x, out=None):
 
 
 def clip(a, a_min, a_max, out=None):
+    a = base.ascontiguousarray(a)
     out_shape = a.shape
     if out is None:
         out = cudarray.empty(out_shape, dtype=a.dtype)
