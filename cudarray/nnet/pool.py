@@ -90,3 +90,8 @@ class PoolB01(object):
                      (img_w + 2*self.padding[1] - self.win_shape[1]) //
                      self.strides[1] + 1)
         return n_imgs_shape + out_shape
+
+    def __getstate__(self):
+        ignore = ['mask', 'last_poolout', 'last_imgs']
+        return dict((k, None) if k in ignore else (k, v)
+                    for k, v in self.__dict__.items())
