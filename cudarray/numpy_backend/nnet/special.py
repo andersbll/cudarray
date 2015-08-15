@@ -25,8 +25,11 @@ def one_hot_encode(labels, n_classes, out=None):
         if out.shape != out_shape:
             raise ValueError('shape mismatch')
     out.fill(0)
-    for c in range(n_classes):
-        out[labels == c, c] = 1
+    if labels.size == 1:
+        out[0, labels] = 1
+    else:
+        for c in range(n_classes):
+            out[labels == c, c] = 1
     return out
 
 
