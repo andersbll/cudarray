@@ -253,7 +253,7 @@ def ones_like(a, dtype=None):
     return array(np.ones_like(a, dtype=dtype))
 
 
-def zeros(shape, dtype=np.float32):
+def zeros(shape, dtype=None):
     a = empty(shape, dtype)
     a.fill(0)
     return a
