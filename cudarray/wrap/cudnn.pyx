@@ -83,11 +83,13 @@ cdef class ConvBC01CuDNN_f:
 
     def bprop(self, ArrayData imgs, ArrayData filters, ArrayData convout_d,
               ArrayData imgs_d, ArrayData filters_d):
+        cdef float *imgs_ptr = <float *>NULL if imgs is None \
+                                             else float_ptr(imgs)
         cdef float *imgs_d_ptr = <float *>NULL if imgs_d is None \
                                                else float_ptr(imgs_d)
         cdef float *filters_d_ptr = <float *>NULL if filters_d is None \
                                                   else float_ptr(filters_d)
-        self.ptr.bprop(float_ptr(imgs), float_ptr(filters),
+        self.ptr.bprop(imgs_ptr, float_ptr(filters),
                        float_ptr(convout_d), imgs_d_ptr, filters_d_ptr)
 
 

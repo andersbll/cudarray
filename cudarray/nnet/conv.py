@@ -29,6 +29,7 @@ class ConvBC01(object):
         if imgs.dtype != filters.dtype:
             raise ValueError('dtype mismatch')
         img_shape = (img_h, img_w)
+        self.imgs_shape = imgs.shape
         filter_shape = (filter_h, filter_w)
         convout_shape = self.output_shape(imgs.shape, f, (filter_h, filter_w))
         if convout is None:
@@ -53,20 +54,16 @@ class ConvBC01(object):
 
     def bprop(self, imgs, filters, convout_d, to_filters=True, to_imgs=True,
               filters_d=None, imgs_d=None):
-        b, c, img_h, img_w = imgs.shape
-        f, c_filters, filter_h, filter_w = filters.shape
+        if imgs is not None:
+            b, c, img_h, img_w = imgs.shape
+        if filters is not None:
+            f, c, filter_h, filter_w = filters.shape
+        if imgs_d is not None:
+            b, c, img_h, img_w = imgs_d.shape
         b_convout, f_convout, convout_h, convout_w = convout_d.shape
-        img_shape = (img_h, img_w)
+        imgs_shape = self.imgs_shape
+        img_shape = imgs_shape[2:]
         filter_shape = (filter_h, filter_w)
-        if b != b_convout:
-            raise ValueError('batch mismatch')
-        if f != f_convout:
-            raise ValueError('filter mismatch')
-        if c != c_filters:
-            raise ValueError('channel mismatch')
-
-        if imgs.dtype != filters.dtype != convout_d.dtype:
-            raise ValueError('dtype mismatch')
 
         if to_filters:
             if filters_d is None:
@@ -84,7 +81,7 @@ class ConvBC01(object):
 
         if to_imgs:
             if imgs_d is None:
-                imgs_d = ca.empty(imgs.shape, dtype=imgs.dtype)
+                imgs_d = ca.empty(imgs_shape, dtype=convout_d.dtype)
             else:
                 if imgs_d.shape != imgs.shape:
                     raise ValueError('imgs_d.shape does not match result')
@@ -97,10 +94,11 @@ class ConvBC01(object):
                 )
 
         if self.impl == 'cudnn':
-            imgs_ = imgs_d._data if to_imgs else None
+            imgs_ = None if imgs is None else imgs._data
+            imgs_d_ = imgs_d._data if to_imgs else None
             filters_ = filters_d._data if to_filters else None
-            self.conv_cudnn.bprop(imgs._data, filters._data, convout_d._data,
-                                  imgs_, filters_)
+            self.conv_cudnn.bprop(imgs_, filters._data, convout_d._data,
+                                  imgs_d_, filters_)
 
         return filters_d, imgs_d
 
