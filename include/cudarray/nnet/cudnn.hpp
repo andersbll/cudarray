@@ -12,6 +12,7 @@ namespace cudarray {
 enum PoolMode {POOL_AVG, POOL_MAX};
 
 const int MAX_IMG_DIMS = 3;
+const int WORKSPACE_LIMIT = 1024*1024*1024;
 
 template <typename T>
 class PoolBC01CuDNN {

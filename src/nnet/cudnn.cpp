@@ -175,7 +175,8 @@ void ConvBC01CuDNN<T>::fprop(const T *imgs, const T *filters, int n_imgs,
     ));
     CUDNN_CHECK(cudnnGetConvolutionForwardAlgorithm(
         CUDNN::handle(), imgs_desc, filters_desc, conv_desc, convout_desc,
-        CUDNN_CONVOLUTION_FWD_PREFER_FASTEST, 0, &fwd_algo
+        CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT, WORKSPACE_LIMIT,
+        &fwd_algo
     ));
     CUDNN_CHECK(cudnnGetConvolutionForwardWorkspaceSize(
         CUDNN::handle(), imgs_desc, filters_desc, conv_desc, convout_desc,
