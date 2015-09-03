@@ -1,10 +1,4 @@
 import os
-import logging
-logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(levelname)-8s %(message)s',
-)
 
 _gpu_id = int(os.getenv('CUDARRAY_DEVICE', '0'))
 
@@ -34,9 +28,10 @@ if _backend == 'cuda':
         wrap.cudart.initialize(_gpu_id)
     except:
         if _force_backend:
-            logger.error('CUDArray: Failed to load CUDA back-end.')
+            print('CUDArray: Failed to load CUDA back-end.')
             raise
         else:
+            print('CUDArray: CUDA back-end not available, using NumPy.')
             # Try NumPy instead
             _backend = 'numpy'
 
