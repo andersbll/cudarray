@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
 import os
+import glob
 import re
 import numpy
 
-from setuptools import setup, find_packages, Feature
+from setuptools import setup, find_packages, Feature, Command
 from Cython.Build import cythonize
 from Cython.Distutils import build_ext
 from Cython.Distutils.extension import Extension
@@ -78,6 +79,28 @@ def numpy_extensions():
     return cythonize(cython_srcs, include_path=[numpy.get_include()])
 
 
+class Clean(Command):
+    description = 'Remove Cython generated files.'
+    user_options = []
+
+    def initialize_options(self):
+        self.report = 'clean'
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        for ext in (cuda_extensions() + numpy_extensions()):
+            for pyx in ext.sources:
+                if pyx.endswith('.pyx'):
+                    prefix = pyx[:-4]
+                    for suffix in ['.c', '.cpp', '.so', '.dll']:
+                        files = glob.glob(prefix + '*' + suffix)
+                        for f in files:
+                            if os.path.exists(f):
+                                os.unlink(f)
+
+
 with open('requirements.txt') as f:
     install_requires = [l.strip() for l in f]
 setup_requires = [r for r in install_requires if r.startswith('cython')]
@@ -131,6 +154,9 @@ setup(
             ext_modules=numpy_extensions(),
         ),
     },
-    cmdclass={'build_ext': build_ext},
+    cmdclass={
+        'build_ext': build_ext,
+        'clean': Clean,
+    },
     zip_safe=False,
 )
