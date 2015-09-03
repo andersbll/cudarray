@@ -212,7 +212,6 @@ def unary(op, x, out=None):
 
 def absolute(x, out=None):
     return unary(elementwise.abs_op, x, out)
-abs = absolute
 fabs = absolute
 
 
