@@ -124,6 +124,9 @@ class ndarray(object):
     def __truediv__(self, other):
         return elementwise.divide(self, other)
 
+    def __rtruediv__(self, other):
+        return elementwise.divide(other, self)
+
     def __itruediv__(self, other):
         return elementwise.divide(self, other, self)
 
