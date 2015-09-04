@@ -30,10 +30,14 @@ class ConvBC01(object):
                   strides=self.strides,
                   convout=convout)
 
+        self.last_imgs = imgs
+
         return convout
 
     def bprop(self, imgs, filters, convout_d, to_filters=True, to_imgs=True,
               filters_d=None, imgs_d=None):
+        if imgs is None:
+            imgs = self.last_imgs
         b, c, _, _ = imgs.shape
         f, c_filters, _, _ = filters.shape
         b_convout, f_convout, _, _ = convout_d.shape
