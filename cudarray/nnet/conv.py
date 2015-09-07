@@ -56,6 +56,8 @@ class ConvBC01(object):
               filters_d=None, imgs_d=None):
         if imgs is not None:
             b, c, img_h, img_w = imgs.shape
+        else:
+            b, c, img_h, img_w = self.imgs_shape
         if filters is not None:
             f, c, filter_h, filter_w = filters.shape
         if imgs_d is not None:
