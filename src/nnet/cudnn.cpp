@@ -116,7 +116,7 @@ template <typename T>
 ConvBC01CuDNN<T>::ConvBC01CuDNN(int pad_y, int pad_x, int stride_y,
     int stride_x) : pad_y(pad_y), pad_x(pad_x), stride_y(stride_y),
     stride_x(stride_x), n_imgs(0), n_channels(0), n_filters(0), img_h(0),
-    img_w(0), filter_h(0), filter_w(0), workspace(NULL), workspace_size(0) {
+    img_w(0), filter_h(0), filter_w(0), workspace_size(0) {
   CUDNN_CHECK(cudnnCreateTensorDescriptor(&imgs_desc));
   CUDNN_CHECK(cudnnCreateTensorDescriptor(&convout_desc));
   CUDNN_CHECK(cudnnCreateFilterDescriptor(&filters_desc));
@@ -183,11 +183,10 @@ void ConvBC01CuDNN<T>::fprop(const T *imgs, const T *filters, int n_imgs,
         fwd_algo, &workspace_size
     ));
 
-    if (workspace_size > 0) {
-      workspace = CUDA::buffer(workspace_size);
-    } else {
-      workspace = 0;
-    }
+  }
+  void *workspace = NULL;
+  if (workspace_size > 0) {
+    workspace = CUDA::buffer(workspace_size);
   }
   CUDNN_CHECK(cudnnConvolutionForward(
       CUDNN::handle(), &CUDNN::one, imgs_desc, imgs, filters_desc, filters,

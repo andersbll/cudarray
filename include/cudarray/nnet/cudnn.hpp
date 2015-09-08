@@ -68,7 +68,6 @@ private:
   cudnnFilterDescriptor_t filters_desc;
   cudnnConvolutionDescriptor_t conv_desc;
   cudnnConvolutionFwdAlgo_t fwd_algo;
-  void *workspace;
   size_t workspace_size;
 };
 
