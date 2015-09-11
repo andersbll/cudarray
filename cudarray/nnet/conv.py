@@ -6,7 +6,7 @@ try:
     from ..wrap import cudnn
     _default_impl = 'cudnn'
 except:
-    _default_impl = 'matmul'
+    _default_impl = 'cudarray'
 
 
 class ConvBC01(object):
@@ -14,12 +14,12 @@ class ConvBC01(object):
         self.padding = padding
         self.strides = strides
         self.impl = _default_impl if impl is None else impl
-        if self.impl == 'matmul':
+        if self.impl == 'cudarray':
             self.conv_cudnn = None
         elif self.impl == 'cudnn':
             self.conv_cudnn = cudnn.conv_bc01_cudnn(padding, strides)
         else:
-            raise ValueError('invalid implementation: %s' % impl)
+            raise ValueError('invalid implementation: %s' % self.impl)
 
     def fprop(self, imgs, filters, convout=None):
         b, c, img_h, img_w = imgs.shape
@@ -39,12 +39,12 @@ class ConvBC01(object):
                 raise ValueError('convout.shape does not match result')
             if convout.dtype != imgs.dtype:
                 raise ValueError('dtype mismatch')
-        if self.impl == 'matmul':
+        if self.impl == 'cudarray':
             nnet._conv_bc01_matmul(
                 imgs._data, filters._data, b, c, f, img_shape, filter_shape,
                 self.padding, self.strides, convout._data
             )
-        elif self.impl == 'cudnn':
+        else:
             self.conv_cudnn.fprop(
                 imgs._data, filters._data, b, c, f, img_shape, filter_shape,
                 convout._data
@@ -75,7 +75,7 @@ class ConvBC01(object):
                     raise ValueError('filters_d.shape does not match result')
                 if filters_d.dtype != filters.dtype:
                     raise ValueError('dtype mismatch')
-            if self.impl == 'matmul':
+            if self.impl == 'cudarray':
                 nnet._conv_bc01_matmul_bprop_filters(
                     imgs._data, convout_d._data, b, c, f, img_shape,
                     filter_shape, self.padding, self.strides, filters_d._data
@@ -89,7 +89,7 @@ class ConvBC01(object):
                     raise ValueError('imgs_d.shape does not match result')
                 if imgs_d.dtype != imgs.dtype:
                     raise ValueError('dtype mismatch')
-            if self.impl == 'matmul':
+            if self.impl == 'cudarray':
                 nnet._conv_bc01_matmul_bprop_imgs(
                     filters._data, convout_d._data, b, c, f, img_shape,
                     filter_shape, self.padding, self.strides, imgs_d._data
