@@ -7,7 +7,7 @@ try:
     from ..wrap import cudnn
     _default_impl = 'cudnn'
 except:
-    _default_impl = 'masked'
+    _default_impl = 'cudarray'
 
 
 class PoolB01(object):
@@ -16,18 +16,17 @@ class PoolB01(object):
         self.padding = padding
         self.strides = strides
         self.impl = _default_impl if impl is None else impl
-        if self.impl == 'masked':
-            if method not in ['max']:
-                raise ValueError('invalid pooling method for "masked" pooling')
+        if method not in ['max', 'avg']:
+            raise ValueError('invalid pooling method: %s' % method)
+        self.method = method
+        if self.impl == 'cudarray':
             self.mask = None
         elif self.impl == 'cudnn':
-            if method not in ['max', 'avg']:
-                raise ValueError('invalid pooling method: %s' % method)
             self.last_poolout = None
             self.pool_cudnn = cudnn.PoolBC01CuDNN_f(win_shape, padding,
                                                     strides, method)
         else:
-            raise ValueError('invalid implementation: %s' % impl)
+            raise ValueError('invalid implementation: %s' % self.impl)
 
     def fprop(self, imgs, poolout=None):
         poolout_shape = self.output_shape(imgs.shape)
@@ -40,15 +39,22 @@ class PoolB01(object):
                 raise ValueError('dtype mismatch')
 
         img_shape = imgs.shape[-2:]
-        if self.impl == 'masked':
+        if self.impl == 'cudarray':
             n_imgs = np.prod(imgs.shape[:-2])
-            if self.mask is None or self.mask.shape != poolout_shape:
-                self.mask = ca.empty(poolout_shape, dtype=np.dtype('int32'))
-            nnet._max_pool_b01(
-                imgs._data, n_imgs, img_shape, self.win_shape, self.padding,
-                self.strides, poolout._data, self.mask._data
-            )
-        elif self.impl == 'cudnn':
+            if self.method == 'max':
+                if self.mask is None or self.mask.shape != poolout_shape:
+                    self.mask = ca.empty(poolout_shape,
+                                         dtype=np.dtype('int32'))
+                nnet._max_pool_b01(
+                    imgs._data, n_imgs, img_shape, self.win_shape,
+                    self.padding, self.strides, poolout._data, self.mask._data
+                )
+            else:
+                nnet._avg_pool_b01(
+                    imgs._data, n_imgs, img_shape, self.win_shape,
+                    self.padding, self.strides, poolout._data
+                )
+        else:
             n_imgs, n_channels = imgs.shape[:2]
             self.last_imgs = imgs
             self.last_poolout = poolout
@@ -69,13 +75,19 @@ class PoolB01(object):
             if imgs_d.dtype != poolout_d.dtype:
                 raise ValueError('dtype mismatch')
 
-        if self.impl == 'masked':
+        if self.impl == 'cudarray':
             n_imgs = np.prod(n_imgs_shape)
-            nnet._max_pool_b01_bprop(
-                poolout_d._data, self.mask._data, n_imgs, img_shape,
-                self.win_shape, self.padding, self.strides, imgs_d._data
-            )
-        elif self.impl == 'cudnn':
+            if self.method == 'max':
+                nnet._max_pool_b01_bprop(
+                    poolout_d._data, self.mask._data, n_imgs, img_shape,
+                    self.win_shape, self.padding, self.strides, imgs_d._data
+                )
+            else:
+                nnet._avg_pool_b01_bprop(
+                    poolout_d._data, n_imgs, img_shape, self.win_shape,
+                    self.padding, self.strides, imgs_d._data
+                )
+        else:
             self.pool_cudnn.bprop(
                 self.last_imgs._data, self.last_poolout._data, poolout_d._data,
                 imgs_d._data
