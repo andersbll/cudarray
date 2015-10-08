@@ -211,7 +211,7 @@ class ndarray(object):
             offset = offset * dim + start
             if append_dim:
                 view_shape.append(view_dim)
-            if rest_must_be_contiguous and view_dim > 1 and view_dim < dim:
+            if rest_must_be_contiguous and view_dim < dim:
                 raise NotImplementedError('only contiguous indices are '
                                           + 'supported')
             if view_dim > 1:
