@@ -46,9 +46,9 @@ def _copy(ArrayData a, unsigned int n, ArrayData out):
 
 
 def _to_device(np.ndarray a, unsigned int n, ArrayData out):
-    if is_int(a):
+    if is_int(out):
         array_ops.to_device(<int *>np.PyArray_DATA(a), n, int_ptr(out))
-    elif is_float(a):
+    elif is_float(out):
         array_ops.to_device(<float *>np.PyArray_DATA(a), n, float_ptr(out))
     else:
         raise ValueError('type (%s) not implemented' % str(a.dtype))
