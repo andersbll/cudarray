@@ -10,6 +10,8 @@ class ndarray(object):
     def __init__(self, shape, dtype=None, np_data=None, array_data=None,
                  array_owner=None):
         shape = helpers.require_iterable(shape)
+        if shape == ():
+            shape = (1,)
         self.shape = shape
         self.transposed = False
         self.isbool = False
@@ -25,6 +27,9 @@ class ndarray(object):
         elif dtype == np.dtype('bool'):
             dtype = np.dtype(base.bool_)
             self.isbool = True
+        else:
+            dtype = np.dtype(dtype)
+
         if np_data is not None:
             np_data = np.require(np_data, dtype=dtype, requirements='C')
         if array_data is None:
@@ -173,9 +178,10 @@ class ndarray(object):
                                   offset=offset)
             return ndarray(view_shape, self.dtype, np_data=None,
                            array_data=data_view)
-
+        elif isinstance(indices, slice):
+            indices = (indices,)
         # Standardize indices to a list of slices
-        if len(indices) > len(self.shape):
+        elif len(indices) > len(self.shape):
             raise IndexError('too many indices for array')
 
         view_shape = []
