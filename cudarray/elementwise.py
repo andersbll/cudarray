@@ -115,7 +115,10 @@ def binary(op, x1, x2, out=None, cmp_op=False):
 
     # Create/check output array
     if x1.size < x2.size:
+        flip = True
         x1, x2 = x2, x1
+    else:
+        flip = False
     if out is None:
         out = cudarray.empty(x1.shape, dtype=out_dtype)
     else:
@@ -135,9 +138,20 @@ def binary(op, x1, x2, out=None, cmp_op=False):
     else:
         btype, k, m, n = btype
         if cmp_op:
+            if flip and op in [elementwise.lt_op, elementwise.gt_op,
+                               elementwise.lt_eq_op, elementwise.gt_eq_op]:
+                raise NotImplementedError(
+                    'Broadcast of non-commutative operations not supported'
+                )
+
             elementwise._binary_cmp_broadcast(op, btype, x1._data, x2._data,
                                               k, m, n, out._data)
         else:
+            if flip and op in [elementwise.sub_op, elementwise.div_op,
+                               elementwise.pow_op]:
+                raise NotImplementedError(
+                    'Broadcast of non-commutative operations not supported'
+                )
             elementwise._binary_broadcast(op, btype, x1._data, x2._data, k, m,
                                           n, out._data)
         return out
