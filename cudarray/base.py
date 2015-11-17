@@ -41,14 +41,13 @@ def copyto(dst, src):
         if isinstance(dst, np.ndarray):
             np.copyto(dst, src)
         else:
-            dst = ascontiguousarray(dst)
+            src = np.ascontiguousarray(src)
             array_ops._to_device(src, n, dst._data)
     else:
         src = ascontiguousarray(src)
         if isinstance(dst, np.ndarray):
             array_ops._to_host(src._data, n, dst)
         else:
-            dst = ascontiguousarray(dst)
             array_ops._copy(src._data, n, dst._data)
 
 
