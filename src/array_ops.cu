@@ -8,6 +8,145 @@ const int BLOCK_ROWS = 8;
 
 namespace cudarray {
 
+
+template<typename T, unsigned int axis>
+__global__ void kernel_concatenate(
+    const T *a, const T *b, unsigned int d0, unsigned int d1, unsigned int d2,
+    unsigned int da, unsigned int db, T *c
+) {
+  CUDA_GRID_STRIDE_LOOP(c_idx, d0*d1*d2) {
+    unsigned int c2_idx = c_idx % d2;
+    unsigned int c1_idx = (c_idx / d2) % d1;
+    unsigned int c0_idx = c_idx / d2 / d1;
+    unsigned int a_idx;
+    unsigned int b_idx;
+    bool from_a;
+    if (axis == 0) {
+      a_idx = (c0_idx*d1 + c1_idx)*d2 + c2_idx;
+      b_idx = ((c0_idx-da)*d1 + c1_idx)*d2 + c2_idx;
+      from_a = c0_idx < da;
+    }
+    if (axis == 1) {
+      a_idx = (c0_idx*da + c1_idx)*d2 + c2_idx;
+      b_idx = (c0_idx*db + (c1_idx-da))*d2 + c2_idx;
+      from_a = c1_idx < da;
+    }
+    if (axis == 2) {
+      a_idx = (c0_idx*d1 + c1_idx)*da + c2_idx;
+      b_idx = (c0_idx*d1 + c1_idx)*db + (c2_idx-da);
+      from_a = c2_idx < da;
+    }
+    c[c_idx] = from_a ? a[a_idx] : b[b_idx];
+  }
+}
+
+template<typename T>
+void concatenate(
+    const T *a, const T *b, unsigned int axis, unsigned int d0,
+    unsigned int d1, unsigned int d2, unsigned int da, unsigned int db, T *c
+) {
+  unsigned int n = d0*d1*d2;
+  if (axis == 0) {
+    kernel_concatenate<T, 0><<<cuda_blocks(n), kNumBlockThreads>>>(
+      a, b, d0, d1, d2, da, db, c
+    );
+  } else if (axis == 1) {
+    kernel_concatenate<T, 1><<<cuda_blocks(n), kNumBlockThreads>>>(
+      a, b, d0, d1, d2, da, db, c
+    );
+  } else if (axis == 2) {
+    kernel_concatenate<T, 2><<<cuda_blocks(n), kNumBlockThreads>>>(
+      a, b, d0, d1, d2, da, db, c
+    );
+  } else {
+    throw std::runtime_error("invalid axis");
+  }
+  CUDA_KERNEL_CHECK;
+}
+
+template void concatenate<float>(
+    const float *a, const float *b, unsigned int axis, unsigned int d0,
+    unsigned int d1, unsigned int d2, unsigned int da, unsigned int db,
+    float *c
+);
+template void concatenate<int>(
+    const int *a, const int *b, unsigned int axis, unsigned int d0,
+    unsigned int d1, unsigned int d2, unsigned int da, unsigned int db,
+    int *c
+);
+
+
+template<typename T, unsigned int axis>
+__global__ void kernel_split(
+    const T *c, unsigned int d0, unsigned int d1, unsigned int d2,
+    unsigned int da, unsigned int db, T *a, T *b
+) {
+  CUDA_GRID_STRIDE_LOOP(c_idx, d0*d1*d2) {
+    unsigned int c2_idx = c_idx % d2;
+    unsigned int c1_idx = (c_idx / d2) % d1;
+    unsigned int c0_idx = c_idx / d2 / d1;
+    unsigned int a_idx;
+    unsigned int b_idx;
+    bool from_a;
+    if (axis == 0) {
+      a_idx = (c0_idx*d1 + c1_idx)*d2 + c2_idx;
+      b_idx = ((c0_idx-da)*d1 + c1_idx)*d2 + c2_idx;
+      from_a = c0_idx < da;
+    }
+    if (axis == 1) {
+      a_idx = (c0_idx*da + c1_idx)*d2 + c2_idx;
+      b_idx = (c0_idx*db + (c1_idx-da))*d2 + c2_idx;
+      from_a = c1_idx < da;
+    }
+    if (axis == 2) {
+      a_idx = (c0_idx*d1 + c1_idx)*da + c2_idx;
+      b_idx = (c0_idx*d1 + c1_idx)*db + (c2_idx-da);
+      from_a = c2_idx < da;
+    }
+    T val = c[c_idx];
+    if (from_a) {
+        a[a_idx] = val;
+    } else {
+        b[b_idx] = val;
+    }
+  }
+}
+
+
+template<typename T>
+void split(
+    const T *c, unsigned int axis, unsigned int d0, unsigned int d1,
+    unsigned int d2, unsigned int da, unsigned int db, T *a, T *b
+) {
+  unsigned int n = d0*d1*d2;
+  if (axis == 0) {
+    kernel_split<T, 0><<<cuda_blocks(n), kNumBlockThreads>>>(
+      c, d0, d1, d2, da, db, a, b
+    );
+  } else if (axis == 1) {
+    kernel_split<T, 1><<<cuda_blocks(n), kNumBlockThreads>>>(
+      c, d0, d1, d2, da, db, a, b
+    );
+  } else if (axis == 2) {
+    kernel_split<T, 2><<<cuda_blocks(n), kNumBlockThreads>>>(
+      c, d0, d1, d2, da, db, a, b
+    );
+  } else {
+    throw std::runtime_error("invalid axis");
+  }
+  CUDA_KERNEL_CHECK;
+}
+
+template void split<float>(
+    const float *c, unsigned int axis, unsigned int d0, unsigned int d1,
+    unsigned int d2, unsigned int da, unsigned int db, float *a, float *b
+);
+template void split<int>(
+    const int *c, unsigned int axis, unsigned int d0, unsigned int d1,
+    unsigned int d2, unsigned int da, unsigned int db, int *a, int *b
+);
+
+
 // Adapted from
 // http://devblogs.nvidia.com/parallelforall/efficient-matrix-transpose-cuda-cc/
 template<typename T, bool mTileMultiple, bool nTileMultiple>

@@ -243,6 +243,26 @@ def test_binary():
     c_ca = ca.multiply(a_ca, b_ca)
     print(np.allclose(c_np, np.array(c_ca)))
 
+    a_np = np.random.normal()
+    b_np = np.random.normal(size=(5, 5))
+    a_ca = ca.array(a_np)
+    b_ca = ca.array(b_np)
+    c_np = np.multiply(a_np, b_np)
+    c_ca = ca.multiply(a_ca, b_ca)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+    a_ca = ca.array(a_np)
+    b_ca = ca.array(b_np)
+    c_np = np.divide(a_np, b_np)
+    c_ca = ca.divide(a_ca, b_ca)
+    print(np.allclose(c_np, np.array(c_ca)))
+
+    a_ca = ca.array(a_np)
+    b_ca = ca.array(b_np)
+    c_np = np.subtract(a_np, b_np)
+    c_ca = ca.subtract(a_ca, b_ca)
+    print(np.allclose(c_np, np.array(c_ca)))
+
 
 def test_binary_cmp():
     a_np = np.random.normal(size=(5, 5))
@@ -422,6 +442,40 @@ def test_copyto():
     print(np.allclose(np.array(a_ca), np.array(b_ca)))
 
 
+def test_concatenate():
+    def concatenate_(shape_a, shape_b, axis):
+        a = np.random.random(size=shape_a)
+        b = np.random.random(size=shape_b)
+        c_np = np.concatenate((a, b), axis=axis)
+        c_ca = ca.extra.concatenate(ca.array(a), ca.array(b), axis=axis)
+        print(np.allclose(c_np, np.array(c_ca)))
+        a_, b_ = ca.extra.split(c_ca, a_size=a.shape[axis], axis=axis)
+        print(np.allclose(a, np.array(a_)))
+        print(np.allclose(b, np.array(b_)))
+    concatenate_((3,), (4,), axis=0)
+
+    concatenate_((2, 3), (2, 3), axis=0)
+    concatenate_((2, 3), (2, 3), axis=1)
+    concatenate_((2, 3), (5, 3), axis=0)
+    concatenate_((2, 3), (2, 5), axis=1)
+
+    concatenate_((2, 3, 4), (2, 3, 4), axis=0)
+    concatenate_((2, 3, 4), (2, 3, 4), axis=1)
+    concatenate_((2, 3, 4), (2, 3, 4), axis=2)
+    concatenate_((2, 3, 4), (5, 3, 4), axis=0)
+    concatenate_((2, 3, 4), (2, 5, 4), axis=1)
+    concatenate_((2, 3, 4), (2, 3, 5), axis=2)
+
+    concatenate_((2, 3, 4, 5), (2, 3, 4, 5), axis=0)
+    concatenate_((2, 3, 4, 5), (2, 3, 4, 5), axis=1)
+    concatenate_((2, 3, 4, 5), (2, 3, 4, 5), axis=2)
+    concatenate_((2, 3, 4, 5), (2, 3, 4, 5), axis=3)
+    concatenate_((2, 3, 4, 5), (7, 3, 4, 5), axis=0)
+    concatenate_((2, 3, 4, 5), (2, 7, 4, 5), axis=1)
+    concatenate_((2, 3, 4, 5), (2, 3, 7, 5), axis=2)
+    concatenate_((2, 3, 4, 5), (2, 3, 4, 7), axis=3)
+
+
 def run():
     test_indexing()
     test_dot()
@@ -432,6 +486,7 @@ def run():
     test_random()
     test_reduce()
     test_transpose()
+    test_concatenate()
 
 
 if __name__ == '__main__':

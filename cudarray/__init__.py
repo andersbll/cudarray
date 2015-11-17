@@ -25,6 +25,7 @@ if _backend == 'cuda':
         from . import random
         from . import nnet
         from . import batch
+        from . import extra
         wrap.cudart.initialize(_gpu_id)
     except:
         if _force_backend:

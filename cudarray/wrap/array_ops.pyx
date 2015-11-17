@@ -4,6 +4,32 @@ from .array_data cimport (ArrayData, bool_ptr, float_ptr, int_ptr, is_int,
                           is_float)
 
 
+def _concatenate(ArrayData a, ArrayData b, unsigned int axis, unsigned int d0,
+                 unsigned int d1, unsigned int d2, unsigned int da,
+                 unsigned int db, ArrayData c):
+    if is_float(a):
+        array_ops.concatenate(float_ptr(a), float_ptr(b), axis, d0, d1, d2, da,
+                              db, float_ptr(c))
+    elif is_int(a):
+        array_ops.concatenate(int_ptr(a), int_ptr(b), axis, d0, d1, d2, da, db,
+                              int_ptr(c))
+    else:
+        raise ValueError('type (%s) not implemented' % str(a.dtype))
+
+
+def _split(ArrayData c, unsigned int axis, unsigned int d0, unsigned int d1,
+           unsigned int d2, unsigned int da, unsigned int db, ArrayData a,
+           ArrayData b):
+    if is_float(a):
+        array_ops.split(float_ptr(c), axis, d0, d1, d2, da, db, float_ptr(a),
+                        float_ptr(b))
+    elif is_int(a):
+        array_ops.split(int_ptr(c), axis, d0, d1, d2, da, db, int_ptr(a),
+                        int_ptr(b))
+    else:
+        raise ValueError('type (%s) not implemented' % str(a.dtype))
+
+
 def _transpose(ArrayData a, unsigned int m, unsigned int n, ArrayData out):
     if is_float(a):
         array_ops.transpose(float_ptr(a), m, n, float_ptr(out))
