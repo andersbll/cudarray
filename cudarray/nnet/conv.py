@@ -84,7 +84,7 @@ class ConvBC01(object):
         if to_imgs:
             if imgs_d is None:
                 imgs_d = ca.empty(imgs_shape, dtype=convout_d.dtype)
-            else:
+            elif imgs is not None:
                 if imgs_d.shape != imgs.shape:
                     raise ValueError('imgs_d.shape does not match result')
                 if imgs_d.dtype != imgs.dtype:
