@@ -173,16 +173,54 @@ void ConvBC01CuDNN<T>::fprop(const T *imgs, const T *filters, int n_imgs,
     CUDNN_CHECK(cudnnSetTensor4dDescriptor(
         convout_desc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, n, c, h, w
     ));
-    CUDNN_CHECK(cudnnGetConvolutionForwardAlgorithm(
+    const int n_requestedAlgo = 10;
+    int n_returnedAlgo;
+    cudnnConvolutionFwdAlgoPerf_t fwd_algo_perf[n_requestedAlgo];
+    CUDNN_CHECK(cudnnFindConvolutionForwardAlgorithm(
         CUDNN::handle(), imgs_desc, filters_desc, conv_desc, convout_desc,
-        CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT, WORKSPACE_LIMIT,
-        &fwd_algo
+        n_requestedAlgo, &n_returnedAlgo, fwd_algo_perf
     ));
+    if (n_returnedAlgo == 0) {
+      throw std::runtime_error("No cudnnConvolutionFwdAlgoPerf_t found");
+    }
+
+    fwd_algo = fwd_algo_perf[0].algo;
+    cudnnConvolutionBwdDataAlgoPerf_t bwd_data_algo_perf[n_requestedAlgo];
+    CUDNN_CHECK(cudnnFindConvolutionBackwardDataAlgorithm(
+        CUDNN::handle(), filters_desc, convout_desc, conv_desc, imgs_desc,
+        n_requestedAlgo, &n_returnedAlgo, bwd_data_algo_perf
+    ));
+    if (n_returnedAlgo == 0) {
+      throw std::runtime_error("No cudnnConvolutionBwdDataAlgoPerf_t found");
+    }
+
+    bwd_imgs_algo = bwd_data_algo_perf[0].algo;
+    cudnnConvolutionBwdFilterAlgoPerf_t bwd_filters_algo_perf[n_requestedAlgo];
+    CUDNN_CHECK(cudnnFindConvolutionBackwardFilterAlgorithm(
+        CUDNN::handle(), imgs_desc, convout_desc, conv_desc, filters_desc,
+        n_requestedAlgo, &n_returnedAlgo, bwd_filters_algo_perf
+    ));
+    if (n_returnedAlgo == 0) {
+      throw std::runtime_error("No cudnnConvolutionBwdFilterAlgoPerf_t found");
+    }
+    bwd_filters_algo = bwd_filters_algo_perf[0].algo;
+    size_t fwd_workspace_size;
+    size_t bwd_imgs_workspace_size;
+    size_t bwd_filters_workspace_size;
     CUDNN_CHECK(cudnnGetConvolutionForwardWorkspaceSize(
         CUDNN::handle(), imgs_desc, filters_desc, conv_desc, convout_desc,
-        fwd_algo, &workspace_size
+        fwd_algo, &fwd_workspace_size
     ));
-
+    CUDNN_CHECK(cudnnGetConvolutionBackwardDataWorkspaceSize(
+        CUDNN::handle(), filters_desc, convout_desc, conv_desc, imgs_desc,
+        bwd_imgs_algo, &bwd_imgs_workspace_size
+    ));
+    CUDNN_CHECK(cudnnGetConvolutionBackwardFilterWorkspaceSize(
+        CUDNN::handle(), imgs_desc, convout_desc, conv_desc, filters_desc,
+        bwd_filters_algo, &bwd_filters_workspace_size
+    ));
+    workspace_size = std::max(fwd_workspace_size, bwd_imgs_workspace_size);
+    workspace_size = std::max(workspace_size, bwd_filters_workspace_size);
   }
   void *workspace = NULL;
   if (workspace_size > 0) {
@@ -199,16 +237,22 @@ void ConvBC01CuDNN<T>::fprop(const T *imgs, const T *filters, int n_imgs,
 template <typename T>
 void ConvBC01CuDNN<T>::bprop(const T* imgs, const T* filters,
                              const T *convout_d, T *imgs_d, T *filters_d) {
+  void *workspace = NULL;
+  if (workspace_size > 0) {
+    workspace = CUDA::buffer(workspace_size);
+  }
   if (filters_d) {
     CUDNN_CHECK(cudnnConvolutionBackwardFilter(
       CUDNN::handle(), &CUDNN::one, imgs_desc, imgs, convout_desc, convout_d,
-      conv_desc, &CUDNN::zero, filters_desc, filters_d
+      conv_desc, bwd_filters_algo, workspace, workspace_size, &CUDNN::zero,
+      filters_desc, filters_d
     ));
   }
   if (imgs_d) {
     CUDNN_CHECK(cudnnConvolutionBackwardData(
       CUDNN::handle(), &CUDNN::one, filters_desc, filters, convout_desc,
-      convout_d, conv_desc, &CUDNN::zero, imgs_desc, imgs_d
+      convout_d, conv_desc, bwd_imgs_algo, workspace, workspace_size,
+      &CUDNN::zero, imgs_desc, imgs_d
     ));
   }
 }
