@@ -68,6 +68,8 @@ private:
   cudnnFilterDescriptor_t filters_desc;
   cudnnConvolutionDescriptor_t conv_desc;
   cudnnConvolutionFwdAlgo_t fwd_algo;
+  cudnnConvolutionBwdFilterAlgo_t bwd_filters_algo;
+  cudnnConvolutionBwdDataAlgo_t bwd_imgs_algo;
   size_t workspace_size;
 };
 
