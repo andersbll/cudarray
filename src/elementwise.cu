@@ -62,7 +62,7 @@ void binary(const Ta *a, const Tb *b, unsigned int n, Tc *c) {
     kernel_binary<Ta, Tb, Tc, Op>
         <<<cuda_blocks(n), kNumBlockThreads>>>
         (a, b, n, c);
-  }
+      }
 }
 
 template<typename Ta, typename Tb,  typename Tc>
@@ -599,12 +599,15 @@ UNARY_OP(AbsOp, return fabsf(a);)
 UNARY_OP(CosOp, return cosf(a);)
 UNARY_OP(ExpOp, return expf(a);)
 UNARY_OP(LogOp, return logf(a);)
+UNARY_OP(Log1pOp, return log1pf(a);)
 UNARY_OP(NegOp, return -a;)
 UNARY_OP(ReluOp, return fmaxf(0.0, a);)
 UNARY_OP(ReluDOp, return a >= 0.0 ? 1.0 : 0.0;)
 UNARY_OP(SigmoidOp, return 1.0/(1.0 + expf(-a));)
 UNARY_OP(SigmoidDOp, Ta tmp = 1.0/(1.0 + expf(-a)); return tmp*(1-tmp);)
 UNARY_OP(SinOp, return sinf(a);)
+UNARY_OP(SoftplusOp, return a > 25.0 ? a : log1pf(expf(a));)
+UNARY_OP(SoftplusDOp, return a > 25.0 ? 1.0 : 1.0 - 1.0/(1.0 + expf(a));)
 UNARY_OP(SqrtOp, return sqrtf(a);)
 UNARY_OP(TanhOp, return tanhf(a);)
 UNARY_OP(TanhDOp, Ta tmp = tanhf(a); return 1-tmp*tmp;)
@@ -651,6 +654,9 @@ void unary(UnaryOp op, const T *a, unsigned int n, T *b) {
     case LOG_OP:
       unary<T, LogOp<T, T> >(a, n, b);
       break;
+    case LOG1P_OP:
+      unary<T, Log1pOp<T, T> >(a, n, b);
+      break;
     case NEG_OP:
       unary<T, NegOp<T, T> >(a, n, b);
       break;
@@ -668,6 +674,12 @@ void unary(UnaryOp op, const T *a, unsigned int n, T *b) {
       break;
     case SIN_OP:
       unary<T, SinOp<T, T> >(a, n, b);
+      break;
+    case SOFTPLUS_OP:
+      unary<T, SoftplusOp<T, T> >(a, n, b);
+      break;
+    case SOFTPLUS_D_OP:
+      unary<T, SoftplusDOp<T, T> >(a, n, b);
       break;
     case SQRT_OP:
       unary<T, SqrtOp<T, T> >(a, n, b);

@@ -52,8 +52,9 @@ void binary_cmp_broadcast(BinaryCmpOp op, BroadcastType btype, const Ta *a,
 
 
 enum UnaryOp {
-  ABS_OP, COS_OP, EXP_OP, LOG_OP, NEG_OP, SIN_OP, SQRT_OP, TANH_OP,
-  RELU_OP, RELU_D_OP, SIGMOID_OP, SIGMOID_D_OP, TANH_D_OP,
+  ABS_OP, COS_OP, EXP_OP, LOG_OP, LOG1P_OP, NEG_OP, SIN_OP, SQRT_OP, TANH_OP,
+  RELU_OP, RELU_D_OP, SIGMOID_OP, SIGMOID_D_OP, SOFTPLUS_OP, SOFTPLUS_D_OP,
+  TANH_D_OP,
 };
 
 template<typename T>

@@ -239,6 +239,10 @@ def log(x, out=None):
     return unary(elementwise.log_op, x, out)
 
 
+def log1p(x, out=None):
+    return unary(elementwise.log1p_op, x, out)
+
+
 def negative(x, out=None):
     return unary(elementwise.neg_op, x, out)
 

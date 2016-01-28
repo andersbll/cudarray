@@ -20,5 +20,13 @@ def sigmoid_d(x, out=None):
     return unary(elementwise.sigmoid_d_op, x, out)
 
 
+def softplus(x, out=None):
+    return unary(elementwise.softplus_op, x, out)
+
+
+def softplus_d(x, out=None):
+    return unary(elementwise.softplus_d_op, x, out)
+
+
 def tanh_d(x, out=None):
     return unary(elementwise.tanh_d_op, x, out)

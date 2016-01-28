@@ -54,11 +54,14 @@ cdef extern from 'cudarray/elementwise.hpp' namespace 'cudarray':
         COS_OP
         EXP_OP
         LOG_OP
+        LOG1P_OP
         NEG_OP
         RELU_OP
         RELU_D_OP
         SIGMOID_OP
         SIGMOID_D_OP
+        SOFTPLUS_OP
+        SOFTPLUS_D_OP
         SIN_OP
         SQRT_OP
         TANH_OP
