@@ -32,25 +32,32 @@ __global__ void kernel_binary(const Ta *a, const Tb *b, unsigned int n,
   }
 }
 
-template<typename Ta, typename Tb, typename Tc, typename Op>
-__global__ void kernel_binary_inplace(Ta *a, const Tb *b, unsigned int n) {
+template<typename Ta, typename Tb, typename Op>
+__global__ void kernel_binary_inplace_a(Ta *a, const Tb *b, unsigned int n) {
   Op op;
   CUDA_GRID_STRIDE_LOOP(idx, n) {
     a[idx] = op(a[idx], b[idx]);
   }
 }
 
+template<typename Tb, typename Ta, typename Op>
+__global__ void kernel_binary_inplace_b(Tb *b, const Ta *a, unsigned int n) {
+  Op op;
+  CUDA_GRID_STRIDE_LOOP(idx, n) {
+    b[idx] = op(a[idx], b[idx]);
+  }
+}
+
 template<typename Ta, typename Tb, typename Tc, typename Op>
 void binary(const Ta *a, const Tb *b, unsigned int n, Tc *c) {
   if (c == (Tc *) a) {
-    kernel_binary_inplace<Tc, Tb, Tc, Op>
+    kernel_binary_inplace_a<Tc, Tb, Op>
         <<<cuda_blocks(n), kNumBlockThreads>>>
         (c, b, n);
   } else if (c == (Tc *) b) {
-    kernel_binary_inplace<Tc, Ta, Tc, Op>
+    kernel_binary_inplace_b<Tc, Ta, Op>
         <<<cuda_blocks(n), kNumBlockThreads>>>
         (c, a, n);
-
   } else {
     kernel_binary<Ta, Tb, Tc, Op>
         <<<cuda_blocks(n), kNumBlockThreads>>>
