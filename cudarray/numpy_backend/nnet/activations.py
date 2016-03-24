@@ -34,3 +34,16 @@ def relu_d(x, out=None):
     result = np.zeros(x.shape)
     result[x >= 0] = 1
     return _output(result, out)
+
+
+def softplus(x, out=None):
+    result = np.log1p(np.exp(x))
+    mask = x > 25.0
+    result[mask] = x[mask]
+    return _output(result, out)
+
+
+def softplus_d(x, out=None):
+    result = 1.0 - 1.0/(1.0 + np.exp(x))
+    result[x > 25.0] = 1.0
+    return _output(result, out)
