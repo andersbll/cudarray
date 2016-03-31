@@ -72,7 +72,8 @@ void PoolBC01CuDNN<T>::fprop(const T *imgs, int *imgs_shape, T *poolout) {
     ));
 
     CUDNN_CHECK(cudnnSetPoolingNdDescriptor(
-        pool_desc, pool_mode, n_img_dims, win_shape, padding, strides
+        pool_desc, pool_mode, CUDNN_PROPAGATE_NAN, n_img_dims, win_shape,
+        padding, strides
     ));
 
     int poolout_shape[n_imgs_dims];
@@ -153,8 +154,8 @@ void ConvBC01CuDNN<T>::fprop(const T *imgs, const T *filters, int n_imgs,
   if (n_filters != this->n_filters || n_channels != this->n_channels ||
       filter_h != this->filter_h || filter_w != this->filter_w) {
     CUDNN_CHECK(cudnnSetFilter4dDescriptor(
-        filters_desc, CUDNN_DATA_FLOAT, n_filters, n_channels, filter_h,
-        filter_w
+        filters_desc, CUDNN_DATA_FLOAT, CUDNN_TENSOR_NCHW, n_filters,
+        n_channels, filter_h, filter_w
     ));
     this->n_filters = n_filters;
     this->n_channels = n_channels;
@@ -173,7 +174,7 @@ void ConvBC01CuDNN<T>::fprop(const T *imgs, const T *filters, int n_imgs,
     CUDNN_CHECK(cudnnSetTensor4dDescriptor(
         convout_desc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, n, c, h, w
     ));
-    const int n_requestedAlgo = 10;
+    const int n_requestedAlgo = 16;
     int n_returnedAlgo;
     cudnnConvolutionFwdAlgoPerf_t fwd_algo_perf[n_requestedAlgo];
     CUDNN_CHECK(cudnnFindConvolutionForwardAlgorithm(
