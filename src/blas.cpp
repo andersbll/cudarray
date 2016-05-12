@@ -87,7 +87,7 @@ T **dev_ptrs(const T *base, int num, int stride) {
   CUDA_CHECK(cudaMalloc((void **) &ptrs_dev, num*sizeof(T *)));
   CUDA_CHECK(cudaMemcpy(ptrs_dev, ptrs_host, num*sizeof(T *),
                         cudaMemcpyHostToDevice));
-  delete ptrs_host;
+  delete []ptrs_host;
   return ptrs_dev;
 }
 
