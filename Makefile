@@ -60,7 +60,7 @@ LIBCUDARRAY_BUILD = $(BUILD_DIR)/$(LIBCUDARRAY)
 LIBCUDARRAY_INSTALL = $(INSTALL_PREFIX)/lib/$(LIBCUDARRAY)
 
 INCLUDES += $(foreach include_dir,$(INCLUDE_DIRS),-I$(include_dir))
-C_FLAGS += -O3 -fPIC -Wall -Wfatal-errors
+C_FLAGS += -O3 -fPIC -Wall -Wfatal-errors -D_FORCE_INLINES
 NVCC_FLAGS = $(CUDA_ARCH) -O3 --compiler-options '$(C_FLAGS)' \
              --ftz=true --prec-div=false -prec-sqrt=false --fmad=true
 LDFLAGS += $(foreach lib_dir,$(LIB_DIRS),-L$(lib_dir)) \
