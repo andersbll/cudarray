@@ -81,7 +81,6 @@ struct AddOp {
   }
 };
 
-
 template <typename T, typename Op, unsigned int block_size>
 __global__ void reduce(const T *a, unsigned int n, T *b) {
   Op op;
@@ -113,43 +112,16 @@ __global__ void reduce(const T *a, unsigned int n, T *b) {
     // Reduce in shared memory
     sdata[tid] = reduced;
     __syncthreads();
-    if (block_size >= 512) {
-      if (tid < 256) {
-        sdata[tid] = reduced = op(reduced, sdata[tid + 256]);
-      }
-      __syncthreads();
-    }
-    if (block_size >= 256) {
-      if (tid < 128) {
-        sdata[tid] = reduced = op(reduced, sdata[tid + 128]);
-      }
-      __syncthreads();
-    }
-    if (block_size >= 128) {
-      if (tid <  64) {
-        sdata[tid] = reduced = op(reduced, sdata[tid + 64]);
-      }
-      __syncthreads();
-    }
-    // No need to sync threads in the same warp
-    if (tid < 32) {
-      if (block_size >= 64) {
-        sdata[tid] = reduced = op(reduced, sdata[tid + 32]);
-      }
-      if (block_size >= 32) {
-        sdata[tid] = reduced = op(reduced, sdata[tid + 16]);
-      }
-      if (block_size >= 16) {
-        sdata[tid] = reduced = op(reduced, sdata[tid + 8]);
-      }
-      if (block_size >= 8) {
-        sdata[tid] = reduced = op(reduced, sdata[tid + 4]);
-      }
-      if (block_size >= 4) {
-        sdata[tid] = reduced = op(reduced, sdata[tid + 2]);
-      }
-      if (block_size >= 2) {
-        sdata[tid] = reduced = op(reduced, sdata[tid + 1]);
+
+    #pragma unroll
+    for (unsigned int i=512; i >= 2; i >>= 1) {
+      if (block_size >= i) {
+        if (tid < (i << 1)) {
+          sdata[tid] = reduced = op(reduced, sdata[tid + i]);
+        }
+        // No need to sync threads in the same warp
+        if (tid >= 32)
+          __syncthreads();
       }
     }
 
@@ -171,7 +143,6 @@ inline unsigned int ceil_pow2(unsigned int x) {
   x |= x >> 16;
   return ++x;
 }
-
 
 unsigned int n_reduce_blocks(unsigned int n) {
   return min(max_blocks, (n + (2*reduce_cta_size - 1)) / (2*reduce_cta_size));
