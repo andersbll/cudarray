@@ -67,7 +67,7 @@ struct MulOp {
     return (T) 1;
   }
   __device__ T operator()(const T a, const T b) {
-    return a + b;
+    return a * b;
   }
 };
 
